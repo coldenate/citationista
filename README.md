@@ -18,7 +18,7 @@
 
 ## 🚀 Overview
 
-Citationista is the ultimate RemNote plugin designed to enhance your knowledge management and citation workflow. This tool offers:
+Citationista a RemNote plugin designed to enhance your knowledge management and citation workflow. This tool offers:
 
 ✨ **Intelligent Source Management**: Citationista helps you effortlessly manage your sources within RemNote, making it a breeze to organize and access your references.
 
