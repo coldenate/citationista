@@ -34,6 +34,8 @@ Citationista is the ultimate RemNote plugin designed to enhance your knowledge m
 - [ ] Real-time collaborative citation management. (dependent on RemNote collaboration)
 - [ ] Enhanced integration with third-party reference managers.
 - [ ] Interactive visualizations to explore your knowledge graph. (tbd)
+- [ ] Import **Zotero** papers.
+- [ ] Compatibility with RemNote Reader
 
 Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista development!
 
