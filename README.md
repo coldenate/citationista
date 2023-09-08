@@ -1,5 +1,5 @@
 <h1 align="center">
-	<img src="https://raw.githubusercontent.com/{REPO}/main/assets/citationista-logo.png" alt="Citationista Logo">
+	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/citationista-logo.png" alt="Citationista Logo">
 </h1>
 
 <h3 align="center">
@@ -7,13 +7,13 @@
 </h3>
 
 <p align="center">
-	<a href="https://github.com/{REPO}/stargazers"><img src="https://img.shields.io/github/stars/{REPO}?colorA=363a4f&colorB=b7bdf8&style=for-the-badge" alt="GitHub Stars"></a>
-	<a href="https://github.com/{REPO}/issues"><img src="https://img.shields.io/github/issues/{REPO}?colorA=363a4f&colorB=f5a97f&style=for-the-badge" alt="GitHub Issues"></a>
-	<a href="https://github.com/{REPO}/contributors"><img src="https://img.shields.io/github/contributors/{REPO}?colorA=363a4f&colorB=a6da95&style=for-the-badge" alt="GitHub Contributors"></a>
+	<a href="https://github.com/coldenate/citationista/stargazers"><img src="https://img.shields.io/github/stars/coldenate/citationista?colorA=363a4f&colorB=b7bdf8&style=for-the-badge" alt="GitHub Stars"></a>
+	<a href="https://github.com/coldenate/citationista/issues"><img src="https://img.shields.io/github/issues/coldenate/citationista?colorA=363a4f&colorB=f5a97f&style=for-the-badge" alt="GitHub Issues"></a>
+	<a href="https://github.com/coldenate/citationista/contributors"><img src="https://img.shields.io/github/contributors/coldenate/citationista?colorA=363a4f&colorB=a6da95&style=for-the-badge" alt="GitHub Contributors"></a>
 </p>
 
 <p align="center">
-	<img src="https://raw.githubusercontent.com/{REPO}/main/assets/remnote-preview.gif" alt="Citationista in Action">
+	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/remnote-preview.gif" alt="Citationista in Action">
 </p>
 
 ## 🚀 Overview
@@ -41,9 +41,9 @@ Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista de
 
 ## 🚧 Work in Progress
 
-Citationista is currently a personal side project and a work in progress. Any feedback is greatly appreciated, but please understand that it's a hobby project without any strict timelines or commitments. If you have an issue with the plugin, please make a GitHub issue. 
+Citationista is currently a personal side project and a work in progress. Any feedback is greatly appreciated, but please understand that it's a hobby project without any strict timelines or commitments. If you have an issue with the plugin, please make a GitHub issue.
 
-<!-- This is a comment ## 💝 Thanks to Our Contributors 
+<!-- This is a comment ## 💝 Thanks to Our Contributors
 
 
 ## 📄 Installation
@@ -56,7 +56,7 @@ Explore the full potential of Citationista by diving into our comprehensive [Doc
 
 ## 🐛 Bugs and Issues
 
-Found a bug or want to suggest a feature? Please open an issue on our [GitHub Issues](https://github.com/{REPO}/issues) page. Your feedback is invaluable!
+Found a bug or want to suggest a feature? Please open an issue on our [GitHub Issues](https://github.com/coldenate/citationista/issues) page. Your feedback is invaluable!
 
 -->
 ---
