@@ -1,0 +1,22 @@
+{
+	"manifestVersion": 1,
+	"id": "citationista",
+	"name": "Citationista",
+	"author": "coldenate",
+	"repoUrl": "https://github.com/coldenate/citationista",
+	"version": {
+		"major": 0,
+		"minor": 1,
+		"patch": 0
+	},
+	"theme": [],
+	"enableOnMobile": true,
+	"description": "📚 A Citation Manager for RemNote! Cite alongside your research - all integrated into your workflow.",
+	"requestNative": false,
+	"requiredScopes": [
+		{
+			"type": "All",
+			"level": "ReadCreateModify"
+		}
+	]
+}
