@@ -20,22 +20,22 @@
 
 Citationista a RemNote plugin designed to enhance your knowledge management and citation workflow. This tool offers:
 
-✨ **Intelligent Source Management**: Citationista helps you effortlessly manage your sources within RemNote, making it a breeze to organize and access your references.
+**Intelligent Source Management**: Citationista helps you effortlessly manage your sources within RemNote, making it a breeze to organize and access your references.
 
-📂 **Flexible Data Export**: Seamlessly convert your RemNote data into various file formats, allowing you to work with your knowledge in the way that suits you best.
+**Flexible Data Export**: Seamlessly convert your RemNote data into various file formats, allowing you to work with your knowledge in the way that suits you best.
 
-📚 **Zotero Integration**: Citationista plays well with Zotero, making it a perfect companion for researchers and academics who rely on this popular reference manager.
+**Zotero Integration**: Citationista plays well with Zotero, making it a perfect companion for researchers and academics who rely on this popular reference manager.
 
-🧩 **Independent Citation Management**: Not a Zotero user? No problem! Citationista offers its own citation management capabilities, ensuring you have complete control over your citations.
+**Independent Citation Management**: Not a Zotero user? No problem! Citationista offers its own citation management capabilities, ensuring you have complete control over your citations.
 
 ## 📅 Planned Features
 
-- [ ] Advanced tagging system for sources.
-- [ ] Real-time collaborative citation management. (dependent on RemNote collaboration)
-- [ ] Enhanced integration with third-party reference managers.
-- [ ] Interactive visualizations to explore your knowledge graph. (tbd)
-- [ ] Import **Zotero** papers.
-- [ ] Compatibility with RemNote Reader
+-   Advanced tagging system for sources.
+-   Real-time collaborative citation management. (dependent on RemNote collaboration)
+-   Enhanced integration with third-party reference managers.
+-   Interactive visualizations to explore your knowledge graph. (tbd)
+-   Import **Zotero** papers.
+-   Compatibility with RemNote Reader
 
 Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista development!
 
@@ -59,6 +59,7 @@ Explore the full potential of Citationista by diving into our comprehensive [Doc
 Found a bug or want to suggest a feature? Please open an issue on our [GitHub Issues](https://github.com/coldenate/citationista/issues) page. Your feedback is invaluable!
 
 -->
+
 ---
 
 <p align="center">
