@@ -1,5 +1,5 @@
 <h1 align="center">⚠️</h1>
-<h3>Develoment is a slow, so I'll make an alert on the RemNote Discord when adequate progress is made! Thank you!</h3>
+<h3>Develoment is slow, so I'll make an alert on the RemNote Discord when adequate progress is made! Thank you!</h3>
 <h1 align="center">
 	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/citationista-logo.png" alt="Citationista Logo">
 </h1>
