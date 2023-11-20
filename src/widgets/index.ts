@@ -254,10 +254,9 @@ async function onActivate(plugin: ReactRNPlugin) {
 			}
 			let citations: string[] = [];
 			await plugin.app.toast('📝 Searching for sources...');
-			// await processRem(plugin, remCursorAt, 0, 1);
-			console.log(
-				await remCursorAt.getPowerupProperty(BuiltInPowerupCodes.Sources, 'Sources')
-			);
+			await processRem(plugin, remCursorAt, 0, 10);
+			const children = await remCursorAt.getChildrenRem();
+			console.log(children);
 			// await plugin.app.toast(`Copied ${citations.length} citations to clipboard.`);
 		},
 	});
@@ -285,19 +284,19 @@ async function processRem(
 		return;
 	}
 
+	// attempt to pull sources from currentRem
+	const sources = await currentRem.getSources();
+
+	if (sources.length !== 0) {
+		// TODO: add those citations to the citations array
+	}
+
 	// iterate through currentRem's children
-	for (let childRemId of currentRem.children) {
-		const childRem = await plugin.rem.findOne(childRemId);
+	for (let childRem of await currentRem.getChildrenRem()) {
 		// check if childRem is undefined
 		if (childRem === undefined) {
 			console.info('Child Rem is undefined.');
 			continue;
-		}
-		// check if childRem has no children
-		if (childRem.children === undefined && childRem.children > 0) {
-			console.info('Child Rem has no children.');
-			// check if childRem is a citation
-			const citation = extractCitation(childRem);
 		}
 
 		// check if childRem has children, then recurse
@@ -308,8 +307,9 @@ async function processRem(
 	}
 }
 
-function extractCitation(rem: Rem): citationObject | undefined {
-	console.log(rem);
+async function extractCitation(rem: Rem): citationObject | undefined {
+	const sources = await rem.getSources();
+	console.log(sources);
 }
 
 declareIndexPlugin(onActivate, onDeactivate);
