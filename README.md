@@ -1,5 +1,5 @@
-<h1 align="center">⚠️</h1>
-<h3>Develoment is slow, so I'll make an alert on the RemNote Discord when adequate progress is made! Thank you!</h3>
+<!-- <h1 align="center">⚠️</h1>
+<h3>Develoment is slow, so I'll make an alert on the RemNote Discord when adequate progress is made! Thank you!</h3> -->
 <h1 align="center">
 	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/citationista-logo.png" alt="Citationista Logo">
 </h1>
@@ -20,30 +20,31 @@
 
 ## 🚀 Overview
 
-Citationista a RemNote plugin designed to enhance your knowledge management and citation workflow. This tool offers:
+Citationista is a RemNote plugin that enhances your research management and citation workflow. It offers:
 
-**Intelligent Source Management**: Citationista helps you effortlessly manage your sources within RemNote, making it a breeze to organize and access your references.
-
-**Flexible Data Export**: Seamlessly convert your RemNote data into various file formats, allowing you to work with your knowledge in the way that suits you best.
-
-**Zotero Integration**: Citationista plays well with Zotero, making it a perfect companion for researchers and academics who rely on this popular reference manager.
-
-**Independent Citation Management**: Not a Zotero user? No problem! Citationista offers its own citation management capabilities, ensuring you have complete control over your citations.
+-   EASY Source Management: All you have to do type /source and insert a link/file! (THAT'S IT! ![](https://cdn.betterttv.net/emote/5fbac4f168e2d56f0f39cac6/1x.gif))
+-   Flexible Data Export: Convert your citation data into different file formats.
+-   Zotero Integration: Works well with Zotero!
+-   Independent Citation Management: Even if you don't use Zotero, Citationista provides its own citation management capabilities.
+    -   Citationista utilizes RemNote's basic Rem Source feature to store citation data. This means that you can use Citationista without Zotero.
 
 ## 📅 Planned Features
 
--   Advanced tagging system for sources.
--   Real-time collaborative citation management. (dependent on RemNote collaboration)
--   Enhanced integration with third-party reference managers.
--   Interactive visualizations to explore your knowledge graph. (tbd)
--   Import **Zotero** papers.
--   Compatibility with RemNote Reader
+> lovingly organized by how confident I think it's possible do complete 🫡
+
+-   [ ] Export Rem Sources to BibTeX, RIS, or generate APA/MLA/etc citations.
+-   [ ] Advanced tagging system for sources.
+-   [ ] Compatibility with RemNote Reader
+-   [ ] Import your **Zotero** papers and sync them with RemNote.
+-   [ ] Enhanced integration with third-party reference managers.
+-   [ ] Support for RemNote Real Time Collaboration
+-   [ ] Support for RemNote AI
 
 Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista development!
 
 ## 🚧 Work in Progress
 
-Citationista is currently a personal side project and a work in progress. Any feedback is greatly appreciated, but please understand that it's a hobby project without any strict timelines or commitments. If you have an issue with the plugin, please make a GitHub issue.
+Citationista is currently a personal side project and a work in progress. Any feedback/contribution is greatly appreciated, but please understand that it's a hobby project without any strict timelines or commitments. If you have an issue with the plugin, please make a GitHub issue.
 
 <!-- This is a comment ## 💝 Thanks to Our Contributors
 
