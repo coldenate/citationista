@@ -39,9 +39,7 @@ Citationista is a RemNote plugin that enhances your research management and cita
     -   [x] Create References from these syncs.
         -   [ ] Automatically Create References upon importing with slash command
     -   [ ] Compatibility with RemNote Reader
--   [ ] Enhanced integration with third-party reference managers.
--   [ ] Support for RemNote Real Time Collaboration
--   [ ] Support for RemNote AI
+-   [x] Support for RemNote AI
 
 Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista development!
 
