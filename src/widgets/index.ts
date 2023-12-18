@@ -6,6 +6,7 @@ import {
 	PropertyLocation,
 	filterAsync,
 } from '@remnote/plugin-sdk';
+import { error } from 'console';
 import api from 'zotero-api-client'; // ignore this error, it's fine (i think)
 
 let pluginPassthrough: RNPlugin;
@@ -50,13 +51,11 @@ async function birthZoteroRem(plugin: RNPlugin) {
 	await helpInfoRem?.setIsQuote(true);
 	await helpInfoRem?.setHighlightColor('Blue');
 	await helpInfoRem?.setParent(rem);
-
-	await syncZoteroLibraryToRemNote(plugin);
 }
 
 // function: sync collections with zotero library rem
 async function syncCollections(plugin: RNPlugin) {
-	const zoteroCollections = await getAllZoteroCollections();
+	const zoteroCollections = await getAllZoteroCollections(plugin);
 
 	const remnoteCollections = await getAllRemNoteCollections(plugin);
 
@@ -119,6 +118,7 @@ async function syncCollections(plugin: RNPlugin) {
 					String(collection.parentCollection),
 				]);
 				await newCollectionRem?.setIsDocument(true);
+				await newCollectionRem?.setFontSize('H1');
 				await newCollectionRem?.setParent(zoteroLibraryRem); //TODO: make this dynamic
 				// await newCollectionRem.setTagPropertyValue('relations', [collection.relations]);
 				break;
@@ -148,16 +148,363 @@ async function syncCollections(plugin: RNPlugin) {
 	}
 }
 
+async function syncItems(plugin: RNPlugin, collectionKey: string | false) {
+	// Sync items with Zotero (same nature of function as syncCollections
+	// we want to get all the items from Zotero, and then compare them to the items in RemNote,
+	// and then update the items in RemNote accordingly determining action: modify or add(delete not supported yet))
+	// if collectionKey is false, then we want to sync all items in the library
+
+	const zoteroItems = await getAllZoteroItems(plugin);
+	const remnoteItems = await getAllRemNoteItems(plugin);
+	console.log(remnoteItems);
+
+	const itemsToUpdate = [];
+	for (const zoteroItem of zoteroItems) {
+		let foundItem = false;
+		if (remnoteItems === undefined) {
+			itemsToUpdate.push({
+				item: zoteroItem,
+				method: 'add',
+			});
+			continue;
+		}
+		for (const remnoteItem of remnoteItems) {
+			if (zoteroItem.key === remnoteItem.key[0]) {
+				foundItem = true;
+				if (zoteroItem.version !== remnoteItem.version[0]) {
+					itemsToUpdate.push({
+						item: zoteroItem,
+						method: 'modify',
+					});
+				}
+			}
+		}
+		if (!foundItem) {
+			itemsToUpdate.push({
+				item: zoteroItem,
+				method: 'add',
+			});
+		}
+	}
+
+	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zotero-item');
+	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode('zotero-synced-library');
+	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem?.taggedRem())[0];
+	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('zotero-collection');
+
+	const childrenItem: Rem[] = await zoteroItemPowerup?.getChildrenRem();
+	const itemProperties = await filterAsync(childrenItem, (c) => c.isProperty());
+
+	const collectionChildren: Rem[] = await zoteroCollectionPowerupRem?.getChildrenRem();
+	const collectionProperties = await filterAsync(collectionChildren, (c) => c.isProperty());
+
+	const keyPropertyCollection = getPropertyByText(itemProperties, 'Key');
+	const versionProperty = getPropertyByText(itemProperties, 'Version');
+	const nameProperty = getPropertyByText(itemProperties, 'Name');
+	const parentCollectionProperty = getPropertyByText(itemProperties, 'Parent Collection');
+	// const relationsProperty = getPropertyByText(itemProperties, 'Relations');
+
+	const messageProperty = getPropertyByText(itemProperties, 'Message');
+	const titleProperty = getPropertyByText(itemProperties, 'Title');
+	const authorsProperty = getPropertyByText(itemProperties, 'Authors');
+	const dateProperty = getPropertyByText(itemProperties, 'Date');
+	const journalProperty = getPropertyByText(itemProperties, 'Journal');
+	const volumeProperty = getPropertyByText(itemProperties, 'Volume');
+	const issueProperty = getPropertyByText(itemProperties, 'Issue');
+	const pagesProperty = getPropertyByText(itemProperties, 'Pages');
+	const doiProperty = getPropertyByText(itemProperties, 'DOI');
+	const abstractProperty = getPropertyByText(itemProperties, 'Abstract');
+	const keywordsProperty = getPropertyByText(itemProperties, 'Keywords');
+	const accessDateProperty = getPropertyByText(itemProperties, 'Access Date');
+	const citekeyProperty = getPropertyByText(itemProperties, 'Citekey');
+	const containerTitleProperty = getPropertyByText(itemProperties, 'Container Title');
+	const eprintProperty = getPropertyByText(itemProperties, 'Eprint');
+	const eprinttypeProperty = getPropertyByText(itemProperties, 'Eprinttype');
+	const eventPlaceProperty = getPropertyByText(itemProperties, 'Event Place');
+	const pageProperty = getPropertyByText(itemProperties, 'Page');
+	const publisherProperty = getPropertyByText(itemProperties, 'Publisher');
+	const publisherPlaceProperty = getPropertyByText(itemProperties, 'Publisher Place');
+	const titleShortProperty = getPropertyByText(itemProperties, 'Title Short');
+	const URLProperty = getPropertyByText(itemProperties, 'URL');
+	const zoteroSelectURIProperty = getPropertyByText(itemProperties, 'Zotero Select URI');
+	const keyProperty = getPropertyByText(itemProperties, 'Key');
+
+	// update the remnote items that need to be changed
+	for (const itemToUpdate of itemsToUpdate) {
+		const { item, method } = itemToUpdate;
+
+		switch (method) {
+			case 'delete':
+				console.error('deleting collections is not yet supported 😡');
+				break;
+			case 'add':
+				console.log(item);
+				const newItemRem = await plugin.rem.createRem();
+				await newItemRem?.addPowerup('zotero-item');
+				await newItemRem?.setText([item.data.title]);
+				await newItemRem?.setIsDocument(true);
+				if (item.data.collections === '' || item.data.collections === undefined) {
+					console.log('No parent collection!');
+					await newItemRem?.setParent(zoteroLibraryRem); //TODO: make this dynamic
+				} else if (item.data.collections.length > 0) {
+					const collectionID = item.data.collections[0];
+					const matchingRem = await plugin.search.search(
+						[collectionID],
+						zoteroLibraryRem,
+						{ numResults: 1 }
+					);
+					console.log(matchingRem);
+
+					if (matchingRem[0]) {
+						await newItemRem?.setParent(matchingRem[0].parent);
+					}
+				}
+				const promises = [
+					newItemRem?.setTagPropertyValue(keyProperty?._id, [item.key]),
+					newItemRem?.setTagPropertyValue(versionProperty?._id, [String(item.version)]),
+					newItemRem?.setTagPropertyValue(messageProperty?._id, [item.data.extra]),
+					newItemRem?.setTagPropertyValue(titleProperty?._id, [item.data.title]),
+					newItemRem?.setTagPropertyValue(authorsProperty?._id, [item.data.creators]),
+					newItemRem?.setTagPropertyValue(dateProperty?._id, [item.data.date]), //TODO: format as rem date
+					newItemRem?.setTagPropertyValue(journalProperty?._id, [item.journal]),
+					newItemRem?.setTagPropertyValue(volumeProperty?._id, [item.volume]),
+					newItemRem?.setTagPropertyValue(issueProperty?._id, [item.issue]),
+					newItemRem?.setTagPropertyValue(pagesProperty?._id, [item.pages]),
+					newItemRem?.setTagPropertyValue(doiProperty?._id, [item.doi]),
+					newItemRem?.setTagPropertyValue(abstractProperty?._id, [
+						item.data.abstractNote,
+					]),
+					newItemRem?.setTagPropertyValue(keywordsProperty?._id, [item.keywords]),
+					newItemRem?.setTagPropertyValue(accessDateProperty?._id, [item.accessDate]),
+					newItemRem?.setTagPropertyValue(citekeyProperty?._id, [item.citekey]),
+					newItemRem?.setTagPropertyValue(containerTitleProperty?._id, [
+						item.containerTitle,
+					]),
+					newItemRem?.setTagPropertyValue(eprintProperty?._id, [item.eprint]),
+					newItemRem?.setTagPropertyValue(eprinttypeProperty?._id, [item.eprinttype]),
+					newItemRem?.setTagPropertyValue(eventPlaceProperty?._id, [item.eventPlace]),
+					newItemRem?.setTagPropertyValue(pageProperty?._id, [item.page]),
+					newItemRem?.setTagPropertyValue(publisherProperty?._id, [item.publisher]),
+					newItemRem?.setTagPropertyValue(publisherPlaceProperty?._id, [
+						item.publisherPlace,
+					]),
+					newItemRem?.setTagPropertyValue(titleShortProperty?._id, [item.titleShort]),
+					newItemRem?.setTagPropertyValue(URLProperty?._id, [item.URL]),
+					newItemRem?.setTagPropertyValue(zoteroSelectURIProperty?._id, [
+						item.zoteroSelectURI,
+					]),
+				];
+				const results = await Promise.allSettled(promises);
+				// results.forEach((result, index) => {
+				// 	if (result.status === 'fulfilled') {
+				// 		console.info(`Set ${getPropertyLabel(index)}!`);
+				// 	} else {
+				// 		// Log the error for the specific function call
+				// 		console.error(
+				// 			`Error setting ${getPropertyLabel(index)}:`,
+				// 			result.reason.message
+				// 		);
+				// 	}
+				// });
+				break;
+			case 'modify':
+				console.log("i'm supposed to modify :)");
+				return;
+		}
+	}
+}
+
+function getPropertyByText(properties: Rem[], propertyText: string): Rem | undefined {
+	return properties.find((property) => property.text[0] === propertyText);
+}
+
+async function getAllRemNoteItems(plugin: RNPlugin) {
+	// query the zotero-item powerup and get all the rems that way
+	// return array of rems after formatting the array to the same schema as the zotero items
+	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zotero-item');
+	const zoteroItems = await zoteroItemPowerup?.taggedRem();
+	if (zoteroItems?.length === 0) {
+		return undefined;
+	}
+	// repack into a new array of objects. this is so we can use the same schema as the zotero items
+	// get the property values, and then repack them into an object. accompanied with the rem id
+
+	const children: Rem[] = await zoteroItemPowerup?.getChildrenRem();
+	const properties = await filterAsync(children, (c) => c.isProperty());
+
+	console.log(properties);
+
+	const messageProperty = getPropertyByText(properties, 'Message');
+	const titleProperty = getPropertyByText(properties, 'Title');
+	const authorsProperty = getPropertyByText(properties, 'Author(s)');
+	const dateProperty = getPropertyByText(properties, 'Date');
+	const journalProperty = getPropertyByText(properties, 'Journal/Source');
+	const volumeProperty = getPropertyByText(properties, 'Volume');
+	const issueProperty = getPropertyByText(properties, 'Issue');
+	const pagesProperty = getPropertyByText(properties, 'Page Numbers');
+	const doiProperty = getPropertyByText(properties, 'DOI (Digital Object Identifier)');
+	const abstractProperty = getPropertyByText(properties, 'Abstract');
+	const keywordsProperty = getPropertyByText(properties, 'Keywords');
+	const accessDateProperty = getPropertyByText(properties, 'Access Date');
+	const citekeyProperty = getPropertyByText(properties, 'Cite Key');
+	const containerTitleProperty = getPropertyByText(properties, 'Container Title');
+	const eprintProperty = getPropertyByText(properties, 'Eprint');
+	const eprinttypeProperty = getPropertyByText(properties, 'Eprint Type');
+	const eventPlaceProperty = getPropertyByText(properties, 'Event Place');
+	const pageProperty = getPropertyByText(properties, 'Page');
+	const publisherProperty = getPropertyByText(properties, 'Publisher');
+	const publisherPlaceProperty = getPropertyByText(properties, 'Publisher Place');
+	const titleShortProperty = getPropertyByText(properties, 'Title Short');
+	const URLProperty = getPropertyByText(properties, 'URL');
+	const zoteroSelectURIProperty = getPropertyByText(properties, 'Zotero Select URI');
+	const keyProperty = getPropertyByText(properties, 'Key');
+	const versionProperty = getPropertyByText(properties, 'Version');
+
+	const remnoteItems = [];
+
+	for (const zoteroItem of zoteroItems) {
+		const version = await zoteroItem.getTagPropertyValue(versionProperty?._id);
+		const message = await zoteroItem.getTagPropertyValue(messageProperty?._id);
+		const title = await zoteroItem.getTagPropertyValue(titleProperty?._id);
+		const authors = await zoteroItem.getTagPropertyValue(authorsProperty?._id);
+		const date = await zoteroItem.getTagPropertyValue(dateProperty?._id);
+		const journal = await zoteroItem.getTagPropertyValue(journalProperty?._id);
+		const volume = await zoteroItem.getTagPropertyValue(volumeProperty?._id);
+		const issue = await zoteroItem.getTagPropertyValue(issueProperty?._id);
+		const pages = await zoteroItem.getTagPropertyValue(pagesProperty?._id);
+		const doi = await zoteroItem.getTagPropertyValue(doiProperty?._id);
+		const abstract = await zoteroItem.getTagPropertyValue(abstractProperty?._id);
+		const keywords = await zoteroItem.getTagPropertyValue(keywordsProperty?._id);
+		const accessDate = await zoteroItem.getTagPropertyValue(accessDateProperty?._id);
+		const citekey = await zoteroItem.getTagPropertyValue(citekeyProperty?._id);
+		const containerTitle = await zoteroItem.getTagPropertyValue(containerTitleProperty?._id);
+		const eprint = await zoteroItem.getTagPropertyValue(eprintProperty?._id);
+		const eprinttype = await zoteroItem.getTagPropertyValue(eprinttypeProperty?._id);
+		const eventPlace = await zoteroItem.getTagPropertyValue(eventPlaceProperty?._id);
+		const page = await zoteroItem.getTagPropertyValue(pageProperty?._id);
+		const publisher = await zoteroItem.getTagPropertyValue(publisherProperty?._id);
+		const publisherPlace = await zoteroItem.getTagPropertyValue(publisherPlaceProperty?._id);
+		const titleShort = await zoteroItem.getTagPropertyValue(titleShortProperty?._id);
+		const URL = await zoteroItem.getTagPropertyValue(URLProperty?._id);
+		const zoteroSelectURI = await zoteroItem.getTagPropertyValue(zoteroSelectURIProperty?._id);
+		const key = await zoteroItem.getTagPropertyValue(keyProperty?._id);
+
+		const item = {
+			version: [version],
+			message: [message],
+			title: [title],
+			authors: [authors],
+			date: [date],
+			journal: [journal],
+			volume: [volume],
+			issue: [issue],
+			pages: [pages],
+			doi: [doi],
+			abstract: [abstract],
+			keywords: [keywords],
+			accessDate: [accessDate],
+			citekey: [citekey],
+			containerTitle: [containerTitle],
+			eprint: [eprint],
+			eprinttype: [eprinttype],
+			eventPlace: [eventPlace],
+			page: [page],
+			publisher: [publisher],
+			publisherPlace: [publisherPlace],
+			titleShort: [titleShort],
+			URL: [URL],
+			zoteroSelectURI: [zoteroSelectURI],
+			key: [key],
+			remID: zoteroItem._id,
+		};
+		remnoteItems.push(item);
+	}
+	return remnoteItems;
+}
+
+async function getAllZoteroItems(plugin: RNPlugin) {
+	// get all items from Zotero
+
+	const zoteroItems = [];
+	const zoteroAPIConnection = await callZoteroConnection(plugin);
+	const zoteroItemsResponse = await zoteroAPIConnection.items().get();
+
+	for (const item of zoteroItemsResponse.raw) {
+		// example of item
+		// 		 {
+		//     key: 'C72HFD6U',
+		//     version: 17,
+		//     library: {
+		//       type: 'user',
+		//       id: 11699886,
+		//       name: 'Nathan Solis',
+		//       links: { alternate: { href: 'https://www.zotero.org/coldenate', type: 'text/html' } }
+		//     },
+		//     links: {
+		//       self: { href: 'https://api.zotero.org/users/11699886/items/C72HFD6U', type: 'application/json' },
+		//       alternate: { href: 'https://www.zotero.org/coldenate/items/C72HFD6U', type: 'text/html' },
+		//       attachment: {
+		//         href: 'https://api.zotero.org/users/11699886/items/FS69FCIW',
+		//         type: 'application/json',
+		//         attachmentType: 'application/pdf',
+		//         attachmentSize: 733670
+		//       }
+		//     },
+		//     meta: { creatorSummary: 'Marzullo', parsedDate: '2017-06-15', numChildren: 2 },
+		//     data: {
+		//       key: 'C72HFD6U',
+		//       version: 17,
+		//       itemType: 'journalArticle',
+		//       title: 'The Missing Manuscript of Dr. Jose Delgado’s Radio Controlled Bulls',
+		//       creators: [ { creatorType: 'author', firstName: 'Timothy C.', lastName: 'Marzullo' } ],
+		//       abstractNote:
+		//         'Neuroscience systems level courses teach: 1) the role of neuroanatomical structures of the brain for perception, movement, and cognition; 2) methods to manipulate and study the brain including lesions, electrophysiological recordings, microstimulation, optogenetics, and pharmacology; 3) proper interpretation of behavioral data to deduce brain circuit operation; and 4) the similarities, differences, and ethics of animal models and their relation to human physiology. These four topics come together quite dramatically in Dr. Jose Delgado’s 1960s famous experiments on the neural correlates of aggression in which he stopped bulls in mid-charge by electrically stimulating basal ganglia and thalamic structures. Technical documentation on these experiments is famously difficult to find. Here I translate and discuss a Spanish language article written by Dr. Delgado in 1981 for an encyclopedia on bull fighting published in Madrid. Here Dr. Delgado appears to give the most complete explanation of his experiments on microstimulation of bovine brains. Dr. Delgado’s motivations, methods, and his interpretation of the bull experiments are summarized, as well as some accompanying information from his 1970 English language book: “Physical Control of the Mind.” This review of Dr. Delgado’s written work on the bull experiments can provide a resource to educators and students who desire to learn more about and interpret the attention-calling experiments that Dr. Delgado did on a ranch in Andalucía over 50 years ago.',
+		//       publicationTitle: 'Journal of Undergraduate Neuroscience Education',
+		//       volume: '15',
+		//       issue: '2',
+		//       pages: 'R29-R35',
+		//       date: '2017-6-15',
+		//       series: '',
+		//       seriesTitle: '',
+		//       seriesText: '',
+		//       journalAbbreviation: 'J Undergrad Neurosci Educ',
+		//       language: '',
+		//       DOI: '',
+		//       ISSN: '1544-2896',
+		//       shortTitle: '',
+		//       url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5480854/',
+		//       accessDate: '2023-12-01T01:44:00Z',
+		//       archive: '',
+		//       archiveLocation: '',
+		//       libraryCatalog: 'PubMed Central',
+		//       callNumber: '',
+		//       rights: '',
+		//       extra: 'PMID: 28690447\nPMCID: PMC5480854',
+		//       tags: [],
+		//       collections: [ 'K4YCBJ26' ],
+		//       relations: {},
+		//       dateAdded: '2023-12-01T01:44:00Z',
+		//       dateModified: '2023-12-01T01:44:00Z'
+		//     }
+		//   }
+		zoteroItems.push(item);
+	}
+	return zoteroItems;
+}
+
+async function getItemFromZotero(plugin: RNPlugin, itemKey: string) {
+	// get individual item from Zotero via key (I don't even think this is possible)
+}
+
 async function syncZoteroLibraryToRemNote(plugin: RNPlugin) {
 	await birthZoteroRem(plugin);
 	await syncCollections(plugin);
+	await syncItems(plugin, false);
 }
 // function: get all collections from zotero
-async function getAllZoteroCollections() {
+async function getAllZoteroCollections(plugin: RNPlugin) {
 	const zoteroCollections = [];
-	const zoteroApiKey = await pluginPassthrough.settings.getSetting('zotero-api-key');
-	const zoteroUserId: number = await pluginPassthrough.settings.getSetting('zotero-user-id');
-	const zoteroAPIConnection = await api(zoteroApiKey).library('user', zoteroUserId);
+	const zoteroAPIConnection = await callZoteroConnection(plugin);
 	const zoteroCollectionsResponse = await zoteroAPIConnection.collections().get();
 	const zoteroCollectionsData = zoteroCollectionsResponse.getData();
 	for (const collection of zoteroCollectionsData) {
@@ -277,11 +624,27 @@ async function onActivate(plugin: RNPlugin) {
 	// powerups
 
 	await plugin.app.registerPowerup(
-		'Citation', // human-readable name
-		'citation', // powerup code used to uniquely identify the powerup
+		'Zotero Item', // human-readable name
+		'zotero-item', // powerup code used to uniquely identify the powerup
 		'A citation object holding certain citation metadata for export. Used only for individual papers.', // description
 		{
 			slots: [
+				{
+					code: 'key',
+					name: 'Key',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
+				},
+				{
+					code: 'version',
+					name: 'Version',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.NUMBER,
+					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
+				},
 				{
 					code: 'message',
 					name: 'Message',
@@ -552,17 +915,10 @@ async function onActivate(plugin: RNPlugin) {
 		icon: '📄',
 		keywords: 'zotero, import, paper',
 		action: async () => {
+			return console.error('Not yet implemented.');
 			// command to search for and add invidual papers from Zotero with zotero-api-client
-			// on selecting the paper, import the citation with a bunch of metadata to populate the powerup
-			await callZoteroConnection(plugin);
-
-			const itemsResponse = await zoteroConnection.items().get();
-			const itemsData = itemsResponse.getData();
-			const searchResults = itemsData.filter((item: { title: string | string[] }) =>
-				item.title.includes('test')
-			);
-
-			console.log(searchResults);
+			// on selecting the paper, import the citation with a bunch of metadata to populate the powerup ONLY IF ITS NOT ALREADY IN REMNOTE
+			// IF ITS IN REMNOTE, then just add the reference to the rem, and individually sync that item with zotero
 		},
 	});
 
@@ -627,7 +983,7 @@ async function onActivate(plugin: RNPlugin) {
 					description: 'Log all Zotero collections',
 					quickCode: 'debug log zotero collections',
 					action: async () => {
-						await getAllZoteroCollections().then((collections) => {
+						await getAllZoteroCollections(plugin).then((collections) => {
 							console.log(collections);
 						});
 					},
@@ -662,6 +1018,28 @@ async function onActivate(plugin: RNPlugin) {
 						await syncCollections(reactivePlugin);
 					},
 				});
+				await plugin.app.registerCommand({
+					id: 'log-all-items-from-zotero',
+					name: 'Log All Items from Zotero',
+					description: 'Log all items from Zotero',
+					quickCode: 'debug log zotero items',
+					action: async () => {
+						await getAllZoteroItems(plugin).then((items) => {
+							console.log(items);
+						});
+					},
+				});
+				await plugin.app.registerCommand({
+					id: 'log-remnote-items',
+					name: 'Log RemNote Items',
+					description: 'Log all items from RemNote',
+					quickCode: 'debug log remnote items',
+					action: async () => {
+						await getAllRemNoteItems(reactivePlugin).then((items) => {
+							console.log(items);
+						});
+					},
+				});
 			}
 		});
 	});
@@ -669,6 +1047,7 @@ async function onActivate(plugin: RNPlugin) {
 	pluginPassthrough = plugin;
 
 	await birthZoteroRem(plugin);
+	await syncCollections(plugin);
 }
 
 async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {

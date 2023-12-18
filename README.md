@@ -30,12 +30,14 @@ Citationista is a RemNote plugin that enhances your research management and cita
 
 ## 📅 Planned Features
 
-> lovingly organized by how confident I think it's possible do complete 🫡
+> lovingly organized by how confident I think it's possible to complete 🫡
 
 -   [ ] Export Rem Sources to BibTeX, RIS, or generate APA/MLA/etc citations.
--   [ ] Import your **Zotero** papers and sync them with RemNote.
-    -   [ ] Advanced tagging system for sources.
-    -   [ ] Create References from these syncs.
+-   [x] Import your **Zotero** Library 📚
+    -   [ ] Proper syncing them with RemNote.
+    -   [x] Advanced tagging system for sources.
+    -   [x] Create References from these syncs.
+        -   [ ] Automatically Create References upon importing with slash command
     -   [ ] Compatibility with RemNote Reader
 -   [ ] Enhanced integration with third-party reference managers.
 -   [ ] Support for RemNote Real Time Collaboration
@@ -58,11 +60,11 @@ Citationista is currently a personal side project and a work in progress. Any fe
 
 Explore the full potential of Citationista by diving into our comprehensive [Documentation](https://citationista-docs.example.com). Learn how to make the most of its features and supercharge your RemNote experience!
 
+-->
+
 ## 🐛 Bugs and Issues
 
 Found a bug or want to suggest a feature? Please open an issue on our [GitHub Issues](https://github.com/coldenate/citationista/issues) page. Your feedback is invaluable!
-
--->
 
 ---
 
