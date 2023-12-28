@@ -17,6 +17,36 @@
 		{
 			"type": "All",
 			"level": "ReadCreateModify"
+		},
+		{
+			"type": "Powerup",
+			"powerupCode": "zotero-synced-library",
+			"level": "ReadCreateModifyDelete"
+		},
+		{
+			"type": "Powerup",
+			"powerupCode": "zotero-item",
+			"level": "ReadCreateModifyDelete"
+		},
+		{
+			"type": "Powerup",
+			"powerupCode": "zotero-collection",
+			"level": "ReadCreateModifyDelete"
+		},
+		{
+			"type": "Powerup",
+			"powerupCode": "zotero-tag",
+			"level": "ReadCreateModifyDelete"
+		},
+		{
+			"type": "Powerup",
+			"powerupCode": "zotero-note",
+			"level": "ReadCreateModifyDelete"
+		},
+		{
+			"type": "Powerup",
+			"powerupCode": "zotero-item-attachment",
+			"level": "ReadCreateModifyDelete"
 		}
 	]
 }

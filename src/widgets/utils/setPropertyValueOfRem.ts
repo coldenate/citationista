@@ -17,7 +17,7 @@ async function setPropertyValueOfRem(
 export async function getCollectionPropertybyCode(plugin: RNPlugin, code: string) {
 	const zoteroCollectionPowerupSlot = await plugin.powerup.getPowerupSlotByCode(
 		'zotero-collection', // TODO: update this to import from a global constant
-		'key'
+		code
 	);
 	const zoteroCollectionPowerupSlotId = zoteroCollectionPowerupSlot?._id ?? '';
 	return zoteroCollectionPowerupSlotId;

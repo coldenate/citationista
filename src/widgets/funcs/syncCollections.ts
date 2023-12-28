@@ -9,22 +9,21 @@ export async function syncCollections(plugin: RNPlugin) {
 	const zoteroCollections = await getAllZoteroCollections(plugin);
 
 	const remnoteCollections = await getAllRemNoteCollections(plugin);
-	if (remnoteCollections === undefined) {
-		console.error('No collections found in RemNote!');
-		return;
-	}
 
 	const collectionsToUpdate = [];
 	for (const zoteroCollection of zoteroCollections) {
 		let foundCollection = false;
-		for (const remnoteCollection of remnoteCollections) {
-			if (zoteroCollection.key === remnoteCollection.key[0]) {
-				foundCollection = true;
-				if (zoteroCollection.version !== remnoteCollection.version) {
-					collectionsToUpdate.push({
-						collection: zoteroCollection,
-						method: 'modify',
-					});
+
+		if (remnoteCollections !== undefined) {
+			for (const remnoteCollection of remnoteCollections) {
+				if (zoteroCollection.key === remnoteCollection.key[0]) {
+					foundCollection = true;
+					if (zoteroCollection.version !== remnoteCollection.version) {
+						collectionsToUpdate.push({
+							collection: zoteroCollection,
+							method: 'modify',
+						});
+					}
 				}
 			}
 		}
@@ -54,38 +53,31 @@ export async function syncCollections(plugin: RNPlugin) {
 				break;
 			case 'add':
 				const newCollectionRem = await plugin.rem.createRem();
+				await newCollectionRem?.setParent(zoteroLibraryRem); //TODO: make this dynamic
 				await newCollectionRem?.addPowerup('zotero-collection');
 				await newCollectionRem?.setText([collection.name]);
+				await newCollectionRem?.setFontSize('H1');
+				await newCollectionRem?.setIsDocument(true);
 				await newCollectionRem?.setTagPropertyValue(
 					await getCollectionPropertybyCode(plugin, 'key'),
 					[collection.key]
 				);
-				// await newCollectionRem?.setTagPropertyValue((await versionProperty)?._id, [
-				// 	String(collection.version),
-				// ]);
+
 				await newCollectionRem?.setTagPropertyValue(
 					await getCollectionPropertybyCode(plugin, 'version'),
 					[String(collection.version)]
 				);
-				// await newCollectionRem?.setTagPropertyValue((await nameProperty)?._id, [
-				// 	collection.name,
-				// ]);
+
 				await newCollectionRem?.setTagPropertyValue(
 					await getCollectionPropertybyCode(plugin, 'name'),
 					[collection.name]
 				);
-				// await newCollectionRem?.setTagPropertyValue((await parentCollectionProperty)?._id, [
-				// 	String(collection.parentCollection),
-				// ]);
-				await newCollectionRem?.setTagPropertyValue(
-					await getCollectionPropertybyCode(plugin, 'parentCollection'),
-					[String(collection.parentCollection)]
-				);
-				await newCollectionRem?.setIsDocument(true);
-				await newCollectionRem?.setFontSize('H1');
-				await newCollectionRem?.setParent(zoteroLibraryRem); //TODO: make this dynamic
 
-				// await newCollectionRem.setTagPropertyValue('relations', [collection.relations]);
+				// await newCollectionRem?.setTagPropertyValue(
+				// 	await getCollectionPropertybyCode(plugin, 'parentCollection'),
+				// WHAT DO I PUT HERE?? NOTHING WORKS??? I THINK: collection.parentCollection
+				// ); //FIXME: BROKEN IDKEK WHY
+
 				break;
 			case 'modify':
 				const collectionPowerupRem = await plugin.powerup.getPowerupByCode(

@@ -320,6 +320,37 @@ async function onActivate(plugin: RNPlugin) {
 						});
 					},
 				});
+				// trash all plugin footprint
+				await plugin.app.registerCommand({
+					id: 'trash-all-plugin-footprint',
+					name: 'Trash All Plugin Footprint',
+					description: 'Trash all plugin footprint',
+					quickCode: 'debug trash all plugin footprint',
+					action: async () => {
+						// zotero-item powerup
+						const zoteroItemPowerup = await plugin.powerup.getPowerupByCode(
+							'zotero-item'
+						);
+						// zotero-collection powerup
+						const zoteroCollectionPowerup = await plugin.powerup.getPowerupByCode(
+							'zotero-collection'
+						);
+						// zotero-library powerup
+						const zoteroLibraryPowerup = await plugin.powerup.getPowerupByCode(
+							'zotero-synced-library'
+						);
+						const taggedRems = await Promise.all([
+							zoteroItemPowerup?.taggedRem(),
+							zoteroCollectionPowerup?.taggedRem(),
+							zoteroLibraryPowerup?.taggedRem(),
+						]).then((results) => results.flat());
+						if (taggedRems) {
+							taggedRems.forEach(async (rem) => {
+								await rem!.remove();
+							});
+						}
+					},
+				});
 			}
 		});
 	});
