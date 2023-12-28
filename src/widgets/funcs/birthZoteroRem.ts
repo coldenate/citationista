@@ -5,7 +5,10 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 	if (lookForRemAlready !== undefined) {
 		return;
 	}
-	const rem = await plugin.rem.createRem();
+	const rem = await plugin.rem.createRem().catch((err) => {
+		console.error(err);
+		return;
+	});
 	await rem?.setText(['Zotero Library']);
 	await rem?.addPowerup('zotero-synced-library');
 	await rem?.setIsDocument(true); // we want this to be a folder rem!
@@ -21,5 +24,5 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 	]);
 	await helpInfoRem?.setIsQuote(true);
 	await helpInfoRem?.setHighlightColor('Blue');
-	await helpInfoRem?.setParent(rem);
+	await helpInfoRem?.setParent(rem!);
 }

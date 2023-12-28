@@ -14,3 +14,19 @@ async function setPropertyValueOfRem(
 	}
 	return await rem.setTagPropertyValue(property!._id, value);
 }
+export async function getCollectionPropertybyCode(plugin: RNPlugin, code: string) {
+	const zoteroCollectionPowerupSlot = await plugin.powerup.getPowerupSlotByCode(
+		'zotero-collection', // TODO: update this to import from a global constant
+		'key'
+	);
+	const zoteroCollectionPowerupSlotId = zoteroCollectionPowerupSlot?._id ?? '';
+	return zoteroCollectionPowerupSlotId;
+}
+export async function getItemPropertyByCode(plugin: RNPlugin, code: string): Promise<string> {
+	const zoteroItemPowerupSlot = await plugin.powerup.getPowerupSlotByCode(
+		'zotero-item', // TODO: update this to import from a global constant
+		code
+	);
+	const zoteroItemPowerupSlotId = zoteroItemPowerupSlot?._id ?? '';
+	return zoteroItemPowerupSlotId;
+}

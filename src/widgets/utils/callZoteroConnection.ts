@@ -1,4 +1,5 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
+// @ts-ignore
 import api from 'zotero-api-client';
 
 export async function callZoteroConnection(plugin: RNPlugin) {

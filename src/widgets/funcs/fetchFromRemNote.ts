@@ -1,11 +1,12 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
+import { getCollectionPropertybyCode, getItemPropertyByCode } from '../utils/setPropertyValueOfRem';
 
 export async function getAllRemNoteItems(plugin: RNPlugin) {
 	// query the zotero-item powerup and get all the rems that way
 	// return array of rems after formatting the array to the same schema as the zotero items
 	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zotero-item');
 	const zoteroItems = await zoteroItemPowerup?.taggedRem();
-	if (zoteroItems?.length === 0) {
+	if (zoteroItems?.length === 0 || zoteroItems === undefined) {
 		return undefined;
 	}
 	// repack into a new array of objects. this is so we can use the same schema as the zotero items
@@ -13,31 +14,81 @@ export async function getAllRemNoteItems(plugin: RNPlugin) {
 	const remnoteItems = [];
 
 	for (const zoteroItem of zoteroItems) {
-		const version = await zoteroItem.getTagPropertyValue(versionProperty?._id);
-		const message = await zoteroItem.getTagPropertyValue(messageProperty?._id);
-		const title = await zoteroItem.getTagPropertyValue(titleProperty?._id);
-		const authors = await zoteroItem.getTagPropertyValue(authorsProperty?._id);
-		const date = await zoteroItem.getTagPropertyValue(dateProperty?._id);
-		const journal = await zoteroItem.getTagPropertyValue(journalProperty?._id);
-		const volume = await zoteroItem.getTagPropertyValue(volumeProperty?._id);
-		const issue = await zoteroItem.getTagPropertyValue(issueProperty?._id);
-		const pages = await zoteroItem.getTagPropertyValue(pagesProperty?._id);
-		const doi = await zoteroItem.getTagPropertyValue(doiProperty?._id);
-		const abstract = await zoteroItem.getTagPropertyValue(abstractProperty?._id);
-		const keywords = await zoteroItem.getTagPropertyValue(keywordsProperty?._id);
-		const accessDate = await zoteroItem.getTagPropertyValue(accessDateProperty?._id);
-		const citekey = await zoteroItem.getTagPropertyValue(citekeyProperty?._id);
-		const containerTitle = await zoteroItem.getTagPropertyValue(containerTitleProperty?._id);
-		const eprint = await zoteroItem.getTagPropertyValue(eprintProperty?._id);
-		const eprinttype = await zoteroItem.getTagPropertyValue(eprinttypeProperty?._id);
-		const eventPlace = await zoteroItem.getTagPropertyValue(eventPlaceProperty?._id);
-		const page = await zoteroItem.getTagPropertyValue(pageProperty?._id);
-		const publisher = await zoteroItem.getTagPropertyValue(publisherProperty?._id);
-		const publisherPlace = await zoteroItem.getTagPropertyValue(publisherPlaceProperty?._id);
-		const titleShort = await zoteroItem.getTagPropertyValue(titleShortProperty?._id);
-		const URL = await zoteroItem.getTagPropertyValue(URLProperty?._id);
-		const zoteroSelectURI = await zoteroItem.getTagPropertyValue(zoteroSelectURIProperty?._id);
-		const key = await zoteroItem.getTagPropertyValue(keyProperty?._id);
+		const version = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'version')
+		);
+		const message = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'message')
+		);
+		const title = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'title')
+		);
+		const authors = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'authors')
+		);
+		const date = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'date')
+		);
+		const journal = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'journal')
+		);
+		const volume = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'volume')
+		);
+		const issue = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'issue')
+		);
+		const pages = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'pages')
+		);
+		const doi = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'doi')
+		);
+		const abstract = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'abstract')
+		);
+		const keywords = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'keywords')
+		);
+		const accessDate = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'accessDate')
+		);
+		const citekey = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'citekey')
+		);
+		const containerTitle = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'containerTitle')
+		);
+		const eprint = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'eprint')
+		);
+		const eprinttype = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'eprinttype')
+		);
+		const eventPlace = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'eventPlace')
+		);
+		const page = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'page')
+		);
+		const publisher = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'publisher')
+		);
+		const publisherPlace = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'publisherPlace')
+		);
+		const titleShort = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'titleShort')
+		);
+		const URL = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'URL')
+		);
+		const zoteroSelectURI = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'zoteroSelectURI')
+		);
+		const key = await zoteroItem.getTagPropertyValue(
+			await getItemPropertyByCode(plugin, 'key')
+		);
 
 		const item = {
 			version: [version],
@@ -78,17 +129,28 @@ export async function getAllRemNoteCollections(plugin: RNPlugin) {
 	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('zotero-collection');
 
 	const collectionRems = await zoteroCollectionPowerupRem?.taggedRem();
+	if (collectionRems?.length === 0 || collectionRems === undefined) {
+		return undefined;
+	}
 
 	for (const collectionRem of collectionRems) {
-		const key = await collectionRem?.getTagPropertyValue(keyProperty?._id);
-		const version = Number(await collectionRem?.getTagPropertyValue(versionProperty?._id));
-		const name = await collectionRem?.getTagPropertyValue(nameProperty?._id);
-		const parentCollection = Boolean(
-			await collectionRem?.getTagPropertyValue(parentCollectionProperty?._id)
+		const key = await collectionRem?.getTagPropertyValue(
+			await getCollectionPropertybyCode(plugin, 'key')
 		);
-		// const relations = await collectionRem?.getTagPropertyValue(
-		// 	relationsProperty?._id
-		// ); //FIXME: convert to object
+		const version = Number(
+			await collectionRem?.getTagPropertyValue(
+				await getCollectionPropertybyCode(plugin, 'version')
+			)
+		);
+		const name = await collectionRem?.getTagPropertyValue(
+			await getCollectionPropertybyCode(plugin, 'name')
+		);
+		const parentCollection = Boolean(
+			await collectionRem?.getTagPropertyValue(
+				await getCollectionPropertybyCode(plugin, 'parentCollection')
+			)
+		);
+
 		const collection = {
 			key: key,
 			version: version,

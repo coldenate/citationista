@@ -2,12 +2,17 @@ import { RNPlugin } from '@remnote/plugin-sdk';
 import { birthZoteroRem } from './birthZoteroRem';
 import { getAllRemNoteCollections, getAllRemNoteItems } from './fetchFromRemNote';
 import { getAllZoteroCollections, getAllZoteroItems } from './fetchFromZotero';
+import { getCollectionPropertybyCode, getItemPropertyByCode } from '../utils/setPropertyValueOfRem';
 
 // function: sync collections with zotero library rem
 export async function syncCollections(plugin: RNPlugin) {
 	const zoteroCollections = await getAllZoteroCollections(plugin);
 
 	const remnoteCollections = await getAllRemNoteCollections(plugin);
+	if (remnoteCollections === undefined) {
+		console.error('No collections found in RemNote!');
+		return;
+	}
 
 	const collectionsToUpdate = [];
 	for (const zoteroCollection of zoteroCollections) {
@@ -31,17 +36,13 @@ export async function syncCollections(plugin: RNPlugin) {
 		}
 	} // TODO: Add support for deleting collections without touching RemNote (i.e. if the user deletes a collection in Zotero, it will be deleted in RemNote)
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode('zotero-synced-library');
+	if (zoteroLibraryPowerUpRem === undefined) {
+		console.error('Zotero Library not found!');
+		return;
+	}
 	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem?.taggedRem())[0];
 
 	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('zotero-collection');
-
-	const keyProperty = properties.find((property) => property.text[0] === 'Key');
-	const versionProperty = properties.find((property) => property.text[0] === 'Version');
-	const nameProperty = properties.find((property) => property.text[0] === 'Name');
-	const parentCollectionProperty = properties.find(
-		(property) => property.text[0] === 'Parent Collection'
-	);
-	const relationsProperty = properties.find((property) => property.text[0] === 'Relations');
 
 	// update the remnote collections that need to be changed
 	for (const collectionToUpdate of collectionsToUpdate) {
@@ -55,14 +56,31 @@ export async function syncCollections(plugin: RNPlugin) {
 				const newCollectionRem = await plugin.rem.createRem();
 				await newCollectionRem?.addPowerup('zotero-collection');
 				await newCollectionRem?.setText([collection.name]);
-				await newCollectionRem?.setTagPropertyValue(keyProperty?._id, [collection.key]);
-				await newCollectionRem?.setTagPropertyValue(versionProperty?._id, [
-					String(collection.version),
-				]);
-				await newCollectionRem?.setTagPropertyValue(nameProperty?._id, [collection.name]);
-				await newCollectionRem?.setTagPropertyValue(parentCollectionProperty?._id, [
-					String(collection.parentCollection),
-				]);
+				await newCollectionRem?.setTagPropertyValue(
+					await getCollectionPropertybyCode(plugin, 'key'),
+					[collection.key]
+				);
+				// await newCollectionRem?.setTagPropertyValue((await versionProperty)?._id, [
+				// 	String(collection.version),
+				// ]);
+				await newCollectionRem?.setTagPropertyValue(
+					await getCollectionPropertybyCode(plugin, 'version'),
+					[String(collection.version)]
+				);
+				// await newCollectionRem?.setTagPropertyValue((await nameProperty)?._id, [
+				// 	collection.name,
+				// ]);
+				await newCollectionRem?.setTagPropertyValue(
+					await getCollectionPropertybyCode(plugin, 'name'),
+					[collection.name]
+				);
+				// await newCollectionRem?.setTagPropertyValue((await parentCollectionProperty)?._id, [
+				// 	String(collection.parentCollection),
+				// ]);
+				await newCollectionRem?.setTagPropertyValue(
+					await getCollectionPropertybyCode(plugin, 'parentCollection'),
+					[String(collection.parentCollection)]
+				);
 				await newCollectionRem?.setIsDocument(true);
 				await newCollectionRem?.setFontSize('H1');
 				await newCollectionRem?.setParent(zoteroLibraryRem); //TODO: make this dynamic
@@ -80,15 +98,18 @@ export async function syncCollections(plugin: RNPlugin) {
 				});
 
 				if (collectionRemToUpdate) {
-					await collectionRemToUpdate.setTagPropertyValue(versionProperty?._id, [
-						String(collection.version),
-					]);
-					await collectionRemToUpdate.setTagPropertyValue(nameProperty?._id, [
-						collection.name,
-					]);
-					await collectionRemToUpdate.setTagPropertyValue(parentCollectionProperty?._id, [
-						String(collection.parentCollection),
-					]);
+					await collectionRemToUpdate.setTagPropertyValue(
+						await getCollectionPropertybyCode(plugin, 'version'),
+						[String(collection.version)]
+					);
+					await collectionRemToUpdate.setTagPropertyValue(
+						await getCollectionPropertybyCode(plugin, 'name'),
+						[collection.name]
+					);
+					await collectionRemToUpdate.setTagPropertyValue(
+						await getCollectionPropertybyCode(plugin, 'parentCollection'),
+						[String(collection.parentCollection)]
+					);
 				}
 				break;
 		}
@@ -134,6 +155,10 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 
 	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zotero-item');
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode('zotero-synced-library');
+	if (zoteroLibraryPowerUpRem === undefined) {
+		console.error('Zotero Library not found!');
+		return;
+	}
 	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem?.taggedRem())[0];
 	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('zotero-collection');
 
@@ -168,38 +193,98 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 					}
 				}
 				const promises = [
-					newItemRem?.setTagPropertyValue(keyProperty?._id, [item.key]),
-					newItemRem?.setTagPropertyValue(versionProperty?._id, [String(item.version)]),
-					newItemRem?.setTagPropertyValue(messageProperty?._id, [item.data.extra]),
-					newItemRem?.setTagPropertyValue(titleProperty?._id, [item.data.title]),
-					newItemRem?.setTagPropertyValue(authorsProperty?._id, [item.data.creators]),
-					newItemRem?.setTagPropertyValue(dateProperty?._id, [item.data.date]), //TODO: format as rem date
-					newItemRem?.setTagPropertyValue(journalProperty?._id, [item.journal]),
-					newItemRem?.setTagPropertyValue(volumeProperty?._id, [item.volume]),
-					newItemRem?.setTagPropertyValue(issueProperty?._id, [item.issue]),
-					newItemRem?.setTagPropertyValue(pagesProperty?._id, [item.pages]),
-					newItemRem?.setTagPropertyValue(doiProperty?._id, [item.doi]),
-					newItemRem?.setTagPropertyValue(abstractProperty?._id, [
-						item.data.abstractNote,
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'key'), [
+						item.key,
 					]),
-					newItemRem?.setTagPropertyValue(keywordsProperty?._id, [item.keywords]),
-					newItemRem?.setTagPropertyValue(accessDateProperty?._id, [item.accessDate]),
-					newItemRem?.setTagPropertyValue(citekeyProperty?._id, [item.citekey]),
-					newItemRem?.setTagPropertyValue(containerTitleProperty?._id, [
-						item.containerTitle,
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'version'),
+						[String(item.version)]
+					),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'message'),
+						[item.data.extra]
+					),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'title'), [
+						item.data.title,
 					]),
-					newItemRem?.setTagPropertyValue(eprintProperty?._id, [item.eprint]),
-					newItemRem?.setTagPropertyValue(eprinttypeProperty?._id, [item.eprinttype]),
-					newItemRem?.setTagPropertyValue(eventPlaceProperty?._id, [item.eventPlace]),
-					newItemRem?.setTagPropertyValue(pageProperty?._id, [item.page]),
-					newItemRem?.setTagPropertyValue(publisherProperty?._id, [item.publisher]),
-					newItemRem?.setTagPropertyValue(publisherPlaceProperty?._id, [
-						item.publisherPlace,
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'authors'),
+						[item.data.creators]
+					),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'date'), [
+						item.data.date,
 					]),
-					newItemRem?.setTagPropertyValue(titleShortProperty?._id, [item.titleShort]),
-					newItemRem?.setTagPropertyValue(URLProperty?._id, [item.URL]),
-					newItemRem?.setTagPropertyValue(zoteroSelectURIProperty?._id, [
-						item.zoteroSelectURI,
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'journal'),
+						[item.journal]
+					),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'volume'), [
+						item.volume,
+					]),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'issue'), [
+						item.issue,
+					]),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'pages'), [
+						item.pages,
+					]),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'doi'), [
+						item.doi,
+					]),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'abstract'),
+						[item.data.abstractNote]
+					),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'keywords'),
+						[item.keywords]
+					),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'accessDate'),
+						[item.accessDate]
+					),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'citekey'),
+						[item.citekey]
+					),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'containerTitle'),
+						[item.containerTitle]
+					),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'eprint'), [
+						item.eprint,
+					]),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'eprinttype'),
+						[item.eprinttype]
+					),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'eventPlace'),
+						[item.eventPlace]
+					),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'page'), [
+						item.page,
+					]),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'publisher'),
+						[item.publisher]
+					),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'publisherPlace'),
+						[item.publisherPlace]
+					),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'titleShort'),
+						[item.titleShort]
+					),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'URL'), [
+						item.URL,
+					]),
+					newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, 'zoteroSelectURI'),
+						[item.zoteroSelectURI]
+					),
+					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'key'), [
+						item.key,
 					]),
 				];
 				const results = await Promise.allSettled(promises);
