@@ -1,12 +1,7 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
-import {
-	getAllZoteroCollections,
-	getAllRemNoteCollections,
-	getAllZoteroItems,
-	getAllRemNoteItems,
-} from './syncCollections';
 import { birthZoteroRem } from './birthZoteroRem';
-import { syncCollections, syncItems } from './syncCollections';
+import { getAllRemNoteCollections, getAllRemNoteItems } from './fetchFromRemNote';
+import { getAllZoteroCollections, getAllZoteroItems } from './fetchFromZotero';
 
 // function: sync collections with zotero library rem
 export async function syncCollections(plugin: RNPlugin) {
