@@ -3,6 +3,7 @@ import { birthZoteroRem } from './birthZoteroRem';
 import { getAllRemNoteCollections, getAllRemNoteItems } from './fetchFromRemNote';
 import { getAllZoteroCollections, getAllZoteroItems } from './fetchFromZotero';
 import { getCollectionPropertybyCode, getItemPropertyByCode } from '../utils/setPropertyValueOfRem';
+import { isDebugMode } from '..';
 
 // function: sync collections with zotero library rem
 export async function syncCollections(plugin: RNPlugin) {
@@ -41,7 +42,7 @@ export async function syncCollections(plugin: RNPlugin) {
 	}
 	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem?.taggedRem())[0];
 
-	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('zotero-collection');
+	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('collection');
 
 	// update the remnote collections that need to be changed
 	for (const collectionToUpdate of collectionsToUpdate) {
@@ -54,7 +55,7 @@ export async function syncCollections(plugin: RNPlugin) {
 			case 'add':
 				const newCollectionRem = await plugin.rem.createRem();
 				await newCollectionRem?.setParent(zoteroLibraryRem); //TODO: make this dynamic
-				await newCollectionRem?.addPowerup('zotero-collection');
+				await newCollectionRem?.addPowerup('collection');
 				await newCollectionRem?.setText([collection.name]);
 				await newCollectionRem?.setFontSize('H1');
 				await newCollectionRem?.setIsDocument(true);
@@ -80,9 +81,7 @@ export async function syncCollections(plugin: RNPlugin) {
 
 				break;
 			case 'modify':
-				const collectionPowerupRem = await plugin.powerup.getPowerupByCode(
-					'zotero-collection'
-				);
+				const collectionPowerupRem = await plugin.powerup.getPowerupByCode('collection');
 				const collectionRems = await collectionPowerupRem?.taggedRem();
 				const collectionRemToUpdate = collectionRems?.find(async (collectionRem) => {
 					const key = await collectionPowerupRem?.getTagPropertyValue('key');
@@ -145,14 +144,14 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 		}
 	}
 
-	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zotero-item');
+	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode('zotero-synced-library');
 	if (zoteroLibraryPowerUpRem === undefined) {
 		console.error('Zotero Library not found!');
 		return;
 	}
 	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem?.taggedRem())[0];
-	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('zotero-collection');
+	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('collection');
 
 	// update the remnote items that need to be changed
 	for (const itemToUpdate of itemsToUpdate) {
@@ -163,139 +162,71 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 				console.error('deleting collections is not yet supported 😡');
 				break;
 			case 'add':
-				console.log(item);
 				const newItemRem = await plugin.rem.createRem();
-				await newItemRem?.addPowerup('zotero-item');
+				const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
+				newItemRem?.setParent(poolPowerup!); // FIXME: this is not type safe
+				await newItemRem?.addPowerup('zitem');
 				await newItemRem?.setText([item.data.title]);
 				await newItemRem?.setIsDocument(true);
-				if (item.data.collections === '' || item.data.collections === undefined) {
-					console.log('No parent collection!');
-					await newItemRem?.setParent(zoteroLibraryRem); //TODO: make this dynamic
-				} else if (item.data.collections.length > 0) {
-					const collectionID = item.data.collections[0];
-					const matchingRem = await plugin.search.search(
-						[collectionID],
-						zoteroLibraryRem,
-						{ numResults: 1 }
-					);
-					console.log(matchingRem);
+				// if (item.data.collections === '' || item.data.collections === undefined) {
+				// 	await newItemRem?.setParent(zoteroLibraryRem); //TODO: make this dynamic
+				// } else if (item.data.collections.length > 0) {
+				// 	const collectionID = item.data.collections[0];
+				// 	const matchingRem = await plugin.search.search(
+				// 		[collectionID],
+				// 		zoteroLibraryRem,
+				// 		{ numResults: 1 }
+				// 	);
 
-					if (matchingRem[0]) {
-						await newItemRem?.setParent(matchingRem[0].parent);
-					}
-				}
-				const promises = [
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'key'), [
-						item.key,
-					]),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'version'),
-						[String(item.version)]
-					),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'message'),
-						[item.data.extra]
-					),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'title'), [
-						item.data.title,
-					]),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'authors'),
-						[item.data.creators]
-					),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'date'), [
-						item.data.date,
-					]),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'journal'),
-						[item.journal]
-					),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'volume'), [
-						item.volume,
-					]),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'issue'), [
-						item.issue,
-					]),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'pages'), [
-						item.pages,
-					]),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'doi'), [
-						item.doi,
-					]),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'abstract'),
-						[item.data.abstractNote]
-					),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'keywords'),
-						[item.keywords]
-					),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'accessDate'),
-						[item.accessDate]
-					),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'citekey'),
-						[item.citekey]
-					),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'containerTitle'),
-						[item.containerTitle]
-					),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'eprint'), [
-						item.eprint,
-					]),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'eprinttype'),
-						[item.eprinttype]
-					),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'eventPlace'),
-						[item.eventPlace]
-					),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'page'), [
-						item.page,
-					]),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'publisher'),
-						[item.publisher]
-					),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'publisherPlace'),
-						[item.publisherPlace]
-					),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'titleShort'),
-						[item.titleShort]
-					),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'URL'), [
-						item.URL,
-					]),
-					newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, 'zoteroSelectURI'),
-						[item.zoteroSelectURI]
-					),
-					newItemRem?.setTagPropertyValue(await getItemPropertyByCode(plugin, 'key'), [
-						item.key,
-					]),
-				];
-				const results = await Promise.allSettled(promises);
-				// results.forEach((result, index) => {
-				// 	if (result.status === 'fulfilled') {
-				// 		console.info(`Set ${getPropertyLabel(index)}!`);
-				// 	} else {
-				// 		// Log the error for the specific function call
-				// 		console.error(
-				// 			`Error setting ${getPropertyLabel(index)}:`,
-				// 			result.reason.message
-				// 		);
+				// 	if (matchingRem[0]) {
+				// 		await newItemRem?.setParent(matchingRem[0].parent);
 				// 	}
-				// });
+				// }
+				const promises = [];
+
+				// Helper function to create a promise without invoking it
+				const createPromise = async (property: string, value: unknown) => {
+					return newItemRem?.setTagPropertyValue(
+						await getItemPropertyByCode(plugin, property),
+						[String(value)]
+					);
+				};
+
+				promises.push(
+					createPromise('citationKey', item.key),
+					createPromise('versionNumber', item.version)
+				);
+
+				for (const [key, value] of Object.entries(item.data)) {
+					if (key === 'key' || key === 'version') {
+						continue;
+					}
+
+					promises.push(createPromise(key, value));
+				}
+
+				// Now you have an array of promises, and you can evaluate them later if needed
+				// Now you have an array of promises
+				Promise.allSettled(promises)
+					.then(async (results) => {
+						// Log errors for rejected promises
+						if (!(await isDebugMode(plugin))) {
+							results.forEach((result, index) => {
+								if (result.status === 'rejected') {
+									console.error(`Promise ${index} failed:`, result.reason);
+								}
+							});
+						}
+					})
+					.finally(() => {
+						// You can add additional code here if needed
+					});
 				break;
 			case 'modify':
-				console.log("i'm supposed to modify :)");
+				console.error("i'm supposed to modify :)");
 				return;
 		}
+		return;
 	}
 }
 export async function syncZoteroLibraryToRemNote(plugin: RNPlugin) {

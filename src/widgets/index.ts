@@ -1,6 +1,6 @@
 import { declareIndexPlugin, PropertyType, RNPlugin, PropertyLocation } from '@remnote/plugin-sdk';
-import { syncCollections } from './funcs/syncCollections';
-import { syncZoteroLibraryToRemNote } from './funcs/syncCollections';
+import { syncCollections } from './funcs/syncing';
+import { syncZoteroLibraryToRemNote } from './funcs/syncing';
 import { getAllRemNoteCollections, getAllRemNoteItems } from './funcs/fetchFromRemNote';
 import { getAllZoteroCollections, getAllZoteroItems } from './funcs/fetchFromZotero';
 import { birthZoteroRem } from './funcs/birthZoteroRem';
@@ -9,11 +9,36 @@ import { zoteroItemSlots } from './constants/zoteroItemSlots';
 let pluginPassthrough: RNPlugin;
 
 async function onActivate(plugin: RNPlugin) {
-	// create Zotero Library Rem
-
-	// zotero connection
-
 	// settings
+
+	// zotero user id
+
+	await plugin.settings.registerNumberSetting({
+		id: 'zotero-user-id',
+		title: 'Zotero User ID',
+		description: 'Find this at https://www.zotero.org/settings/keys',
+
+		// defaultValue: 0,
+	});
+
+	// zotero api key
+
+	await plugin.settings.registerStringSetting({
+		id: 'zotero-api-key',
+		title: 'Zotero API Key',
+		description: 'The API key used to connect to Zotero.',
+
+		// defaultValue: '',
+	});
+
+	await plugin.settings.registerBooleanSetting({
+		// TODO: implement this feature
+		id: 'simple-mode',
+		title: 'Simple Syncing Mode',
+		description:
+			'Enables Simple importing of Zotero Items. Toggling this OFF will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
+		defaultValue: false,
+	});
 
 	await plugin.settings.registerDropdownSetting({
 		id: 'export-citations-format',
@@ -57,84 +82,69 @@ async function onActivate(plugin: RNPlugin) {
 		defaultValue: false,
 	});
 
-	// zotero api key
-
-	await plugin.settings.registerStringSetting({
-		id: 'zotero-api-key',
-		title: 'Zotero API Key',
-		description: 'The API key used to connect to Zotero.',
-
-		// defaultValue: '',
-	});
-
-	// zotero user id
-
-	await plugin.settings.registerNumberSetting({
-		id: 'zotero-user-id',
-		title: 'Zotero User ID',
-		description: 'Find this at https://www.zotero.org/settings/keys',
-
-		// defaultValue: 0,
-	});
-
 	// powerups
 
 	await plugin.app.registerPowerup(
 		'Zotero Item', // human-readable name
-		'zotero-item', // powerup code used to uniquely identify the powerup
+		'zitem', // powerup code used to uniquely identify the powerup
 		'A citation object holding certain citation metadata for export. Used only for individual papers.', // description
 		{
+			// @ts-ignore
 			slots: zoteroItemSlots,
 		}
 	);
 
+	await plugin.app.registerPowerup('Zotero Collection', 'collection', 'A Zotero Collection.', {
+		slots: [
+			{
+				code: 'key',
+				name: 'Key',
+				onlyProgrammaticModifying: false, //TODO: RemNote needs to fix this: RemNote doesn't know the plugin is modifying property slots and blocks it when this is true
+				hidden: false,
+				propertyType: PropertyType.TEXT,
+				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+			},
+			{
+				code: 'version',
+				name: 'Version',
+				onlyProgrammaticModifying: false,
+				hidden: false,
+				propertyType: PropertyType.NUMBER,
+				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+			},
+			{
+				code: 'name',
+				name: 'Name',
+				onlyProgrammaticModifying: false,
+				hidden: false,
+				propertyType: PropertyType.TEXT,
+				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+			},
+			{
+				code: 'parentCollection',
+				name: 'Parent Collection',
+				onlyProgrammaticModifying: false,
+				hidden: false,
+				propertyType: PropertyType.CHECKBOX,
+				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+			},
+			{
+				code: 'relations',
+				name: 'Relations',
+				onlyProgrammaticModifying: false,
+				hidden: false,
+				propertyType: PropertyType.TEXT,
+				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+			},
+		],
+	});
+
 	await plugin.app.registerPowerup(
-		'Zotero Collection',
-		'zotero-collection',
-		'A Zotero Collection.',
+		'Citationista Pool',
+		'coolPool',
+		'A pool of citationista rems.',
 		{
-			slots: [
-				{
-					code: 'key',
-					name: 'Key',
-					onlyProgrammaticModifying: false, //TODO: RemNote needs to fix this: RemNote doesn't know the plugin is modifying property slots and blocks it when this is true
-					hidden: false,
-					propertyType: PropertyType.TEXT,
-					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-				},
-				{
-					code: 'version',
-					name: 'Version',
-					onlyProgrammaticModifying: false,
-					hidden: false,
-					propertyType: PropertyType.NUMBER,
-					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-				},
-				{
-					code: 'name',
-					name: 'Name',
-					onlyProgrammaticModifying: false,
-					hidden: false,
-					propertyType: PropertyType.TEXT,
-					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-				},
-				{
-					code: 'parentCollection',
-					name: 'Parent Collection',
-					onlyProgrammaticModifying: false,
-					hidden: false,
-					propertyType: PropertyType.CHECKBOX,
-					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-				},
-				{
-					code: 'relations',
-					name: 'Relations',
-					onlyProgrammaticModifying: false,
-					hidden: false,
-					propertyType: PropertyType.TEXT,
-					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-				},
-			],
+			properties: [],
 		}
 	);
 
@@ -247,7 +257,7 @@ async function onActivate(plugin: RNPlugin) {
 		// debug mode
 		await isDebugMode(reactivePlugin).then(async (debugMode) => {
 			if (debugMode) {
-				plugin.app.toast('Debug Mode Enabled; Registering Debug Tools');
+				plugin.app.toast('Debug Mode Enabled; Registering Debug Tools for Citationista...');
 				await plugin.app.registerCommand({
 					id: 'log-values',
 					name: 'Log Values',
@@ -258,7 +268,7 @@ async function onActivate(plugin: RNPlugin) {
 					},
 				});
 				await plugin.app.registerCommand({
-					id: 'log-all-zotero-collections',
+					id: 'log-all-collections',
 					name: 'Log All Zotero Collections',
 					description: 'Log all Zotero collections',
 					quickCode: 'debug log zotero collections',
@@ -286,7 +296,7 @@ async function onActivate(plugin: RNPlugin) {
 					quickCode: 'debug tag as collection',
 					action: async () => {
 						const remFocused = await plugin.focus.getFocusedRem();
-						await remFocused?.addPowerup('zotero-collection');
+						await remFocused?.addPowerup('collection');
 					},
 				});
 				await plugin.app.registerCommand({
@@ -309,6 +319,29 @@ async function onActivate(plugin: RNPlugin) {
 						});
 					},
 				});
+				// log citationista pool tagged rem
+				await plugin.app.registerCommand({
+					id: 'show-pool',
+					name: 'show pool',
+					action: async () => {
+						const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
+						await plugin.window.openRem(poolPowerup!);
+					},
+				});
+				// log all items from remnote (use the powerup)
+				await plugin.app.registerCommand({
+					id: 'log-all-items-from-remnote-powerup-based',
+					name: 'Log All Items from RemNote (Powerup Based)',
+					description: 'Log all items from RemNote',
+					quickCode: 'debug log remnote items',
+					action: async () => {
+						const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
+						await zoteroItemPowerup?.taggedRem().then((rem) => {
+							console.log(rem);
+						});
+					},
+				});
+
 				await plugin.app.registerCommand({
 					id: 'log-remnote-items',
 					name: 'Log RemNote Items',
@@ -327,13 +360,11 @@ async function onActivate(plugin: RNPlugin) {
 					description: 'Trash all plugin footprint',
 					quickCode: 'debug trash all plugin footprint',
 					action: async () => {
-						// zotero-item powerup
-						const zoteroItemPowerup = await plugin.powerup.getPowerupByCode(
-							'zotero-item'
-						);
-						// zotero-collection powerup
+						// zitem powerup
+						const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
+						// collection powerup
 						const zoteroCollectionPowerup = await plugin.powerup.getPowerupByCode(
-							'zotero-collection'
+							'collection'
 						);
 						// zotero-library powerup
 						const zoteroLibraryPowerup = await plugin.powerup.getPowerupByCode(
@@ -349,19 +380,22 @@ async function onActivate(plugin: RNPlugin) {
 								await rem!.remove();
 							});
 						}
+
+						await zoteroCollectionPowerup?.remove();
+						await zoteroItemPowerup?.remove();
+						await zoteroLibraryPowerup?.remove();
 					},
 				});
 			}
+			if (!(await isDebugMode(plugin))) await syncZoteroLibraryToRemNote(plugin);
 		});
 	});
 
 	pluginPassthrough = plugin;
-
-	await birthZoteroRem(plugin);
-	await syncCollections(plugin);
+	syncZoteroLibraryToRemNote(plugin);
 }
 
-async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {
+export async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {
 	return await reactivePlugin.settings.getSetting('debug-mode');
 }
 

@@ -1,19 +1,22 @@
-import { RNPlugin } from '@remnote/plugin-sdk';
+import { RNPlugin, Rem } from '@remnote/plugin-sdk';
 
 export async function birthZoteroRem(plugin: RNPlugin) {
 	const lookForRemAlready = await plugin.rem.findByName(['Zotero Library'], null);
 	if (lookForRemAlready !== undefined) {
 		return;
 	}
-	const rem = await plugin.rem.createRem().catch((err) => {
+	const rem: Rem = await plugin.rem.createRem().catch((err) => {
 		console.error(err);
 		return;
 	});
+	const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
+
 	await rem?.setText(['Zotero Library']);
 	await rem?.addPowerup('zotero-synced-library');
 	await rem?.setIsDocument(true); // we want this to be a folder rem!
 
 	const helpInfoRem = await plugin.rem.createRem();
+	await helpInfoRem?.setParent(poolPowerup!); // FIXME: not type safe
 	await helpInfoRem?.setText([
 		'Help Info: ',
 		'This is your Zotero Library. It syncs every 5 minutes, and you can force sync it with the command: `force zotero sync.` ',

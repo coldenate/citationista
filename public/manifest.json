@@ -25,12 +25,12 @@
 		},
 		{
 			"type": "Powerup",
-			"powerupCode": "zotero-item",
+			"powerupCode": "zitem",
 			"level": "ReadCreateModifyDelete"
 		},
 		{
 			"type": "Powerup",
-			"powerupCode": "zotero-collection",
+			"powerupCode": "collection",
 			"level": "ReadCreateModifyDelete"
 		},
 		{
@@ -45,7 +45,12 @@
 		},
 		{
 			"type": "Powerup",
-			"powerupCode": "zotero-item-attachment",
+			"powerupCode": "zitem-attachment",
+			"level": "ReadCreateModifyDelete"
+		},
+		{
+			"type": "Powerup",
+			"powerupCode": "citationista-pool",
 			"level": "ReadCreateModifyDelete"
 		}
 	]
