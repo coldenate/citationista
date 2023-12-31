@@ -50,7 +50,7 @@
 		},
 		{
 			"type": "Powerup",
-			"powerupCode": "citationista-pool",
+			"powerupCode": "coolPool",
 			"level": "ReadCreateModifyDelete"
 		}
 	]
