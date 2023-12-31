@@ -28,4 +28,5 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 	await helpInfoRem?.setIsQuote(true);
 	await helpInfoRem?.setHighlightColor('Blue');
 	await helpInfoRem?.setParent(rem!);
+	return rem;
 }

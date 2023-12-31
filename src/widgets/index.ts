@@ -5,6 +5,7 @@ import { getAllRemNoteCollections, getAllRemNoteItems } from './funcs/fetchFromR
 import { getAllZoteroCollections, getAllZoteroItems } from './funcs/fetchFromZotero';
 import { birthZoteroRem } from './funcs/birthZoteroRem';
 import { zoteroItemSlots } from './constants/zoteroItemSlots';
+import { setForceStop } from './funcs/forceStop';
 
 let pluginPassthrough: RNPlugin;
 
@@ -171,20 +172,23 @@ async function onActivate(plugin: RNPlugin) {
 	// force birth zotero rem command
 
 	await plugin.app.registerCommand({
-		name: 'force birth zotero rem',
+		name: 'Force Library Rem Creation',
 		description: 'Forces the creation of the Zotero Library Rem.',
 		id: 'force-birth-zotero-rem',
 		quickCode: 'birth',
 		icon: '👶',
 		keywords: 'zotero, force, birth',
 		action: async () => {
-			await birthZoteroRem(plugin);
+			const rem = await birthZoteroRem(plugin);
+			if (rem) {
+				await plugin.window.openRem(rem);
+			}
 		},
 	});
 
 	// force zotero sync command
 	await plugin.app.registerCommand({
-		name: 'force zotero sync',
+		name: 'Force Syncing of Zotero Library',
 		description: 'Forces synchronization with Zotero.',
 		id: 'force-zotero-sync',
 		quickCode: 'sync',
@@ -198,7 +202,7 @@ async function onActivate(plugin: RNPlugin) {
 
 	// import zotero paper command
 	await plugin.app.registerCommand({
-		name: 'zotero',
+		name: 'Import a Zotero Paper',
 		description: 'Search and Import a paper from Zotero',
 		id: 'import-zotero-paper',
 		quickCode: 'import',
@@ -209,6 +213,19 @@ async function onActivate(plugin: RNPlugin) {
 			// command to search for and add invidual papers from Zotero with zotero-api-client
 			// on selecting the paper, import the citation with a bunch of metadata to populate the powerup ONLY IF ITS NOT ALREADY IN REMNOTE
 			// IF ITS IN REMNOTE, then just add the reference to the rem, and individually sync that item with zotero
+		},
+	});
+
+	// force stop syncing
+	await plugin.app.registerCommand({
+		name: 'Force Quit Syncing',
+		description: 'Force stop syncing with Zotero.',
+		id: 'force-stop-syncing',
+		quickCode: 'stop',
+		icon: '🛑',
+		keywords: 'zotero, stop, sync',
+		action: async () => {
+			await setForceStop(plugin);
 		},
 	});
 
@@ -262,7 +279,7 @@ async function onActivate(plugin: RNPlugin) {
 					id: 'log-values',
 					name: 'Log Values',
 					description: 'Log the values of certain variables',
-					quickCode: 'debug log',
+					quickCode: 'dlog',
 					action: async () => {
 						// log values
 					},
@@ -271,7 +288,7 @@ async function onActivate(plugin: RNPlugin) {
 					id: 'log-all-collections',
 					name: 'Log All Zotero Collections',
 					description: 'Log all Zotero collections',
-					quickCode: 'debug log zotero collections',
+					quickCode: 'dczlog',
 					action: async () => {
 						await getAllZoteroCollections(plugin).then((collections) => {
 							console.log(collections);
@@ -282,7 +299,7 @@ async function onActivate(plugin: RNPlugin) {
 					id: 'log-all-remnote-collections',
 					name: 'Log All RemNote Collections',
 					description: 'Log all RemNote collections',
-					quickCode: 'debug log remnote collections',
+					quickCode: 'dcrlog',
 					action: async () => {
 						await getAllRemNoteCollections(reactivePlugin).then((collections) => {
 							console.log(collections);
@@ -293,7 +310,7 @@ async function onActivate(plugin: RNPlugin) {
 					id: 'tag-as-collection',
 					name: 'Tag as Collection',
 					description: 'Tag a Rem as a collection',
-					quickCode: 'debug tag as collection',
+					quickCode: 'dtagcol',
 					action: async () => {
 						const remFocused = await plugin.focus.getFocusedRem();
 						await remFocused?.addPowerup('collection');
@@ -303,7 +320,7 @@ async function onActivate(plugin: RNPlugin) {
 					id: 'sync-collections',
 					name: 'Sync Collections',
 					description: 'Sync collections with Zotero',
-					quickCode: 'debug sync collections',
+					quickCode: 'dsynccol',
 					action: async () => {
 						await syncCollections(reactivePlugin);
 					},
@@ -312,7 +329,7 @@ async function onActivate(plugin: RNPlugin) {
 					id: 'log-all-items-from-zotero',
 					name: 'Log All Items from Zotero',
 					description: 'Log all items from Zotero',
-					quickCode: 'debug log zotero items',
+					quickCode: 'laifz',
 					action: async () => {
 						await getAllZoteroItems(plugin).then((items) => {
 							console.log(items);
@@ -322,7 +339,8 @@ async function onActivate(plugin: RNPlugin) {
 				// log citationista pool tagged rem
 				await plugin.app.registerCommand({
 					id: 'show-pool',
-					name: 'show pool',
+					name: 'Display Citationista Pool Powerup Rem',
+					description: `Let's you see the Citationista Pool Powerup Rem`,
 					action: async () => {
 						const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
 						await plugin.window.openRem(poolPowerup!);
@@ -333,7 +351,7 @@ async function onActivate(plugin: RNPlugin) {
 					id: 'log-all-items-from-remnote-powerup-based',
 					name: 'Log All Items from RemNote (Powerup Based)',
 					description: 'Log all items from RemNote',
-					quickCode: 'debug log remnote items',
+					quickCode: 'daifrp',
 					action: async () => {
 						const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
 						await zoteroItemPowerup?.taggedRem().then((rem) => {
@@ -346,7 +364,7 @@ async function onActivate(plugin: RNPlugin) {
 					id: 'log-remnote-items',
 					name: 'Log RemNote Items',
 					description: 'Log all items from RemNote',
-					quickCode: 'debug log remnote items',
+					quickCode: 'dlogremcon',
 					action: async () => {
 						await getAllRemNoteItems(reactivePlugin).then((items) => {
 							console.log(items);
@@ -356,9 +374,9 @@ async function onActivate(plugin: RNPlugin) {
 				// trash all plugin footprint
 				await plugin.app.registerCommand({
 					id: 'trash-all-plugin-footprint',
-					name: 'Trash All Plugin Footprint',
-					description: 'Trash all plugin footprint',
-					quickCode: 'debug trash all plugin footprint',
+					name: 'Delete all Citationista Generated Rem',
+					description: `Trash all of the plugin's footprint`,
+					quickCode: 'dtapf',
 					action: async () => {
 						// zitem powerup
 						const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
@@ -370,20 +388,36 @@ async function onActivate(plugin: RNPlugin) {
 						const zoteroLibraryPowerup = await plugin.powerup.getPowerupByCode(
 							'zotero-synced-library'
 						);
+						const citationistaPowerup = await plugin.powerup.getPowerupByCode(
+							'coolPool'
+						);
 						const taggedRems = await Promise.all([
 							zoteroItemPowerup?.taggedRem(),
 							zoteroCollectionPowerup?.taggedRem(),
 							zoteroLibraryPowerup?.taggedRem(),
+							citationistaPowerup?.taggedRem(),
 						]).then((results) => results.flat());
 						if (taggedRems) {
 							taggedRems.forEach(async (rem) => {
 								await rem!.remove();
 							});
 						}
-
-						await zoteroCollectionPowerup?.remove();
-						await zoteroItemPowerup?.remove();
-						await zoteroLibraryPowerup?.remove();
+					},
+				});
+				// delete all Rems tagged with zitem powerup
+				await plugin.app.registerCommand({
+					id: 'delete-all-remnote-items',
+					name: 'Delete all RemNote Items',
+					description: 'Delete all RemNote Items',
+					quickCode: 'dari',
+					action: async () => {
+						const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
+						const taggedRems = await zoteroItemPowerup?.taggedRem();
+						if (taggedRems) {
+							taggedRems.forEach(async (rem) => {
+								await rem!.remove();
+							});
+						}
 					},
 				});
 			}
@@ -392,7 +426,6 @@ async function onActivate(plugin: RNPlugin) {
 	});
 
 	pluginPassthrough = plugin;
-	syncZoteroLibraryToRemNote(plugin);
 }
 
 export async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {

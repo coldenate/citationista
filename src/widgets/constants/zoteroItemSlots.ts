@@ -34,10 +34,32 @@ function constructAllPossibleSlots() {
 		(slot, index, self) =>
 			index === self.findIndex((s) => s.code === slot.code && s.name === slot.name)
 	);
+
+	const manualAddSlots = [
+		{
+			code: 'fullData',
+			name: 'Full Data',
+			onlyProgrammaticModifying: true,
+			hidden: true,
+			propertyType: PropertyType.TEXT,
+			propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+		},
+	];
+
+	uniqueSlots.push(...manualAddSlots);
+
 	return uniqueSlots;
 }
 
 export const zoteroItemSlots = [
+	{
+		code: 'fullData',
+		name: 'Full Data',
+		onlyProgrammaticModifying: true,
+		hidden: true,
+		propertyType: 'text',
+		propertyLocation: 'only_table',
+	},
 	{
 		code: 'itemType',
 		name: 'Item Type',

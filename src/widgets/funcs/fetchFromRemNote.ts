@@ -116,7 +116,7 @@ export async function getAllRemNoteItems(plugin: RNPlugin) {
 			// URL: [URL],
 			// zoteroSelectURI: [zoteroSelectURI],
 			key: [key],
-			remID: zoteroItem._id,
+			rem: zoteroItem,
 		};
 		remnoteItems.push(item);
 	}
@@ -152,6 +152,7 @@ export async function getAllRemNoteCollections(plugin: RNPlugin) {
 		);
 
 		const collection = {
+			rem: collectionRem,
 			key: key,
 			version: version,
 			name: name,
