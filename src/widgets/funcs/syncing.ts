@@ -6,9 +6,11 @@ import { getCollectionPropertybyCode, getItemPropertyByCode } from '../utils/set
 import { isDebugMode } from '..';
 import { checkForForceStop } from './forceStop';
 import { findCollection } from './findCollectioninRemNote';
+import { LogType, logMessage } from './logging';
 
 // function: sync collections with zotero library rem
 export async function syncCollections(plugin: RNPlugin) {
+	const debugMode = await isDebugMode(plugin);
 	const zoteroCollections = await getAllZoteroCollections(plugin);
 
 	const remnoteCollections = await getAllRemNoteCollections(plugin);
@@ -47,7 +49,6 @@ export async function syncCollections(plugin: RNPlugin) {
 			}
 		}
 		if (!foundCollection) {
-			console.log(remnoteCollection.rem);
 			collectionsToUpdate.push({
 				collection: remnoteCollection,
 				method: 'delete',
@@ -69,6 +70,7 @@ export async function syncCollections(plugin: RNPlugin) {
 
 	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('collection');
 	const addedCollections = [];
+	const isDebugModeValue = await isDebugMode(plugin);
 
 	// update the remnote collections that need to be changed
 	for (const collectionToUpdate of collectionsToUpdate) {
@@ -78,6 +80,9 @@ export async function syncCollections(plugin: RNPlugin) {
 			case 'delete':
 				if (remToDelete) {
 					await remToDelete.remove();
+					if (isDebugModeValue) {
+						console.log(`Deleting collection:`, collection);
+					}
 				}
 				break;
 			case 'add':
@@ -149,6 +154,7 @@ export async function syncCollections(plugin: RNPlugin) {
 	}
 }
 export async function syncItems(plugin: RNPlugin, collectionKey: string | false) {
+	const debugMode = await isDebugMode(plugin);
 	// Sync items with Zotero (same nature of function as syncCollections
 	// we want to get all the items from Zotero, and then compare them to the items in RemNote,
 	// and then update the items in RemNote accordingly determining action: modify or add(delete not supported yet))
@@ -202,11 +208,19 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode('zotero-synced-library');
 	if (zoteroLibraryPowerUpRem === undefined) {
-		console.error('Zotero Library not found!');
+		await logMessage({
+			plugin,
+			message: 'Zotero Library not found!',
+			type: LogType.Error,
+			consoleEmitType: 'error',
+			isToast: false,
+			omitIfNOTDebugMode: true,
+		});
 		return;
 	}
 	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem?.taggedRem())[0];
 	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('collection');
+	const isDebugModeValue = await isDebugMode(plugin);
 
 	// update the remnote items that need to be changed
 	for (const itemToUpdate of itemsToUpdate) {
@@ -216,6 +230,9 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 		switch (method) {
 			case 'delete':
 				if (remToDelete) {
+					if (isDebugModeValue) {
+						console.log(`Deleting item:`, item);
+					}
 					await remToDelete.remove();
 				}
 				break;
@@ -279,8 +296,14 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 						extractedCollections.push(item.data.collection);
 					}
 				} catch (error) {
-					console.error(`couldn't extract collections! Item:`, item);
-					console.error(error);
+					await logMessage({
+						plugin,
+						message: [`couldn't extract collections! Item:`, error],
+						type: LogType.Error,
+						consoleEmitType: 'error',
+						isToast: false,
+						omitIfNOTDebugMode: true,
+					});
 				}
 				for (const collection of extractedCollections) {
 					try {
@@ -297,14 +320,20 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 							}
 						}
 					} catch (error) {
-						console.error(`Couldn't save to collection rem`, item);
-						console.error(error);
+						await logMessage({
+							plugin,
+							message: [`Couldn't save to collection rem`, item, error],
+							type: LogType.Error,
+							consoleEmitType: 'error',
+							isToast: false,
+							omitIfNOTDebugMode: true,
+						});
 					}
 				}
 
 				break;
 			case 'modify':
-				console.error("i'm supposed to modify :)");
+				if (debugMode) console.error("i'm supposed to modify :)");
 		}
 	}
 }

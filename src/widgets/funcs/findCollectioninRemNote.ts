@@ -1,14 +1,24 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
 import { getAllRemNoteCollections } from './fetchFromRemNote';
+import { isDebugMode } from '..';
+import { LogType, logMessage } from './logging';
 
 export async function findCollection(
 	plugin: RNPlugin,
 	collectionKey: string | false,
 	collectionName: string | false
 ) {
+	const debugMode = await isDebugMode(plugin);
 	// check to must have one of the two parameters
 	if (!collectionKey && !collectionName) {
-		console.error('Must have one of the two parameters');
+		await logMessage({
+			plugin,
+			message: 'Must have one of the two parameters',
+			type: LogType.Error,
+			consoleEmitType: 'error',
+			isToast: false,
+			omitIfNOTDebugMode: true,
+		});
 		return;
 	}
 	const collections = await getAllRemNoteCollections(plugin);
@@ -16,7 +26,15 @@ export async function findCollection(
 	// if we have the collectionKey, search for the collection with that key in RemNote and return it
 	if (collectionKey) {
 		if (collections === undefined) {
-			console.error('No collections found in RemNote');
+			// if (debugMode) console.error('No collections found in RemNote');
+			await logMessage({
+				plugin,
+				message: 'No collections found in RemNote',
+				type: LogType.Error,
+				consoleEmitType: 'error',
+				isToast: false,
+				omitIfNOTDebugMode: true,
+			});
 			return;
 		}
 		for (const collection of collections) {
@@ -24,14 +42,35 @@ export async function findCollection(
 				return collection;
 			}
 		}
-		console.log(collectionKey);
-		console.error('No collection found with that key');
+		await logMessage({
+			plugin,
+			message: 'No collection found with that key',
+			type: LogType.Error,
+			consoleEmitType: 'error',
+			isToast: false,
+			omitIfNOTDebugMode: true,
+		});
+		await logMessage({
+			plugin,
+			message: collectionKey,
+			type: LogType.Info,
+			consoleEmitType: 'info',
+			isToast: false,
+			omitIfNOTDebugMode: true,
+		});
 		return;
 	}
 	// if we have the collectionName, search for the collection with that name in RemNote and return it
 	if (collectionName) {
 		if (collections === undefined) {
-			console.error('No collections found in RemNote');
+			await logMessage({
+				plugin,
+				message: 'No collections found in RemNote',
+				type: LogType.Error,
+				consoleEmitType: 'error',
+				isToast: false,
+				omitIfNOTDebugMode: true,
+			});
 			return;
 		}
 		for (const collection of collections) {
@@ -39,7 +78,14 @@ export async function findCollection(
 				return collection;
 			}
 		}
-		console.error('No collection found with that name');
+		await logMessage({
+			plugin,
+			message: 'No collection found with that name',
+			type: LogType.Error,
+			consoleEmitType: 'error',
+			isToast: false,
+			omitIfNOTDebugMode: true,
+		});
 		return;
 	}
 }

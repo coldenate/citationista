@@ -5,7 +5,7 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 	if (lookForRemAlready !== undefined) {
 		return;
 	}
-	const rem: Rem = await plugin.rem.createRem().catch((err) => {
+	const rem: Rem | undefined | void = await plugin.rem.createRem().catch((err) => {
 		console.error(err);
 		return;
 	});
@@ -19,7 +19,7 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 	await helpInfoRem?.setParent(poolPowerup!); // FIXME: not type safe
 	await helpInfoRem?.setText([
 		'Help Info: ',
-		'This is your Zotero Library. It syncs every 5 minutes, and you can force sync it with the command: `force zotero sync.` ',
+		'This is your Zotero Library. It syncs on app startup, and you can force sync it with the command: `force zotero sync.` ',
 		'You can import papers from Zotero with the command: `zotero`. ',
 		'You can export citations from your RemNote Library with the command: `export citations`. ',
 		'You can set your Zotero API key and User ID in the settings. ',
