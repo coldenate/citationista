@@ -28,6 +28,7 @@ export async function syncCollections(plugin: RNPlugin) {
 						collectionsToUpdate.push({
 							collection: zoteroCollection,
 							method: 'modify',
+							snapshotRemBeforeMod: remnoteCollection.rem,
 						});
 					}
 				}
@@ -41,19 +42,21 @@ export async function syncCollections(plugin: RNPlugin) {
 		}
 	}
 	// check for collections that need to be deleted
-	for (const remnoteCollection of remnoteCollections!) {
-		let foundCollection = false;
-		for (const zoteroCollection of zoteroCollections) {
-			if (zoteroCollection.key === remnoteCollection.key[0]) {
-				foundCollection = true;
+	if (remnoteCollections) {
+		for (const remnoteCollection of remnoteCollections!) {
+			let foundCollection = false;
+			for (const zoteroCollection of zoteroCollections) {
+				if (zoteroCollection.key === remnoteCollection.key[0]) {
+					foundCollection = true;
+				}
 			}
-		}
-		if (!foundCollection) {
-			collectionsToUpdate.push({
-				collection: remnoteCollection,
-				method: 'delete',
-				remToDelete: remnoteCollection.rem,
-			});
+			if (!foundCollection) {
+				collectionsToUpdate.push({
+					collection: remnoteCollection,
+					method: 'delete',
+					remToDelete: remnoteCollection.rem,
+				});
+			}
 		}
 	}
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode('zotero-synced-library');
@@ -74,7 +77,7 @@ export async function syncCollections(plugin: RNPlugin) {
 
 	// update the remnote collections that need to be changed
 	for (const collectionToUpdate of collectionsToUpdate) {
-		const { collection, method, remToDelete } = collectionToUpdate;
+		const { collection, method, remToDelete, snapshotRemBeforeMod } = collectionToUpdate;
 		// console log all the collection fields
 		switch (method) {
 			case 'delete':
@@ -111,27 +114,51 @@ export async function syncCollections(plugin: RNPlugin) {
 
 				break;
 			case 'modify':
-				const collectionPowerupRem = await plugin.powerup.getPowerupByCode('collection');
-				const collectionRems = await collectionPowerupRem?.taggedRem();
-				const collectionRemToUpdate = collectionRems?.find(async (collectionRem) => {
-					const key = await collectionPowerupRem?.getTagPropertyValue('key');
-					return key === collection.key;
-				});
-
-				if (collectionRemToUpdate) {
-					await collectionRemToUpdate.setTagPropertyValue(
-						await getCollectionPropertybyCode(plugin, 'version'),
-						[String(collection.version)]
-					);
-					await collectionRemToUpdate.setTagPropertyValue(
+				// here we need to confirm what has changed, and then update the remnote collection accordingly
+				// first, check if the name has changed
+				if (collection.name !== snapshotRemBeforeMod?.text![0]) {
+					await snapshotRemBeforeMod?.setText([collection.name]);
+					await snapshotRemBeforeMod?.setTagPropertyValue(
 						await getCollectionPropertybyCode(plugin, 'name'),
 						[collection.name]
 					);
-					await collectionRemToUpdate.setTagPropertyValue(
-						await getCollectionPropertybyCode(plugin, 'parentCollection'),
-						[String(collection.parentCollection)]
-					);
 				}
+
+				// now check if the parent collection has changed
+				const collectionKey = await getCollectionPropertybyCode(plugin, 'key');
+				const parentRem = await snapshotRemBeforeMod?.getParentRem();
+				if (!parentRem) {
+					return;
+				}
+				const currentParentCollectionID = await parentRem.getTagPropertyValue(
+					collectionKey
+				);
+
+				if (collection.parentCollection !== currentParentCollectionID) {
+					if (collection.parentCollection === false) {
+						await snapshotRemBeforeMod?.setParent(zoteroLibraryRem);
+					} else if (collection.parentCollection !== false) {
+						const parentCollectionRem = await findCollection(
+							plugin,
+							collection.parentCollection,
+							false
+						);
+						if (parentCollectionRem) {
+							await snapshotRemBeforeMod?.setParent(parentCollectionRem.rem);
+						}
+					}
+				}
+
+				// now check if the version has changed
+
+				const versionKey = await getCollectionPropertybyCode(plugin, 'version');
+				const currentVersion = await snapshotRemBeforeMod?.getTagPropertyValue(versionKey);
+				if (collection.version !== currentVersion) {
+					await snapshotRemBeforeMod?.setTagPropertyValue(versionKey, [
+						String(collection.version),
+					]);
+				}
+
 				break;
 		}
 	}
@@ -168,12 +195,14 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 		let foundItem = false;
 		if (remnoteItems !== undefined) {
 			for (const remnoteItem of remnoteItems) {
-				if (zoteroItem.key == remnoteItem.key[0]) {
+				if (zoteroItem.key == remnoteItem.key[0][0]) {
+					// wHAT IS THIS BLACK MAGIC FORKERINOYOYO???
 					foundItem = true;
 					if (zoteroItem.version !== remnoteItem.version) {
 						itemsToUpdate.push({
 							item: zoteroItem,
 							method: 'modify',
+							snapshotRemBeforeMod: remnoteItem.rem,
 						});
 					}
 				}
@@ -225,7 +254,7 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 	// update the remnote items that need to be changed
 	for (const itemToUpdate of itemsToUpdate) {
 		if (await checkForForceStop(plugin)) return;
-		const { item, method, remToDelete } = itemToUpdate;
+		const { item, method, remToDelete, snapshotRemBeforeMod } = itemToUpdate;
 
 		switch (method) {
 			case 'delete':
@@ -333,7 +362,66 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 
 				break;
 			case 'modify':
-				if (debugMode) console.error("i'm supposed to modify :)");
+				// just like with collections, we need to check what has changed, and then update the remnote item accordingly, however we need to handle all the different fields automatically (not manually like with collections)
+				// first, check if the title has changed
+				const titleKey = await getItemPropertyByCode(plugin, 'title');
+				const currentTitle = await snapshotRemBeforeMod?.getTagPropertyValue(titleKey);
+				if (item.data.title !== currentTitle) {
+					await snapshotRemBeforeMod?.setText([item.data.title]);
+					await snapshotRemBeforeMod?.setTagPropertyValue(titleKey, [item.data.title]);
+				}
+
+				// now check if the parent collection has changed
+				const collectionKey = await getItemPropertyByCode(plugin, 'collection');
+				const parentRem = await snapshotRemBeforeMod?.getParentRem();
+				if (!parentRem) {
+					return;
+				}
+				const currentParentCollectionID = await parentRem.getTagPropertyValue(
+					collectionKey
+				);
+
+				if (item.data.collection !== currentParentCollectionID) {
+					if (item.data.collection === false) {
+						await snapshotRemBeforeMod?.setParent(zoteroLibraryRem);
+					} else if (item.data.collection !== false) {
+						const parentCollectionRem = await findCollection(
+							plugin,
+							item.data.collection,
+							false
+						);
+						if (parentCollectionRem) {
+							await snapshotRemBeforeMod?.setParent(parentCollectionRem.rem);
+						}
+					}
+				}
+
+				// now check if the version has changed
+
+				const versionKey = await getItemPropertyByCode(plugin, 'version');
+				const currentVersion = await snapshotRemBeforeMod?.getTagPropertyValue(versionKey);
+				if (item.version !== currentVersion) {
+					await snapshotRemBeforeMod?.setTagPropertyValue(versionKey, [
+						String(item.version),
+					]);
+				}
+
+				// now iterate through all the other properties and check if they have changed
+				for (const [key, value] of Object.entries(item.data)) {
+					if (key === 'key' || key === 'version') {
+						continue;
+					}
+					const propertyKey = await getItemPropertyByCode(plugin, key);
+					const currentValue = await snapshotRemBeforeMod?.getTagPropertyValue(
+						propertyKey
+					);
+					if (value !== currentValue) {
+						// @ts-ignore //FIXME: solve this later
+						await snapshotRemBeforeMod?.setTagPropertyValue(propertyKey, [value]);
+					}
+				}
+
+				break;
 		}
 	}
 }
