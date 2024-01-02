@@ -5,7 +5,7 @@
 </h1>
 
 <h3 align="center">
-	📚 Citationista: Your local RemNote barista for Citationappuccinos! 📖
+	📚 Citationista: Brewing decaf reference management for your brain's second brain :)
 </h3>
 
 <p align="center">
