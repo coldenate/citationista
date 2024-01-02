@@ -193,10 +193,9 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 	// iterate through all the zotero items. try to find a matching remnote item by searching the keys. if there is no matching remnote item, then add it. if there is a matching remnote item, then check if the version numbers match. if they don't, then modify it.
 	for (const zoteroItem of zoteroItems) {
 		let foundItem = false;
-		if (remnoteItems !== undefined) {
+		if (remnoteItems != undefined) { // TODO: examine logic results vs ===
 			for (const remnoteItem of remnoteItems) {
 				if (zoteroItem.key == remnoteItem.key[0][0]) {
-					// wHAT IS THIS BLACK MAGIC FORKERINOYOYO???
 					foundItem = true;
 					if (zoteroItem.version !== remnoteItem.version) {
 						itemsToUpdate.push({
@@ -243,7 +242,6 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 			type: LogType.Error,
 			consoleEmitType: 'error',
 			isToast: false,
-			omitIfNOTDebugMode: true,
 		});
 		return;
 	}
@@ -269,6 +267,10 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 				const newItemRem = await plugin.rem.createRem();
 				const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
 				newItemRem?.setParent(poolPowerup!); // FIXME: this is not type safe
+				// determine the itemType of the item: annotation, artwork, attachment, audioRecording, bill, blogPost, book, bookSection, case, computerProgram, conferencePaper, dictionaryEntry, document, email, encyclopediaArticle, film, forumPost, hearing, instantMessage, interview, journalArticle, letter, magazineArticle, manuscript, map, newspaperArticle, note, patent, podcast, presentation, radioBroadcast, report, statute, thesis, tvBroadcast, videoRecording, webpage
+				// switch (item.data.itemType) {
+				// 	default: // when its just a regular item
+				// } // TODO: implement this, revamped powerup system. (powerups for each item type)
 				await newItemRem?.addPowerup('zitem');
 				await newItemRem?.setText([item.data.title]);
 				await newItemRem?.setIsDocument(true);
@@ -276,16 +278,22 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 
 				// Helper function to create a promise without invoking it
 				const createPromise = async (property: string, value: unknown) => {
-					return newItemRem?.setTagPropertyValue(
-						await getItemPropertyByCode(plugin, property),
-						[String(value)]
-					);
+					const itemPropertyCode = await getItemPropertyByCode(plugin, property);
+					return newItemRem?.setTagPropertyValue(itemPropertyCode, [String(value)]);
 				};
+				// handle key and version separately
 
-				promises.push(
-					createPromise('citationKey', item.key),
-					createPromise('versionNumber', item.version)
-				);
+				const keyPropertyCode = await getItemPropertyByCode(plugin, 'citationKey');
+				console.log(item.data.key);
+				try {
+					await newItemRem?.setTagPropertyValue(keyPropertyCode, [item.data.key]);
+				} catch (error) {
+					console.log('something done goofed');
+					console.log(error);
+				}
+
+				const versionPropertyCode = await getItemPropertyByCode(plugin, 'versionNumber');
+				await newItemRem?.setTagPropertyValue(versionPropertyCode, [String(item.version)]);
 
 				for (const [key, value] of Object.entries(item.data)) {
 					if (key === 'key' || key === 'version') {
@@ -301,16 +309,36 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 					.then(async (results) => {
 						// Log errors for rejected promises
 						if (await isDebugMode(plugin)) {
-							results.forEach((result, index) => {
+							results.forEach(async (result, index) => {
+								// if its rejected and its a promise dealing with the key, then log it
+								// if (result.status === 'rejected' && index === 0) { (THIS WAS WHEN THE KEY USED TO BE IN THE ARRAY)
+								// 	await logMessage({
+								// 		plugin,
+								// 		message: [
+								// 			`Couldn't save key to rem. This is a fatal error and your ZKB is corrupted.`,
+								// 			item,
+								// 			result.reason,
+								// 		],
+								// 		type: LogType.Error,
+								// 		consoleEmitType: 'error',
+								// 		isToast: true,
+								// 	});
+								// }
+
 								if (result.status === 'rejected') {
-									console.log(`Item:`, item);
-									console.error(`Promise ${index} failed:`, result.reason);
+									console.error(
+										`Item:`,
+										item,
+										`Promise ${index} failed:`,
+										result.reason
+									);
 								}
 							});
 						}
 					})
-					.finally(() => {
-						// You can add additional code here if needed
+					.finally(async () => {
+						console.log(item.data.key);
+						console.log(item.key);
 					});
 				// now attempt to assign it to its parent collection
 				// if collection data has more than one collection id, for the first collection, move rem, but for the remaining collections, make a portal in each collection to the rem
@@ -331,7 +359,6 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 						type: LogType.Error,
 						consoleEmitType: 'error',
 						isToast: false,
-						omitIfNOTDebugMode: true,
 					});
 				}
 				for (const collection of extractedCollections) {
@@ -355,7 +382,6 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 							type: LogType.Error,
 							consoleEmitType: 'error',
 							isToast: false,
-							omitIfNOTDebugMode: true,
 						});
 					}
 				}
