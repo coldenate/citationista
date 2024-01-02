@@ -1,7 +1,5 @@
-<!-- <h1 align="center">⚠️</h1>
-<h3>Develoment is slow, so I'll make an alert on the RemNote Discord when adequate progress is made! Thank you!</h3> -->
 <h1 align="center">
-	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/citationista-logo.svg" alt="Citationista Logo" height="200px">
+	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/logo.svg" alt="Citationista Logo" height="300px">
 </h1>
 
 <h3 align="center">
@@ -14,9 +12,9 @@
 	<a href="https://github.com/coldenate/citationista/contributors"><img src="https://img.shields.io/github/contributors/coldenate/citationista?colorA=363a4f&colorB=a6da95&style=for-the-badge" alt="GitHub Contributors"></a>
 </p>
 
-<p align="center">
+<!-- <p align="center">
 	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/remnote-preview.gif" alt="Citationista in Action">
-</p>
+</p> -->
 
 ## 🚀 Overview
 
