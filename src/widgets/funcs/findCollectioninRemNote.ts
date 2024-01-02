@@ -17,7 +17,6 @@ export async function findCollection(
 			type: LogType.Error,
 			consoleEmitType: 'error',
 			isToast: false,
-			omitIfNOTDebugMode: true,
 		});
 		return;
 	}
@@ -33,7 +32,6 @@ export async function findCollection(
 				type: LogType.Error,
 				consoleEmitType: 'error',
 				isToast: false,
-				omitIfNOTDebugMode: true,
 			});
 			return;
 		}
@@ -48,7 +46,6 @@ export async function findCollection(
 			type: LogType.Error,
 			consoleEmitType: 'error',
 			isToast: false,
-			omitIfNOTDebugMode: true,
 		});
 		await logMessage({
 			plugin,
@@ -56,7 +53,6 @@ export async function findCollection(
 			type: LogType.Info,
 			consoleEmitType: 'info',
 			isToast: false,
-			omitIfNOTDebugMode: true,
 		});
 		return;
 	}
@@ -69,7 +65,6 @@ export async function findCollection(
 				type: LogType.Error,
 				consoleEmitType: 'error',
 				isToast: false,
-				omitIfNOTDebugMode: true,
 			});
 			return;
 		}
@@ -84,7 +79,6 @@ export async function findCollection(
 			type: LogType.Error,
 			consoleEmitType: 'error',
 			isToast: false,
-			omitIfNOTDebugMode: true,
 		});
 		return;
 	}

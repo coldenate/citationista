@@ -90,6 +90,7 @@ export async function getAllRemNoteItems(plugin: RNPlugin) {
 			await getItemPropertyByCode(plugin, 'citationKey')
 		);
 
+
 		const item = {
 			version: [version],
 			message: [message],

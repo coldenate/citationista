@@ -12,7 +12,6 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 				type: LogType.Info,
 				consoleEmitType: 'info',
 				isToast: false,
-				omitIfNOTDebugMode: true,
 			});
 		} else {
 			return;

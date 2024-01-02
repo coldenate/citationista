@@ -32,22 +32,13 @@ export async function logMessage({
 	type,
 	consoleEmitType = 'log',
 	isToast,
-	omitIfNOTDebugMode = true,
 }: {
 	plugin: ReactRNPlugin | RNPlugin;
 	message: any[] | string;
 	type: LogType;
 	consoleEmitType?: 'warn' | 'info' | 'error' | 'log';
 	isToast: boolean;
-	omitIfNOTDebugMode?: boolean;
 }) {
-	const debugMode = await plugin.storage.getSession('debugMode');
-	if (omitIfNOTDebugMode === true) {
-		if (debugMode === false) {
-			return;
-		}
-	}
-
 	const baseplateIdentifier = `Log Emitted from ${plugin.id}`;
 	switch (consoleEmitType) {
 		case 'warn':
@@ -63,7 +54,8 @@ export async function logMessage({
 			console.log(baseplateIdentifier, message);
 			break;
 	}
-	if (isToast === true) {
+	const debugMode = await plugin.storage.getSession('debugMode');
+	if (isToast) {
 		await plugin.app.toast(String(message));
 	}
 }
