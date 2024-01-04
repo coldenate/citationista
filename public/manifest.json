@@ -1,7 +1,7 @@
 {
 	"manifestVersion": 1,
 	"id": "citationista",
-	"name": "Citationista",
+	"name": "Citationista | Reference Manager + Zotero Integration",
 	"author": "coldenate",
 	"repoUrl": "https://github.com/coldenate/citationista",
 	"version": {
