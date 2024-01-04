@@ -193,7 +193,8 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 	// iterate through all the zotero items. try to find a matching remnote item by searching the keys. if there is no matching remnote item, then add it. if there is a matching remnote item, then check if the version numbers match. if they don't, then modify it.
 	for (const zoteroItem of zoteroItems) {
 		let foundItem = false;
-		if (remnoteItems != undefined) { // TODO: examine logic results vs ===
+		if (remnoteItems != undefined) {
+			// TODO: examine logic results vs ===
 			for (const remnoteItem of remnoteItems) {
 				if (zoteroItem.key == remnoteItem.key[0][0]) {
 					foundItem = true;
@@ -295,8 +296,18 @@ export async function syncItems(plugin: RNPlugin, collectionKey: string | false)
 				const versionPropertyCode = await getItemPropertyByCode(plugin, 'versionNumber');
 				await newItemRem?.setTagPropertyValue(versionPropertyCode, [String(item.version)]);
 
+				const urlPropertyCode = await getItemPropertyByCode(plugin, 'url');
+				await newItemRem?.setTagPropertyValue(urlPropertyCode, [item.data.url]);
+				console.log(item.data.url);
+				try {
+					await newItemRem?.addSource(item.data.url);
+				} catch (error) {
+					console.log('something done goofed');
+					console.log(error);
+				}
+
 				for (const [key, value] of Object.entries(item.data)) {
-					if (key === 'key' || key === 'version') {
+					if (key === 'key' || key === 'version' || key === 'URL') {
 						continue;
 					}
 
