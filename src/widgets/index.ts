@@ -1,4 +1,11 @@
-import { declareIndexPlugin, PropertyType, RNPlugin, PropertyLocation } from '@remnote/plugin-sdk';
+import {
+	declareIndexPlugin,
+	PropertyType,
+	RNPlugin,
+	PropertyLocation,
+	Rem,
+	BuiltInPowerupCodes,
+} from '@remnote/plugin-sdk';
 import { syncCollections } from './funcs/syncing';
 import { syncZoteroLibraryToRemNote } from './funcs/syncing';
 import { getAllRemNoteCollections, getAllRemNoteItems } from './funcs/fetchFromRemNote';
@@ -6,8 +13,11 @@ import { getAllZoteroCollections, getAllZoteroItems } from './funcs/fetchFromZot
 import { birthZoteroRem } from './funcs/birthZoteroRem';
 import { zoteroItemSlots } from './constants/zoteroItemSlots';
 import { setForceStop } from './funcs/forceStop';
-
-let pluginPassthrough: RNPlugin;
+import { extractAllFollowingChildren } from './utils/childrenExtract';
+// @ts-ignore
+import Cite from 'citation-js';
+import { fetchCitation } from './utils/fetchCitation';
+import { LogType, logMessage } from './funcs/logging';
 
 async function onActivate(plugin: RNPlugin) {
 	// settings
@@ -45,32 +55,37 @@ async function onActivate(plugin: RNPlugin) {
 		id: 'export-citations-format',
 		title: 'Export Citations Format',
 		description: 'The format used when exporting citations.',
-		defaultValue: 'APA',
+		defaultValue: 'BibTeX',
 		options: [
-			{ key: 'APA', value: 'APA', label: 'APA' },
+			{
+				key: 'BibTeX',
+				value: 'BibTeX',
+				label: 'BibTeX',
+			},
+			{ key: 'APA', value: 'apa', label: 'APA' },
 			{
 				key: 'MLA',
-				value: 'MLA',
+				value: 'mla',
 				label: 'MLA',
 			},
 			{
 				key: 'Chicago',
-				value: 'Chicago',
+				value: 'chicago',
 				label: 'Chicago',
 			},
 			{
 				key: 'Harvard',
-				value: 'Harvard',
+				value: 'harvard',
 				label: 'Harvard',
 			},
 			{
 				key: 'Vancouver',
-				value: 'Vancouver',
+				value: 'vancouver',
 				label: 'Vancouver',
 			},
 			{
 				key: 'IEEE',
-				value: 'IEEE',
+				value: 'ieee',
 				label: 'IEEE',
 			},
 		],
@@ -200,22 +215,6 @@ async function onActivate(plugin: RNPlugin) {
 		},
 	});
 
-	// import zotero paper command
-	await plugin.app.registerCommand({
-		name: 'Import a Zotero Paper',
-		description: 'Search and Import a paper from Zotero',
-		id: 'import-zotero-paper',
-		quickCode: 'import',
-		icon: '📄',
-		keywords: 'zotero, import, paper',
-		action: async () => {
-			return console.error('Not yet implemented.');
-			// command to search for and add invidual papers from Zotero with zotero-api-client
-			// on selecting the paper, import the citation with a bunch of metadata to populate the powerup ONLY IF ITS NOT ALREADY IN REMNOTE
-			// IF ITS IN REMNOTE, then just add the reference to the rem, and individually sync that item with zotero
-		},
-	});
-
 	// force stop syncing
 	await plugin.app.registerCommand({
 		name: 'Force Quit Syncing',
@@ -231,40 +230,94 @@ async function onActivate(plugin: RNPlugin) {
 
 	// magic search zotero command (basically, the plugin will have created an upopulated list of papers from Zotero, and the user can search through them. then when they select one, it will populate the paper with the metadata from Zotero)
 
-	// export citations command
+	// export citations command (later on, (TODO:) we may want a export citations and add to zotero library command as an ext to this command)
 	await plugin.app.registerCommand({
 		name: 'export citations',
-		description:
-			'Exports all citations of this Rem to clipboard. Searches through all children of this Rem. Uses defined format in settings.',
+		description: 'Exports all citations of this Rem to clipboard...',
 		id: 'export-citations',
 		quickCode: 'cite',
 		icon: '📑',
 		keywords: 'citation, export',
 		action: async () => {
-			// // start at the rem the user ran the command at
-			// let remCursorAt = await plugin.focus.getFocusedRem();
-			// if (remCursorAt === undefined) {
-			// 	let extraString = `We'll then convert that Rem to a document, as per settings. (You can turn this off)`; // only shows if the setting: convertToDocument is true
-			// 	await plugin.app.toast(
-			// 		`📝 You need to have your cursor in a Rem you'd like to make the document.`
-			// 	);
-			// 	console.info("Couldn't find a Rem to make a document from.");
-			// 	return;
-			// }
-			// // then make a children iterator (max depth 10)
-			// // so we will get the child (remCursorAt.children[0]) and then we will go on 10 times deep into that child
-			// // then we'll resume the iterator and get the next child (remCursorAt.children[1]) and then we will go on 10 times deep into that child
-			// // and so on
-			// if (remCursorAt.children === undefined) {
-			// 	await plugin.app.toast('📝 Found no Rem found to search... try broader Rem.');
-			// 	return;
-			// }
-			// let citations: string[] = [];
-			// await plugin.app.toast('📝 Searching for sources...');
-			// await processRem(plugin, remCursorAt, 0, 10);
-			// const children = await remCursorAt.getChildrenRem();
-			// console.log(children);
-			// // await plugin.app.toast(`Copied ${citations.length} citations to clipboard.`);
+			let remCursorAt = await plugin.focus.getFocusedRem();
+			const exportCitationsFormat = await plugin.settings.getSetting(
+				'export-citations-format'
+			);
+
+			if (!remCursorAt) {
+				await logMessage({
+					plugin,
+					message:
+						"You need to have your cursor in a Rem you'd like to export citations from.",
+					type: LogType.Info,
+					consoleEmitType: 'log',
+					isToast: true,
+				});
+				return;
+			}
+
+			if (!remCursorAt.children) {
+				await logMessage({
+					plugin,
+					message: 'Found no Rem to search... try broader Rem.',
+					type: LogType.Info,
+					consoleEmitType: 'log',
+					isToast: true,
+				});
+				return;
+			}
+
+			await logMessage({
+				plugin,
+				message: '📝 Generating citations...',
+				type: LogType.Info,
+				consoleEmitType: 'log',
+				isToast: true,
+			});
+			
+			const citations: string[] = [];
+
+			const children: Rem[] = await extractAllFollowingChildren({ remCursorAt });
+
+			for (const child of children) {
+				const sources = await child.getSources();
+
+				if (sources && sources.length > 0) {
+					for (const source of sources) {
+						const urlPowerupSlot = await plugin.powerup.getPowerupSlotByCode(
+							BuiltInPowerupCodes.Link,
+							'URL'
+						);
+						const url = await source.getTagPropertyValue(urlPowerupSlot!._id);
+
+						if (url && url.length > 0) {
+							// @ts-expect-error
+							citations.push(url[0]);
+						}
+					}
+				}
+			}
+
+			const generatedCitations = await Promise.all(
+				citations.map(async (citationURL) => {
+					const result = await fetchCitation(citationURL, plugin);
+					if (result) {
+						if (exportCitationsFormat === 'BibTeX') {
+							return result;
+						}
+						const cite = new Cite(result);
+						return cite.format('bibliography', {
+							format: 'rtf',
+							template: exportCitationsFormat,
+							lang: 'en-US',
+						});
+					}
+				})
+			);
+
+			const citationsString = generatedCitations.filter(Boolean).join('\n');
+			await navigator.clipboard.writeText(citationsString);
+			await plugin.app.toast('📝 Copied citations to clipboard!');
 		},
 	});
 
@@ -424,8 +477,6 @@ async function onActivate(plugin: RNPlugin) {
 			if (!(await isDebugMode(plugin))) await syncZoteroLibraryToRemNote(plugin);
 		});
 	});
-
-	pluginPassthrough = plugin;
 }
 
 export async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {
