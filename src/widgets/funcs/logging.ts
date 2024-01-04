@@ -26,6 +26,16 @@ const logTypeToEmoji: LogTypeInfo = {
 	Critical: { name: LogType.Critical, emoji: '🚨' },
 };
 
+/**
+ * Logs a message with the specified type and emits it to the console.
+ * If isToast is true, it also displays the message as a toast.
+ *
+ * @param plugin - The ReactRNPlugin or RNPlugin instance.
+ * @param message - The message to be logged.
+ * @param type - The type of the log message.
+ * @param consoleEmitType - The type of console emit (warn, info, error, log). Default is 'log'.
+ * @param isToast - Indicates whether to display the message as a toast. Default is false.
+ */
 export async function logMessage({
 	plugin,
 	message,
@@ -39,7 +49,7 @@ export async function logMessage({
 	consoleEmitType?: 'warn' | 'info' | 'error' | 'log';
 	isToast: boolean;
 }) {
-	const baseplateIdentifier = `Log Emitted from ${plugin.id}`;
+	const baseplateIdentifier = `${logTypeToEmoji[type].emoji} emitted from ${plugin.id}`;
 	switch (consoleEmitType) {
 		case 'warn':
 			console.warn(baseplateIdentifier, message);
@@ -56,6 +66,6 @@ export async function logMessage({
 	}
 	const debugMode = await plugin.storage.getSession('debugMode');
 	if (isToast) {
-		await plugin.app.toast(String(message));
+		await plugin.app.toast(`${logTypeToEmoji[type].emoji} ${message}`);
 	}
 }
