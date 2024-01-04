@@ -30,10 +30,13 @@ Citationista is a RemNote plugin that enhances your research management and cita
 
 > lovingly organized by how confident I think it's possible to complete 🫡
 
--   [ ] Export Rem Sources to BibTeX, RIS, or generate APA/MLA/etc citations.
+-   [x] Export Rem Sources to BibTeX, or generate APA/MLA/etc citations.
+    -   let me know if RIS would be useful in an issue please!
 -   [x] Import your **Zotero** Library 📚
     -   [x] Proper syncing them with RemNote.
+    -   [ ] Importing Zotero Notes
     -   [x] Advanced tagging system for sources.
+        -   [ ] Import Zotero Tags as RemNote Tags
     -   [x] Create References from these syncs.
         -   [x] ~~Automatically Create References upon importing with slash command~~ (Built-in due to plugin being native to RemNote!)
     -   [ ] Compatibility with RemNote Reader
