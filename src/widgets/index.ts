@@ -18,6 +18,7 @@ import { extractAllFollowingChildren } from './utils/childrenExtract';
 import Cite from 'citation-js';
 import { fetchCitation } from './utils/fetchCitation';
 import { LogType, logMessage } from './funcs/logging';
+import { getItemPropertyByCode } from './utils/setPropertyValueOfRem';
 
 async function onActivate(plugin: RNPlugin) {
 	// settings
@@ -100,75 +101,81 @@ async function onActivate(plugin: RNPlugin) {
 
 	// powerups
 
-	await plugin.app.registerPowerup(
-		'Zotero Item', // human-readable name
-		'zitem', // powerup code used to uniquely identify the powerup
-		'A citation object holding certain citation metadata for export. Used only for individual papers.', // description
-		{
+	await plugin.app.registerPowerup({
+		name: 'Zotero Item', // human-readable name
+		code: 'zitem', // powerup code used to uniquely identify the powerup
+		description:
+			'A citation object holding certain citation metadata for export. Used only for individual papers.', // description
+		options: {
 			// @ts-ignore
 			slots: zoteroItemSlots,
-		}
-	);
-
-	await plugin.app.registerPowerup('Zotero Collection', 'collection', 'A Zotero Collection.', {
-		slots: [
-			{
-				code: 'key',
-				name: 'Key',
-				onlyProgrammaticModifying: false, //TODO: RemNote needs to fix this: RemNote doesn't know the plugin is modifying property slots and blocks it when this is true
-				hidden: false,
-				propertyType: PropertyType.TEXT,
-				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
-			},
-			{
-				code: 'version',
-				name: 'Version',
-				onlyProgrammaticModifying: false,
-				hidden: false,
-				propertyType: PropertyType.NUMBER,
-				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
-			},
-			{
-				code: 'name',
-				name: 'Name',
-				onlyProgrammaticModifying: false,
-				hidden: false,
-				propertyType: PropertyType.TEXT,
-				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
-			},
-			{
-				code: 'parentCollection',
-				name: 'Parent Collection',
-				onlyProgrammaticModifying: false,
-				hidden: false,
-				propertyType: PropertyType.CHECKBOX,
-				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
-			},
-			{
-				code: 'relations',
-				name: 'Relations',
-				onlyProgrammaticModifying: false,
-				hidden: false,
-				propertyType: PropertyType.TEXT,
-				propertyLocation: PropertyLocation.ONLY_IN_TABLE,
-			},
-		],
+		},
 	});
 
-	await plugin.app.registerPowerup(
-		'Citationista Pool',
-		'coolPool',
-		'A pool of citationista rems.',
-		{
-			properties: [],
-		}
-	);
+	await plugin.app.registerPowerup({
+		name: 'Zotero Collection',
+		code: 'collection',
+		description: 'A Zotero Collection.',
+		options: {
+			slots: [
+				{
+					code: 'key',
+					name: 'Key',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'version',
+					name: 'Version',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.NUMBER,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'name',
+					name: 'Name',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'parentCollection',
+					name: 'Parent Collection',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.CHECKBOX,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'relations',
+					name: 'Relations',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+			],
+		},
+	});
 
-	await plugin.app.registerPowerup(
-		'Zotero Library Sync Powerup',
-		'zotero-synced-library',
-		'Your Zotero library, synced with RemNote. :D',
-		{
+	await plugin.app.registerPowerup({
+		name: 'Citationista Pool',
+		code: 'coolPool',
+		description: 'A pool of citationista rems.',
+		options: {
+			properties: [],
+		},
+	});
+
+	await plugin.app.registerPowerup({
+		name: 'Zotero Library Sync Powerup',
+		code: 'zotero-synced-library',
+		description: 'Your Zotero library, synced with RemNote. :D',
+		options: {
 			properties: [
 				{
 					code: 'syncing',
@@ -179,8 +186,8 @@ async function onActivate(plugin: RNPlugin) {
 					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
 				},
 			],
-		}
-	);
+		},
+	});
 
 	// commands
 
@@ -274,7 +281,7 @@ async function onActivate(plugin: RNPlugin) {
 				consoleEmitType: 'log',
 				isToast: true,
 			});
-			
+
 			const citations: string[] = [];
 
 			const children: Rem[] = await extractAllFollowingChildren({ remCursorAt });
@@ -470,6 +477,62 @@ async function onActivate(plugin: RNPlugin) {
 							taggedRems.forEach(async (rem) => {
 								await rem!.remove();
 							});
+						}
+					},
+				});
+				await plugin.app.registerCommand({
+					id: 'stress-test-promise-array',
+					name: 'Stress Test Promise Array',
+					description: 'Stress test the plugin',
+					quickCode: 'STPA',
+					action: async () => {
+						const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
+						const promises = [];
+						for (let i = 0; i < 100; i++) {
+							const newItemRem = await plugin.rem.createRem();
+							newItemRem?.setParent(poolPowerup!); // FIXME: this is not type safe
+							await newItemRem?.addPowerup('zitem');
+							await newItemRem?.setText([`Item ${i}`]);
+							await newItemRem?.setIsDocument(true);
+							const keyPropertyCode = await getItemPropertyByCode(
+								plugin,
+								'citationKey'
+							);
+							const versionPropertyCode = await getItemPropertyByCode(
+								plugin,
+								'versionNumber'
+							);
+							promises.push(
+								newItemRem?.setTagPropertyValue(keyPropertyCode, [`key${i}`])
+							);
+							promises.push(
+								newItemRem?.setTagPropertyValue(versionPropertyCode, [`${i}`])
+							);
+						}
+						await Promise.all(promises);
+					},
+				});
+				await plugin.app.registerCommand({
+					id: 'stress-test',
+					name: 'Stress Test',
+					description: 'Stress test the plugin',
+					quickCode: 'STP',
+					action: async () => {
+						try {
+							const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
+							for (let i = 0; i < 100; i++) {
+								const newItemRem = await plugin.rem.createRem();
+								newItemRem?.setParent(poolPowerup!); // FIXME: this is not type safe
+								await newItemRem?.addPowerup('zitem');
+								await newItemRem?.setText([`Item ${i}`]);
+								await newItemRem?.setIsDocument(true);
+								const keyPropertyCode = await getItemPropertyByCode(plugin, 'citationKey');
+								const versionPropertyCode = await getItemPropertyByCode(plugin, 'versionNumber');
+								await newItemRem?.setTagPropertyValue(keyPropertyCode, [`key${i}`]);
+								await newItemRem?.setTagPropertyValue(versionPropertyCode, [`${i}`]);
+							}
+						} catch (error) {
+							console.error(error);
 						}
 					},
 				});
