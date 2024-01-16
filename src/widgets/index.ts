@@ -18,7 +18,6 @@ import { extractAllFollowingChildren } from './utils/childrenExtract';
 import Cite from 'citation-js';
 import { fetchCitation } from './utils/fetchCitation';
 import { LogType, logMessage } from './funcs/logging';
-import { getItemPropertyByCode } from './utils/setPropertyValueOfRem';
 
 async function onActivate(plugin: RNPlugin) {
 	// settings
@@ -480,59 +479,21 @@ async function onActivate(plugin: RNPlugin) {
 						}
 					},
 				});
+				// delete all Rems tagged with collection powerup
 				await plugin.app.registerCommand({
-					id: 'stress-test-promise-array',
-					name: 'Stress Test Promise Array',
-					description: 'Stress test the plugin',
-					quickCode: 'STPA',
+					id: 'delete-all-remnote-collections',
+					name: 'Delete all RemNote Collections',
+					description: 'Delete all RemNote Collections',
+					quickCode: 'darc',
 					action: async () => {
-						const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
-						const promises = [];
-						for (let i = 0; i < 100; i++) {
-							const newItemRem = await plugin.rem.createRem();
-							newItemRem?.setParent(poolPowerup!); // FIXME: this is not type safe
-							await newItemRem?.addPowerup('zitem');
-							await newItemRem?.setText([`Item ${i}`]);
-							await newItemRem?.setIsDocument(true);
-							const keyPropertyCode = await getItemPropertyByCode(
-								plugin,
-								'citationKey'
-							);
-							const versionPropertyCode = await getItemPropertyByCode(
-								plugin,
-								'versionNumber'
-							);
-							promises.push(
-								newItemRem?.setTagPropertyValue(keyPropertyCode, [`key${i}`])
-							);
-							promises.push(
-								newItemRem?.setTagPropertyValue(versionPropertyCode, [`${i}`])
-							);
-						}
-						await Promise.all(promises);
-					},
-				});
-				await plugin.app.registerCommand({
-					id: 'stress-test',
-					name: 'Stress Test',
-					description: 'Stress test the plugin',
-					quickCode: 'STP',
-					action: async () => {
-						try {
-							const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
-							for (let i = 0; i < 100; i++) {
-								const newItemRem = await plugin.rem.createRem();
-								newItemRem?.setParent(poolPowerup!); // FIXME: this is not type safe
-								await newItemRem?.addPowerup('zitem');
-								await newItemRem?.setText([`Item ${i}`]);
-								await newItemRem?.setIsDocument(true);
-								const keyPropertyCode = await getItemPropertyByCode(plugin, 'citationKey');
-								const versionPropertyCode = await getItemPropertyByCode(plugin, 'versionNumber');
-								await newItemRem?.setTagPropertyValue(keyPropertyCode, [`key${i}`]);
-								await newItemRem?.setTagPropertyValue(versionPropertyCode, [`${i}`]);
-							}
-						} catch (error) {
-							console.error(error);
+						const zoteroCollectionPowerup = await plugin.powerup.getPowerupByCode(
+							'collection'
+						);
+						const taggedRems = await zoteroCollectionPowerup?.taggedRem();
+						if (taggedRems) {
+							taggedRems.forEach(async (rem) => {
+								await rem!.remove();
+							});
 						}
 					},
 				});
