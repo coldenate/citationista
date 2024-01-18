@@ -281,7 +281,8 @@ async function onActivate(plugin: RNPlugin) {
 				isToast: true,
 			});
 
-			const citations: string[] = [];
+			// make a new Set containing only strings called citations
+			const citations = new Set<string>();
 
 			const children: Rem[] = await extractAllFollowingChildren({ remCursorAt });
 
@@ -298,19 +299,15 @@ async function onActivate(plugin: RNPlugin) {
 
 						if (url && url.length > 0) {
 							// @ts-expect-error
-							citations.push(url[0]);
+							citations.add(url[0]);
 						}
 					}
 				}
 			}
-
-			const generatedCitations = await Promise.all(
-				citations.map(async (citationURL) => {
+			const fetchAndFormatCitation = async (citationURL: string) => {
+				try {
 					const result = await fetchCitation(citationURL, plugin);
-					if (result) {
-						if (exportCitationsFormat === 'BibTeX') {
-							return result;
-						}
+					if (result && exportCitationsFormat !== 'BibTeX') {
 						const cite = new Cite(result);
 						return cite.format('bibliography', {
 							format: 'rtf',
@@ -318,7 +315,15 @@ async function onActivate(plugin: RNPlugin) {
 							lang: 'en-US',
 						});
 					}
-				})
+					return result;
+				} catch (error) {
+					console.error(`Failed to fetch or format citation: ${error}`);
+					return null; // or handle error as appropriate
+				}
+			};
+
+			const generatedCitations = await Promise.all(
+				Array.from(citations).map(fetchAndFormatCitation)
 			);
 
 			const citationsString = generatedCitations.filter(Boolean).join('\n');
