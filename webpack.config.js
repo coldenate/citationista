@@ -59,7 +59,7 @@ const config = {
 			? undefined
 			: new MiniCssExtractPlugin({
 					filename: '[name].css',
-			  }),
+				}),
 		new HtmlWebpackPlugin({
 			templateContent: `
       <body></body>
@@ -115,6 +115,8 @@ if (isProd) {
 		watchFiles: ['src/*'],
 		headers: {
 			'Access-Control-Allow-Origin': '*',
+			'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+			'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
 		},
 	};
 }

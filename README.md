@@ -33,7 +33,6 @@ Citationista is a RemNote plugin that enhances your research management and cita
 Please be sure to check out the [Roadmap](https://www.remnote.com/a/Citationista/658cfd9913817531eaa826de) for more details on the features below.
 
 -   [x] Export Rem Sources to BibTeX, or generate APA/MLA/etc citations.
-    -   let me know if RIS would be useful in an issue please!
 -   [x] Import your **Zotero** Library 📚
     -   [x] Proper syncing them with RemNote.
     -   [ ] Importing Zotero Notes
@@ -66,6 +65,9 @@ Explore the full potential of Citationista by diving into our comprehensive [Doc
 ## 🐛 Bugs and Issues
 
 Found a bug or want to suggest a feature? Please open an issue on our [GitHub Issues](https://github.com/coldenate/citationista/issues) page. Your feedback is invaluable!
+
+> [!NOTE]
+> If you're reporting a bug, please include as much information as possible to help us reproduce the bug. We love detailed bug reports! **Your Zotero Library Exported** is a great place to start.
 
 ---
 

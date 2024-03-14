@@ -3,7 +3,7 @@ import { getAllRemNoteCollections } from './fetchFromRemNote';
 import { isDebugMode } from '..';
 import { LogType, logMessage } from './logging';
 
-export async function findCollection(
+export async function findCollection( // TODO: ideally, caching the should be used here
 	plugin: RNPlugin,
 	collectionKey: string | false,
 	collectionName: string | false
@@ -35,10 +35,9 @@ export async function findCollection(
 			});
 			return;
 		}
-		for (const collection of collections) {
-			if (collection.key[0] === collectionKey) {
-				return collection;
-			}
+		const foundCollection = collections.find((collection) => collection.key === collectionKey);
+		if (foundCollection) {
+			return foundCollection;
 		}
 		await logMessage({
 			plugin,

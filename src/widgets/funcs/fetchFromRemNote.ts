@@ -40,6 +40,7 @@ export async function getAllRemNoteCollections(plugin: RNPlugin) {
 
 	for (const collectionRem of collectionRems) {
 		const key = await collectionRem.getPowerupProperty('collection', 'key');
+
 		const version = Number(await collectionRem.getPowerupProperty('collection', 'version'));
 		const name = await collectionRem.getPowerupProperty('collection', 'name');
 		const parentCollection = Boolean(

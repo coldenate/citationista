@@ -309,10 +309,17 @@ async function onActivate(plugin: RNPlugin) {
 					const result = await fetchCitation(citationURL, plugin);
 					if (result && exportCitationsFormat !== 'BibTeX') {
 						const cite = new Cite(result);
-						return cite.format('bibliography', {
-							format: 'rtf',
-							template: exportCitationsFormat,
+						// return cite.format('bibliography', {
+						// 	format: 'rtf',
+						// 	template: exportCitationsFormat,
+						// 	lang: 'en-US',
+						// });
+						return cite.get({
+							format: 'real',
+							// template: exportCitationsFormat,
 							lang: 'en-US',
+							type: 'string',
+							style: `citation-${exportCitationsFormat}`,
 						});
 					}
 					return result;
@@ -327,7 +334,8 @@ async function onActivate(plugin: RNPlugin) {
 			);
 
 			const citationsString = generatedCitations.filter(Boolean).join('\n');
-			await navigator.clipboard.writeText(citationsString);
+			// await navigator.clipboard.writeText(citationsString);
+			console.log(citationsString);
 			await plugin.app.toast('📝 Copied citations to clipboard!');
 		},
 	});
@@ -500,6 +508,24 @@ async function onActivate(plugin: RNPlugin) {
 								await rem!.remove();
 							});
 						}
+					},
+				});
+				// test make a rem, tag it with zitem powerup, and then add random stuff to its fullData slot
+				await plugin.app.registerCommand({
+					id: 'test-make-rem-tag-with-zitem-powerup',
+					name: 'Test Make Rem and Tag with Zitem Powerup',
+					description: 'Test Make Rem and Tag with Zitem Powerup',
+					quickCode: 'tmrtwzp',
+					action: async () => {
+						const currentRem = await plugin.focus.getFocusedRem();
+						const rem = await plugin.rem.createRem();
+						rem?.setParent(currentRem!);
+						await rem!.addPowerup('zitem');
+						await rem?.setPowerupProperty('zitem', 'fullData', ["I'm a test!"]);
+						// retrieve it and toast
+						await rem?.getPowerupProperty('zitem', 'fullData').then((result) => {
+							plugin.app.toast(result);
+						});
 					},
 				});
 			}

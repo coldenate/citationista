@@ -1,4 +1,4 @@
-import { RNPlugin } from '@remnote/plugin-sdk';
+import { RNPlugin, Rem } from '@remnote/plugin-sdk';
 import { birthZoteroRem } from './birthZoteroRem';
 import { getAllRemNoteCollections, getAllRemNoteItems } from './fetchFromRemNote';
 import { getAllZoteroCollections, getAllZoteroItems } from './fetchFromZotero';
@@ -134,7 +134,7 @@ export async function syncCollections(plugin: RNPlugin) {
 					} else if (collection.parentCollection !== false) {
 						const parentCollectionRem = await findCollection(
 							plugin,
-							collection.parentCollection,
+							collection.parentCollection, //parent collection is a string of the key
 							false
 						);
 						if (parentCollectionRem) {
@@ -168,6 +168,7 @@ export async function syncCollections(plugin: RNPlugin) {
 		if (collectionData.parentCollection === false) {
 			await collectionRem?.setParent(zoteroLibraryRem);
 		} else if (collectionData.parentCollection !== false) {
+			console.log(collectionData.parentCollection);
 			const parentCollectionRem = await findCollection(
 				plugin,
 				collectionData.parentCollection,
@@ -187,27 +188,24 @@ export async function syncItems(plugin: RNPlugin) {
 	// if collectionKey is false, then we want to sync all items in the library
 	const zoteroItems = await getAllZoteroItems(plugin);
 	const remnoteItems = await getAllRemNoteItems(plugin);
+	const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
 
 	const itemsToUpdate = [];
 	// iterate through all the zotero items. try to find a matching remnote item by searching the keys. if there is no matching remnote item, then add it. if there is a matching remnote item, then check if the version numbers match. if they don't, then modify it.
 	for (const zoteroItem of zoteroItems) {
 		let foundItem = false;
 		if (remnoteItems != undefined) {
-			// TODO: examine logic results vs ===
 			for (const remnoteItem of remnoteItems) {
 				if (zoteroItem.key == remnoteItem.key) {
 					foundItem = true;
-					//TODO: this is not exactly when the version may update, but it will do for now.
 					if (zoteroItem.version !== remnoteItem.version) {
 						itemsToUpdate.push({
 							item: zoteroItem,
 							method: 'modify',
 							snapshotRemBeforeMod: remnoteItem.rem,
 						});
-					} else if (zoteroItem.version === remnoteItem.version) {
-						console.log('checking!');
-						// TODO: handle hierarchy
 					}
+					// else if (zoteroItem.version === remnoteItem.version) {}
 				}
 			}
 		}
@@ -219,6 +217,7 @@ export async function syncItems(plugin: RNPlugin) {
 		}
 	}
 	// check for items that need to be deleted
+	const orphans: { item: any; rem: Rem }[] = [];
 
 	if (remnoteItems)
 		for (const remnoteItem of remnoteItems) {
@@ -226,6 +225,9 @@ export async function syncItems(plugin: RNPlugin) {
 			for (const zoteroItem of zoteroItems) {
 				if (zoteroItem.key == remnoteItem.key) {
 					foundItem = true;
+					if (debugMode) {
+						orphans.push({ item: zoteroItem, rem: remnoteItem.rem });
+					}
 				}
 			}
 			if (!foundItem) {
@@ -268,6 +270,7 @@ export async function syncItems(plugin: RNPlugin) {
 				break;
 			case 'add':
 				const newItemRem = await plugin.rem.createRem();
+				orphans.push({ item: item, rem: newItemRem! });
 				const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
 				newItemRem?.setParent(poolPowerup!); // FIXME: this is not type safe
 				// determine the itemType of the item: annotation, artwork, attachment, audioRecording, bill, blogPost, book, bookSection, case, computerProgram, conferencePaper, dictionaryEntry, document, email, encyclopediaArticle, film, forumPost, hearing, instantMessage, interview, journalArticle, letter, magazineArticle, manuscript, map, newspaperArticle, note, patent, podcast, presentation, radioBroadcast, report, statute, thesis, tvBroadcast, videoRecording, webpage
@@ -313,21 +316,6 @@ export async function syncItems(plugin: RNPlugin) {
 						// Log errors for rejected promises
 						if (await isDebugMode(plugin)) {
 							results.forEach(async (result, index) => {
-								// if its rejected and its a promise dealing with the key, then log it
-								// if (result.status === 'rejected' && index === 0) { (THIS WAS WHEN THE KEY USED TO BE IN THE ARRAY)
-								// 	await logMessage({
-								// 		plugin,
-								// 		message: [
-								// 			`Couldn't save key to rem. This is a fatal error and your ZKB is corrupted.`,
-								// 			item,
-								// 			result.reason,
-								// 		],
-								// 		type: LogType.Error,
-								// 		consoleEmitType: 'error',
-								// 		isToast: true,
-								// 	});
-								// }
-
 								if (result.status === 'rejected') {
 									console.error(
 										`Item:`,
@@ -343,59 +331,13 @@ export async function syncItems(plugin: RNPlugin) {
 						console.log(item.data.key);
 						console.log(item.key);
 					});
-				// now attempt to assign it to its parent collection
-				// if collection data has more than one collection id, for the first collection, move rem, but for the remaining collections, make a portal in each collection to the rem
-				// // collections are sometimes in item.data.collections, and sometimes in item.data.collection, and even others.
-				// const extractedCollections = [];
-				// // first examine item in search of collections
-				// try {
-				// 	if (item.data.collections) {
-				// 		extractedCollections.push(...item.data.collections);
-				// 	}
-				// 	if (item.data.collection) {
-				// 		extractedCollections.push(item.data.collection);
-				// 	}
-				// } catch (error) {
-				// 	await logMessage({
-				// 		plugin,
-				// 		message: [`couldn't extract collections! Item:`, error],
-				// 		type: LogType.Error,
-				// 		consoleEmitType: 'error',
-				// 		isToast: false,
-				// 	});
-				// }
-				// for (const collection of extractedCollections) {
-				// 	console.log('attempt');
-				// 	try {
-				// 		const collectionRem = (await findCollection(plugin, collection, false))
-				// 			?.rem;
-				// 		if (collectionRem) {
-				// 			if (collection === extractedCollections[0]) {
-				// 				await newItemRem?.setParent(collectionRem);
-				// 			} else if (collection !== extractedCollections[0]) {
-				// 				const createPortal = await plugin.rem.createPortal();
-				// 				await createPortal?.setParent(poolPowerup!);
-				// 				await newItemRem?.addToPortal(createPortal?._id!);
-				// 				await createPortal?.setParent(collectionRem);
-				// 			}
-				// 		}
-				// 	} catch (error) {
-				// 		await logMessage({
-				// 			plugin,
-				// 			message: [`Couldn't save to collection rem`, item, error],
-				// 			type: LogType.Error,
-				// 			consoleEmitType: 'error',
-				// 			isToast: false,
-				// 		});
-				// 	}
-				// }
-				// TODO: handle hierarchy new logic. (some items may have a parent item, and some may have a parent collection) we are agnostic to this, and we will just set the parent to the right thing. the only time we are strict is in syncCollections, where we check if the parent collection has changed, and if it has, then we will move the item to the new parent collection.
 
 				break;
 			case 'modify':
 				// just like with collections, we need to check what has changed, and then update the remnote item accordingly, however we need to handle all the different fields automatically (not manually like with collections)
 				// first, check if the title has changed
 				// const currentTitle = await snapshotRemBeforeMod?.getTagPropertyValue(titleKey);
+				orphans.push({ item: item, rem: snapshotRemBeforeMod! });
 				const currentTitle = await snapshotRemBeforeMod?.getPowerupProperty(
 					'zitem',
 					'title'
@@ -407,33 +349,6 @@ export async function syncItems(plugin: RNPlugin) {
 						item.data.title,
 					]);
 				}
-
-				// now check if the parent collection has changed
-				// TODO: handle hierarchy new logic. (some items may have a parent item, and some may have a parent collection) we are agnostic to this, and we will just set the parent to the right thing. the only time we are strict is in syncCollections, where we check if the parent collection has changed, and if it has, then we will move the item to the new parent collection.
-				// const parentRem = await snapshotRemBeforeMod?.getParentRem();
-				// if (!parentRem) {
-				// 	return;
-				// }
-				// const currentParentCollectionID = await parentRem.getPowerupProperty(
-				// 	'collection',
-				// 	'key'
-				// );
-
-				// if (item.data.collections !== currentParentCollectionID) {
-				// 	if (item.data.collection === false) {
-				// 		await snapshotRemBeforeMod?.setParent(zoteroLibraryRem);
-				// 	} else if (item.data.collection !== false) {
-				// 		const parentCollectionRem = await findCollection(
-				// 			plugin,
-				// 			item.data.collection,
-				// 			false
-				// 		);
-				// 		if (parentCollectionRem) {
-				// 			await snapshotRemBeforeMod?.setParent(parentCollectionRem.rem);
-				// 		}
-				// 	}
-				// }
-
 				// now check if the version has changed
 
 				const currentVersion = await snapshotRemBeforeMod?.getPowerupProperty(
@@ -461,6 +376,69 @@ export async function syncItems(plugin: RNPlugin) {
 				}
 
 				break;
+		}
+	}
+
+	for (const orphan of orphans) {
+		const item = orphan.item;
+		const rem = orphan.rem;
+		// first, check if the item has a parent item
+		if (item.data.parentItem) {
+			// if it does, then we need to find the parent item, and then move the item to the parent item
+			// query all items in zotero library for the parent item by citationKey
+
+			const parentItemRem = remnoteItems?.find((rem) => rem.key === item.data.parentItem);
+
+			if (parentItemRem) {
+				await rem?.setParent(parentItemRem.rem);
+			}
+			continue; // we don't want to check for parentCollection if we have a parentItem
+		}
+
+		// handle multiple collections, or one collection (item belongs to multiple/single collections)
+
+		if (item.data.collections && item.data.collections.length > 0) {
+			const collectionRem = await findCollection(plugin, item.data.collections[0], false);
+			if (collectionRem) {
+				await rem?.setParent(collectionRem.rem);
+			}
+			if (item.data.collections.length > 1) {
+				for (let i = 1; i < item.data.collections.length; i++) {
+					const collectionRem = await findCollection(
+						plugin,
+						item.data.collections[i],
+						false
+					);
+					if (collectionRem) {
+						const createPortal = await plugin.rem.createPortal();
+
+						await createPortal?.setParent(poolPowerup!);
+						await rem?.addToPortal(createPortal?._id!);
+						await createPortal?.setParent(collectionRem.rem);
+					}
+				}
+			}
+		}
+
+		if (item.data.parentCollection) {
+			// this only deals with collections
+			// if it doesn't, then we need to check if the item has a parent collection
+			// if it does, then we need to find the parent collection, and then move the item to the parent collection
+			const parentCollectionRem = await findCollection(
+				plugin,
+				item.data.parentCollection,
+				false
+			);
+			if (parentCollectionRem) {
+				await rem?.setParent(parentCollectionRem.rem);
+			}
+			return;
+		}
+		if (!item.data.parentItem && !item.data.parentCollection && !item.data.collections) {
+			// if it doesn't, then we need to check if the item has a parent collection
+			// if it does, then we need to find the parent collection, and then move the item to the parent collection
+			console.log('this is where we give up and fail');
+			await rem?.setParent(zoteroLibraryRem);
 		}
 	}
 }
