@@ -67,7 +67,7 @@ Explore the full potential of Citationista by diving into our comprehensive [Doc
 Found a bug or want to suggest a feature? Please open an issue on our [GitHub Issues](https://github.com/coldenate/citationista/issues) page. Your feedback is invaluable!
 
 > [!NOTE]
-> If you're reporting a bug, please include as much information as possible to help us reproduce the bug. We love detailed bug reports! **Your Zotero Library Exported** is a great place to start.
+> If you're reporting a bug, please include as much information as possible to help us reproduce the bug. We love detailed bug reports! **Exporting your Zotero Library** is a great starting point.
 
 ---
 
