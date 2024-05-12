@@ -1,5 +1,5 @@
 <h1 align="center">
-	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/public/logo.svg" alt="Citationista Logo" height="300px">
+	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/logo.svg" alt="Citationista Logo" height="200px">
 </h1>
 
 <h3 align="center">
