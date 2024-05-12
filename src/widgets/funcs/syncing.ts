@@ -278,6 +278,10 @@ export async function syncItems(plugin: RNPlugin) {
 				// 	default: // when its just a regular item
 				// } // TODO: implement this, revamped powerup system. (powerups for each item type)
 				await newItemRem?.addPowerup('zitem');
+				if (!item.data.title) {
+					console.error('no title');
+					console.log(item);
+				}
 				await newItemRem?.setText([item.data.title]);
 				await newItemRem?.setIsDocument(true);
 				const promises = [];
