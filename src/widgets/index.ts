@@ -47,7 +47,7 @@ async function onActivate(plugin: RNPlugin) {
 		id: 'simple-mode',
 		title: 'Simple Syncing Mode',
 		description:
-			'Enables Simple importing of Zotero Items. Toggling this OFF will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
+			'Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
 		defaultValue: false,
 	});
 
@@ -246,9 +246,8 @@ async function onActivate(plugin: RNPlugin) {
 		keywords: 'citation, export',
 		action: async () => {
 			let remCursorAt = await plugin.focus.getFocusedRem();
-			const exportCitationsFormat = await plugin.settings.getSetting(
-				'export-citations-format'
-			);
+			const exportCitationsFormat =
+				await plugin.settings.getSetting('export-citations-format');
 
 			if (!remCursorAt) {
 				await logMessage({
@@ -453,16 +452,13 @@ async function onActivate(plugin: RNPlugin) {
 						// zitem powerup
 						const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
 						// collection powerup
-						const zoteroCollectionPowerup = await plugin.powerup.getPowerupByCode(
-							'collection'
-						);
+						const zoteroCollectionPowerup =
+							await plugin.powerup.getPowerupByCode('collection');
 						// zotero-library powerup
-						const zoteroLibraryPowerup = await plugin.powerup.getPowerupByCode(
-							'zotero-synced-library'
-						);
-						const citationistaPowerup = await plugin.powerup.getPowerupByCode(
-							'coolPool'
-						);
+						const zoteroLibraryPowerup =
+							await plugin.powerup.getPowerupByCode('zotero-synced-library');
+						const citationistaPowerup =
+							await plugin.powerup.getPowerupByCode('coolPool');
 						const taggedRems = await Promise.all([
 							zoteroItemPowerup?.taggedRem(),
 							zoteroCollectionPowerup?.taggedRem(),
@@ -499,9 +495,8 @@ async function onActivate(plugin: RNPlugin) {
 					description: 'Delete all RemNote Collections',
 					quickCode: 'darc',
 					action: async () => {
-						const zoteroCollectionPowerup = await plugin.powerup.getPowerupByCode(
-							'collection'
-						);
+						const zoteroCollectionPowerup =
+							await plugin.powerup.getPowerupByCode('collection');
 						const taggedRems = await zoteroCollectionPowerup?.taggedRem();
 						if (taggedRems) {
 							taggedRems.forEach(async (rem) => {
