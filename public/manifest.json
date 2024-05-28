@@ -11,7 +11,7 @@
 	},
 	"theme": [],
 	"enableOnMobile": true,
-	"description": "📚 RemNote's Reference Manager! Zotero Integration, Export Sources as Bibliography, and more!",
+	"description": "📚 RemNote's Reference Manager! Official Zotero Integration, Export Sources as Bibliography, and more!",
 	"requestNative": false,
 	"requiredScopes": [
 		{

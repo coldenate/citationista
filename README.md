@@ -1,10 +1,13 @@
 <h1 align="center">
-	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/logo.svg" alt="Citationista Logo" height="200px">
+	<img src="https://raw.githubusercontent.com/coldenate/citationista/main/assets/logo.svg" alt="Only the Epic Citationista Logo" height="200px">
 </h1>
 
 <h3 align="center">
-	📚 Citationista: Brewing decaf reference management for your brain's second brain :)
+	📚 Citationista
 </h3>
+<p align="center">
+	<i>Brewing decaf reference management for your brain's second brain ;)</i>
+</p>
 
 <p align="center">
 	<a href="https://github.com/coldenate/citationista/stargazers"><img src="https://img.shields.io/github/stars/coldenate/citationista?colorA=363a4f&colorB=b7bdf8&style=for-the-badge" alt="GitHub Stars"></a>
@@ -18,11 +21,12 @@
 
 ## 🚀 Overview
 
-Citationista is a RemNote plugin that enhances your research management and citation workflow. It offers:
+Citationista is a RemNote plugin that enhances your research management and citation workflow.
 
--   EASY Source Management: All you have to do type /source and insert a link/file! (THAT'S IT! ![](https://cdn.betterttv.net/emote/5fbac4f168e2d56f0f39cac6/1x.gif))
+-   Easy Source Management: All you have to do type /source and insert a link/file!
+    -   [ ] TODO: also support just appending link references
 -   Flexible Data Export: Convert your citation data into different file formats.
--   Zotero Integration: Works well with Zotero!
+-   Zotero Integration
 -   Independent Citation Management: Even if you don't use Zotero, Citationista provides its own citation management capabilities.
     -   Citationista utilizes RemNote's basic Rem Source feature to store citation data. This means that you can use Citationista without Zotero.
 
@@ -42,10 +46,12 @@ Please be sure to check out the [Roadmap](https://www.remnote.com/a/Citationista
         -   [x] ~~Automatically Create References upon importing with slash command~~ (Built-in due to plugin being native to RemNote!)
     -   [ ] Compatibility with RemNote Reader
 -   [x] Support for RemNote AI
-
-Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista development!
+<!-- -   [ ] Full Bi-Directional Syncing with Zotero
+    > [!NOTE] This is a long-term goal, but some is already implemented :D -->
 
 ## 🚧 Work in Progress
+
+> Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista development!
 
 Citationista is currently a personal side project and a work in progress. Any feedback/contribution is greatly appreciated, but please understand that it's a hobby project without any strict timelines or commitments. If you have an issue with the plugin, please make a GitHub issue.
 
@@ -66,11 +72,11 @@ Explore the full potential of Citationista by diving into our comprehensive [Doc
 
 Found a bug or want to suggest a feature? Please open an issue on our [GitHub Issues](https://github.com/coldenate/citationista/issues) page. Your feedback is invaluable!
 
-> [!NOTE]
+> [!TIP]
 > If you're reporting a bug, please include as much information as possible to help us reproduce the bug. We love detailed bug reports! **Exporting your Zotero Library** is a great starting point.
 
 ---
 
 <p align="center">
-	📆 Copyright &copy; 2023 <a href="https://github.com/coldenate" target="_blank">Nathan Solis</a>
+	📆 Copyright &copy; 2024 <a href="https://github.com/coldenate" target="_blank">Nathan Solis</a>
 </p>

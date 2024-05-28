@@ -19,7 +19,7 @@ const SANDBOX_SUFFIX = '-sandbox';
 
 const config = {
 	mode: isProd ? 'production' : 'development',
-	entry: glob.sync('./src/widgets/**.ts').reduce(function (obj, el) {
+	entry: glob.sync('./src/**/*.ts').reduce(function (obj, el) {
 		obj[path.parse(el).name] = el;
 		obj[path.parse(el).name + SANDBOX_SUFFIX] = el;
 		return obj;

@@ -1,6 +1,7 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
 // @ts-ignore
 import api from 'zotero-api-client';
+import { Collection, Item } from '../types/types';
 
 export async function callZoteroConnection(plugin: RNPlugin) {
 	const zoteroApiKey = await plugin.settings.getSetting('zotero-api-key');
@@ -18,4 +19,26 @@ export async function callZoteroConnection(plugin: RNPlugin) {
 
 	const zoteroAPIConnection = await api(zoteroApiKey).library('user', zoteroUserId);
 	return zoteroAPIConnection;
+}
+
+export async function getAllZoteroItems(plugin: RNPlugin) {
+	const zoteroItems: Item[] = [];
+	const zoteroAPIConnection = await callZoteroConnection(plugin);
+	const zoteroItemsResponse = await zoteroAPIConnection.items().get();
+
+	for (const item of zoteroItemsResponse.raw) {
+		zoteroItems.push(item);
+	}
+	return zoteroItems;
+}
+
+export async function getAllZoteroCollections(plugin: RNPlugin) {
+	const zoteroCollections: Collection[] = [];
+	const zoteroAPIConnection = await callZoteroConnection(plugin);
+	const zoteroCollectionsResponse = await zoteroAPIConnection.collections().get();
+	const zoteroCollectionsData = zoteroCollectionsResponse.getData();
+	for (const collection of zoteroCollectionsData) {
+		zoteroCollections.push(collection);
+	}
+	return zoteroCollections;
 }

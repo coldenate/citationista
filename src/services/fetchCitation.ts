@@ -1,5 +1,5 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
-import { LogType, logMessage } from '../funcs/logging';
+import { LogType, logMessage } from '../utils/logging';
 import { isDebugMode } from '..';
 import { WIKIPEDIA_API_URL, WIKIPEDIA_API_HEADERS } from '../constants/wikipediaAPIConstants';
 

@@ -1,0 +1,49 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: '[Feature]: '
+labels: ['enhancement', 'feature request']
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand your request.
+    - type: input
+      id: contact
+      attributes:
+          label: Contact Details
+          description: How can we get in touch with you if we need more info?
+          placeholder: ex. Your Discord Account on the RemNote Discord Server, Or you can specify (here) to keep communication on GitHub.
+      validations:
+          required: false
+    - type: input
+      id: featureTitle
+      attributes:
+          label: Feature Title
+          description: Give a brief title for your feature request.
+          placeholder: e.g. Add Zotero Integration
+      validations:
+          required: true
+    - type: textarea
+      id: featureDescription
+      attributes:
+          label: Feature Description
+          description: Describe the feature you would like to see.
+          placeholder: Please describe the feature in detail.
+      validations:
+          required: true
+    - type: input
+      id: useCase
+      attributes:
+          label: Use Case
+          description: Describe how you would use this feature and how it would benefit you.
+          placeholder: e.g. This feature would help me by...
+      validations:
+          required: true
+    - type: checkboxes
+      id: terms
+      attributes:
+          label: Code of Conduct
+          description: By submitting this feature request, you agree to actively contribute back to this issue through conversation.
+          options:
+              - label: I agree
+                required: true
