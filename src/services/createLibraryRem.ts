@@ -1,5 +1,6 @@
 import { BuiltInPowerupCodes, RNPlugin, Rem } from '@remnote/plugin-sdk';
 import { LogType, logMessage } from '../utils/logging';
+import { powerupCodes } from '../constants/constants';
 
 export async function birthZoteroRem(plugin: RNPlugin) {
 	await plugin.app.waitForInitialSync(); //TODO: Test to see if this slows down the plugin
@@ -17,11 +18,11 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 		await logMessage(plugin, 'Failed to create Rem', LogType.Error, false);
 		return;
 	}
-	const poolPowerup = await plugin.powerup.getPowerupByCode('coolPool');
+	const poolPowerup = await plugin.powerup.getPowerupByCode(powerupCodes.COOL_POOL);
 	await plugin.storage.setSynced('zoteroLibraryRemId', rem._id);
 
 	await rem.setText(['Zotero Library']);
-	await rem.addPowerup('zotero-synced-library');
+	await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
 	await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
 	await rem.setIsDocument(true); // TODO: we want this to be a folder rem! https://linear.app/remnoteio/issue/ENG-25553/add-a-remsetisfolder-to-the-plugin-system
 

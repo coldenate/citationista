@@ -1,7 +1,7 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
 import { LogType, logMessage } from '../utils/logging';
 import { isDebugMode } from '..';
-import { WIKIPEDIA_API_URL, WIKIPEDIA_API_HEADERS } from '../constants/wikipediaAPIConstants';
+import { WIKIPEDIA_API_URL, WIKIPEDIA_API_HEADERS } from '../constants/constants';
 
 export async function fetchCitation(citationURL: string, plugin: RNPlugin) {
 	const debugMode = await isDebugMode(plugin);
@@ -13,26 +13,23 @@ export async function fetchCitation(citationURL: string, plugin: RNPlugin) {
 		});
 
 		if (!response.ok && debugMode) {
-			await logMessage({
-				plugin: plugin,
-				message: `Failed to fetch citation for ${citationURL}`,
-				type: LogType.Error,
-				consoleEmitType: 'error',
-				isToast: false,
-			});
+			await logMessage(
+				plugin,
+				`Failed to fetch citation for ${citationURL}`,
+				LogType.Error,
+				false
+			);
 			return null;
 		}
 
 		return response.text();
 	} catch (error) {
-		await logMessage({
-			plugin: plugin,
-			message: `Failed to fetch citation for ${citationURL}`,
-			type: LogType.Error,
-			consoleEmitType: 'error',
-			isToast: false,
-		});
-
+		await logMessage(
+			plugin,
+			`Failed to fetch citation for ${citationURL}`,
+			LogType.Error,
+			false
+		);
 		return null;
 	}
 }

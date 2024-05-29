@@ -4,6 +4,7 @@ import { powerupCodes } from '../constants/constants';
 import { birthZoteroRem } from './createLibraryRem';
 import { findCollection, getAllRemNoteItems } from './fetchRN';
 import { checkForForceStop } from './pluginIO';
+import { getAllZoteroCollections, getAllZoteroItems } from './fetchAPI';
 
 export type ChangedData<T extends Item | Collection> = Array<{
 	subject: T;
@@ -15,11 +16,10 @@ async function identifyChangesInLibrary(
 	plugin: RNPlugin,
 	remoteData: Collection[] | Item[],
 	localData: Collection[] | Item[]
-) {
+): Promise<ChangedData<Item | Collection>> {
 	// some notes:
 	// - if the version of the remote data is greater than the local data, then we need to update the local data
 	// - if the version of the local data is equal to the remote data, then we need to compare the content of the data
-	const poolPowerup = await plugin.powerup.getPowerupByCode(powerupCodes.COOL_POOL);
 	const changedData: ChangedData<Item | Collection> = [];
 
 	for (const remoteItem of remoteData) {
@@ -134,6 +134,8 @@ async function mergeChangedItems(plugin: RNPlugin, changedData: ChangedData<Item
 				break;
 		}
 	}
+
+	return addedItems;
 }
 async function mergeChangedCollections(plugin: RNPlugin, changedData: ChangedData<Collection>) {
 	const poolPowerup = await plugin.powerup.getPowerupByCode(powerupCodes.COOL_POOL);
@@ -366,4 +368,36 @@ async function wireCollections(
 
 export async function syncLibrary(plugin: RNPlugin) {
 	await birthZoteroRem(plugin);
+	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode(
+		powerupCodes.ZOTERO_SYNCED_LIBRARY
+	);
+	if (zoteroLibraryPowerUpRem === undefined) {
+		console.error('Zotero Library not found!');
+		return;
+	}
+	const remoteItems = await getAllZoteroItems(plugin);
+	const remoteCollections = await getAllZoteroCollections(plugin);
+	const localItems = await getAllRemNoteItems(plugin);
+	const localCollections = await getAllRemNoteItems(plugin);
+	if (!localItems || !localCollections) {
+		console.error('No items or collections found in RemNote!');
+		return;
+	}
+	const changedItems = (await identifyChangesInLibrary(
+		plugin,
+		remoteItems,
+		localItems
+	)) as ChangedData<Item>;
+	const changedCollections = (await identifyChangesInLibrary(
+		plugin,
+		remoteCollections,
+		localCollections
+	)) as ChangedData<Collection>;
+	const addedItems = await mergeChangedItems(plugin, changedItems);
+	const addedCollections = await mergeChangedCollections(plugin, changedCollections);
+
+	await wireCollections(plugin, addedCollections || []);
+	await wireItems(plugin, addedItems || []);
+
+	return;
 }

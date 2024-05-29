@@ -1,9 +1,10 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
 import { Collection, Item } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
+import { powerupCodes } from '../constants/constants';
 
 export async function getAllRemNoteItems(plugin: RNPlugin) {
-	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode('zitem');
+	const zoteroItemPowerup = await plugin.powerup.getPowerupByCode(powerupCodes.ZITEM);
 	const zoteroItems = await zoteroItemPowerup?.taggedRem();
 	if (zoteroItems?.length === 0 || zoteroItems === undefined) {
 		return undefined;
@@ -12,16 +13,17 @@ export async function getAllRemNoteItems(plugin: RNPlugin) {
 	const remnoteItems: Item[] = [];
 
 	for (const zoteroItem of zoteroItems) {
-		const version = await zoteroItem.getPowerupProperty('zitem', 'versionNumber');
+		const version = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'versionNumber');
 		// TODO: convert all the string lookups to constants so that we can change them in one place
-		const message = await zoteroItem.getPowerupProperty('zitem', 'extra');
-		const key = await zoteroItem.getPowerupProperty('zitem', 'citationKey');
+		const message = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'extra');
+		const key = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'citationKey');
 
 		const item: Item = {
 			version: Number(version),
 			message: message,
 			key: key,
 			rem: zoteroItem,
+			data: {}, //TODO: GET THIS FROM THE POWERUP PROPERTY FULL_DATA
 		};
 		remnoteItems.push(item);
 	}
@@ -30,7 +32,9 @@ export async function getAllRemNoteItems(plugin: RNPlugin) {
 
 export async function getAllRemNoteCollections(plugin: RNPlugin) {
 	const remnoteCollections: Collection[] = [];
-	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode('collection');
+	const zoteroCollectionPowerupRem = await plugin.powerup.getPowerupByCode(
+		powerupCodes.COLLECTION
+	);
 
 	const collectionRems = await zoteroCollectionPowerupRem?.taggedRem();
 	if (collectionRems?.length === 0 || collectionRems === undefined) {
@@ -38,14 +42,16 @@ export async function getAllRemNoteCollections(plugin: RNPlugin) {
 	}
 
 	for (const collectionRem of collectionRems) {
-		const key = await collectionRem.getPowerupProperty('collection', 'key');
+		const key = await collectionRem.getPowerupProperty(powerupCodes.COLLECTION, 'key');
 
-		const version = Number(await collectionRem.getPowerupProperty('collection', 'version'));
-		const name = await collectionRem.getPowerupProperty('collection', 'name');
-		const parentCollection = Boolean(
-			await collectionRem.getPowerupProperty('collection', 'parentCollection')
+		const version = Number(
+			await collectionRem.getPowerupProperty(powerupCodes.COLLECTION, 'version')
 		);
-
+		const name = await collectionRem.getPowerupProperty(powerupCodes.COLLECTION, 'name');
+		const parentCollection = await collectionRem.getPowerupProperty(
+			powerupCodes.COLLECTION,
+			'parentCollection'
+		);
 		const collection: Collection = {
 			rem: collectionRem,
 			key: key,
