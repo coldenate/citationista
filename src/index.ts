@@ -2,6 +2,8 @@ import { RNPlugin, declareIndexPlugin } from '@remnote/plugin-sdk';
 import { citationFormats, powerupCodes } from './constants/constants';
 import { setForceStop } from './services/pluginIO';
 import { exportCitations } from './services/exportCitations';
+import { syncCollections, syncLibrary } from './services/syncing';
+import { birthZoteroRem } from './services/createLibraryRem';
 
 async function onActivate(plugin: RNPlugin) {
 	await plugin.settings.registerNumberSetting({
@@ -54,7 +56,7 @@ async function onActivate(plugin: RNPlugin) {
 	});
 	plugin.track(async (reactivePlugin) => {
 		await isDebugMode(reactivePlugin).then(async (debugMode) => {
-			if (!debugMode) await syncZoteroLibraryToRemNote(plugin);
+			if (!debugMode) await syncLibrary(plugin);
 			if (debugMode) {
 				plugin.app.toast('Debug Mode Enabled; Registering Debug Tools for Citationista...');
 				await plugin.app.registerCommand({
@@ -65,7 +67,7 @@ async function onActivate(plugin: RNPlugin) {
 					icon: '👶',
 					keywords: 'zotero, force, birth',
 					action: async () => {
-						// const rem = await birthZoteroRem(plugin);
+						const rem = await birthZoteroRem(plugin);
 						if (rem) {
 							await plugin.window.openRem(rem);
 						}

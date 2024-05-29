@@ -260,7 +260,6 @@ async function mergeChangedCollections(plugin: RNPlugin, changedData: ChangedDat
 	return addedCollections;
 }
 async function wireItems(plugin: RNPlugin, items: { rem: Rem; item: Item }[]) {
-	// TODO: I was also thinking, I should make just one wire function that can handle both items and collections since the logic is the same
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode(
 		powerupCodes.ZOTERO_SYNCED_LIBRARY
 	);
@@ -366,6 +365,44 @@ async function wireCollections(
 	}
 }
 
+export async function syncItems(plugin: RNPlugin) {
+	const remoteItems = await getAllZoteroItems(plugin);
+	const localItems = await getAllRemNoteItems(plugin);
+	if (!localItems) {
+		console.error('No items found in RemNote!');
+		return;
+	}
+	const changedItems = (await identifyChangesInLibrary(
+		plugin,
+		remoteItems,
+		localItems
+	)) as ChangedData<Item>;
+	const addedItems = await mergeChangedItems(plugin, changedItems);
+
+	await wireItems(plugin, addedItems || []);
+
+	return;
+}
+
+export async function syncCollections(plugin: RNPlugin) {
+	const remoteCollections = await getAllZoteroCollections(plugin);
+	const localCollections = await getAllRemNoteItems(plugin);
+	if (!localCollections) {
+		console.error('No collections found in RemNote!');
+		return;
+	}
+	const changedCollections = (await identifyChangesInLibrary(
+		plugin,
+		remoteCollections,
+		localCollections
+	)) as ChangedData<Collection>;
+	const addedCollections = await mergeChangedCollections(plugin, changedCollections);
+
+	await wireCollections(plugin, addedCollections || []);
+
+	return;
+}
+
 export async function syncLibrary(plugin: RNPlugin) {
 	await birthZoteroRem(plugin);
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode(
@@ -375,29 +412,9 @@ export async function syncLibrary(plugin: RNPlugin) {
 		console.error('Zotero Library not found!');
 		return;
 	}
-	const remoteItems = await getAllZoteroItems(plugin);
-	const remoteCollections = await getAllZoteroCollections(plugin);
-	const localItems = await getAllRemNoteItems(plugin);
-	const localCollections = await getAllRemNoteItems(plugin);
-	if (!localItems || !localCollections) {
-		console.error('No items or collections found in RemNote!');
-		return;
-	}
-	const changedItems = (await identifyChangesInLibrary(
-		plugin,
-		remoteItems,
-		localItems
-	)) as ChangedData<Item>;
-	const changedCollections = (await identifyChangesInLibrary(
-		plugin,
-		remoteCollections,
-		localCollections
-	)) as ChangedData<Collection>;
-	const addedItems = await mergeChangedItems(plugin, changedItems);
-	const addedCollections = await mergeChangedCollections(plugin, changedCollections);
 
-	await wireCollections(plugin, addedCollections || []);
-	await wireItems(plugin, addedItems || []);
+	await syncItems(plugin);
+	await syncCollections(plugin);
 
 	return;
 }
