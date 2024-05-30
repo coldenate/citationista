@@ -1,9 +1,11 @@
-import { RNPlugin, declareIndexPlugin } from '@remnote/plugin-sdk';
+import { PropertyLocation, PropertyType, RNPlugin, declareIndexPlugin } from '@remnote/plugin-sdk';
 import { citationFormats, powerupCodes } from './constants/constants';
 import { setForceStop } from './services/pluginIO';
 import { exportCitations } from './services/exportCitations';
 import { syncCollections, syncLibrary } from './services/syncing';
 import { birthZoteroRem } from './services/createLibraryRem';
+import { itemTypes } from './constants/zoteroItemSchema';
+import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 
 async function onActivate(plugin: RNPlugin) {
 	await plugin.settings.registerNumberSetting({
@@ -54,6 +56,193 @@ async function onActivate(plugin: RNPlugin) {
 		action: async () => exportCitations(plugin),
 		// FIXME: I might need to await exportCitations(plugin) here (if so we will need to wrap the thingy
 	});
+
+	await plugin.app.registerPowerup({
+		name: 'Zotero Collection',
+		code: powerupCodes.COLLECTION,
+		description: 'A Zotero Collection.',
+		options: {
+			slots: [
+				{
+					code: 'key',
+					name: 'Key',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'version',
+					name: 'Version',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.NUMBER,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'name',
+					name: 'Name',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'parentCollection',
+					name: 'Parent Collection',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.CHECKBOX,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'relations',
+					name: 'Relations',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+			],
+		},
+	});
+
+	await plugin.app.registerPowerup({
+		name: 'Citationista Pool',
+		code: powerupCodes.COOL_POOL,
+		description: 'A pool of citationista rems.',
+		options: {
+			properties: [],
+		},
+	});
+
+	await plugin.app.registerPowerup({
+		name: 'Zotero Library Sync Powerup',
+		code: powerupCodes.ZOTERO_SYNCED_LIBRARY,
+		description: 'Your Zotero library, synced with RemNote. :D',
+		options: {
+			properties: [
+				{
+					code: 'syncing',
+					name: 'Syncing',
+					onlyProgrammaticModifying: true,
+					hidden: false,
+					propertyType: PropertyType.CHECKBOX,
+					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
+				},
+			],
+		},
+	});
+
+	await plugin.app.registerPowerup({
+		name: 'Zotero Item',
+		code: powerupCodes.ZITEM,
+		description: 'A Zotero Item.',
+		options: {
+			slots: [
+				{
+					code: 'key',
+					name: 'Key',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'version',
+					name: 'Version',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.NUMBER,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'fullData',
+					name: 'Full Data',
+					onlyProgrammaticModifying: false,
+					hidden: true,
+					propertyType: PropertyType.TEXT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'relations',
+					name: 'Relations',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.MULTI_SELECT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'notes',
+					name: 'Notes',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.MULTI_SELECT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'dateAdded',
+					name: 'Date Added',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.DATE,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'dateModified',
+					name: 'Date Modified',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.DATE,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'dateAccessed',
+					name: 'Date Accessed',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.DATE,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'tags',
+					name: 'Tags',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.MULTI_SELECT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+				{
+					code: 'collections',
+					name: 'Collections',
+					onlyProgrammaticModifying: false,
+					hidden: false,
+					propertyType: PropertyType.MULTI_SELECT,
+					propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+				},
+			],
+		},
+	});
+
+	const isNewDebugMode = await isDebugMode(plugin);
+
+	const freshZItemPowerups = registerItemPowerups(itemTypes);
+	const zItem = await plugin.powerup.getPowerupByCode(powerupCodes.ZITEM);
+	if (!zItem) {
+		throw new Error('ZItem powerup not found');
+	}
+	const zItemID = zItem._id;
+	if (!zItemID) {
+		throw new Error('ZItem ID not found');
+	}
+	for (const powerup of freshZItemPowerups) {
+		await plugin.app.registerPowerup(powerup);
+
+		const powerUpRem = await plugin.powerup.getPowerupByCode(powerup.code);
+		if (powerUpRem) {
+			await powerUpRem.addTag(zItemID);
+		}
+	}
 	plugin.track(async (reactivePlugin) => {
 		await isDebugMode(reactivePlugin).then(async (debugMode) => {
 			if (!debugMode) await syncLibrary(plugin);
@@ -82,7 +271,7 @@ async function onActivate(plugin: RNPlugin) {
 					icon: '🔁',
 					keywords: 'zotero, sync',
 					action: async () => {
-						// await syncZoteroLibraryToRemNote(plugin); //FIXME: This is a temporary fix. We need to implement a better way to sync.
+						await syncLibrary(plugin); //FIXME: This is a temporary fix. We need to implement a better way to sync.
 						await plugin.app.toast('🔁 Synced with Zotero!');
 					},
 				});
