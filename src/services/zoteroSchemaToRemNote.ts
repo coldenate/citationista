@@ -51,9 +51,9 @@ export function registerItemPowerups(itemTypes: ItemType[]) {
 			code: getCode(field.field),
 			name: field.field.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
 			onlyProgrammaticModifying: false,
-			hidden: false,
+			hidden: getPropertyType(field.field) === PropertyType.TITLE,
 			propertyType: getPropertyType(field.field),
-			propertyLocation: PropertyLocation.ONLY_IN_TABLE,
+			propertyLocation: PropertyLocation.ONLY_DOCUMENT,
 		}));
 
 		const powerup = {

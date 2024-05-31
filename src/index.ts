@@ -243,9 +243,9 @@ async function onActivate(plugin: RNPlugin) {
 			await powerUpRem.addTag(zItemID);
 		}
 	}
+
 	plugin.track(async (reactivePlugin) => {
 		await isDebugMode(reactivePlugin).then(async (debugMode) => {
-			if (!debugMode) await syncLibrary(plugin);
 			if (debugMode) {
 				plugin.app.toast('Debug Mode Enabled; Registering Debug Tools for Citationista...');
 				await plugin.app.registerCommand({
@@ -271,7 +271,7 @@ async function onActivate(plugin: RNPlugin) {
 					icon: '🔁',
 					keywords: 'zotero, sync',
 					action: async () => {
-						await syncLibrary(plugin); //FIXME: This is a temporary fix. We need to implement a better way to sync.
+						await syncLibrary(plugin);
 						await plugin.app.toast('🔁 Synced with Zotero!');
 					},
 				});
@@ -331,7 +331,7 @@ async function onActivate(plugin: RNPlugin) {
 								powerupCodes.COLLECTION
 							);
 							const zoteroLibraryPowerup = await plugin.powerup.getPowerupByCode(
-								'powerupCodes.ZOTERO_SYNCED_LIBRARY'
+								powerupCodes.ZOTERO_SYNCED_LIBRARY
 							);
 							const citationistaPowerup = await plugin.powerup.getPowerupByCode(
 								powerupCodes.COOL_POOL
@@ -407,6 +407,11 @@ async function onActivate(plugin: RNPlugin) {
 			}
 		});
 	});
+
+	await plugin.app.waitForInitialSync();
+	if (!isNewDebugMode) {
+		await syncLibrary(plugin);
+	}
 }
 
 export async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {

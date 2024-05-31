@@ -13,10 +13,9 @@ export async function getAllRemNoteItems(plugin: RNPlugin) {
 	const remnoteItems: Item[] = [];
 
 	for (const zoteroItem of zoteroItems) {
-		const version = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'versionNumber');
-		// TODO: convert all the string lookups to constants so that we can change them in one place
+		const version = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'version');
 		const message = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'extra');
-		const key = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'citationKey');
+		const key = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'key');
 
 		const item: Item = {
 			version: Number(version),
@@ -38,7 +37,7 @@ export async function getAllRemNoteCollections(plugin: RNPlugin) {
 
 	const collectionRems = await zoteroCollectionPowerupRem?.taggedRem();
 	if (collectionRems?.length === 0 || collectionRems === undefined) {
-		return undefined;
+		return remnoteCollections;
 	}
 
 	for (const collectionRem of collectionRems) {
@@ -57,7 +56,7 @@ export async function getAllRemNoteCollections(plugin: RNPlugin) {
 			key: key,
 			version: version,
 			name: name,
-			parentCollectionID: parentCollection,
+			parentCollection: parentCollection,
 			relations: {},
 		};
 		remnoteCollections.push(collection);

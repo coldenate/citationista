@@ -1,10 +1,11 @@
-import { RNPlugin, Rem } from '@remnote/plugin-sdk';
+import { PropertyType, RNPlugin, Rem, filterAsync } from '@remnote/plugin-sdk';
 import { Collection, Item } from '../types/types';
 import { powerupCodes } from '../constants/constants';
 import { birthZoteroRem } from './createLibraryRem';
-import { findCollection, getAllRemNoteItems } from './fetchRN';
+import { findCollection, getAllRemNoteCollections, getAllRemNoteItems } from './fetchRN';
 import { checkForForceStop } from './pluginIO';
 import { getAllZoteroCollections, getAllZoteroItems } from './fetchAPI';
+import { getCode } from '../utils/getCodeName';
 
 export type ChangedData<T extends Item | Collection> = Array<{
 	subject: T;
@@ -13,7 +14,6 @@ export type ChangedData<T extends Item | Collection> = Array<{
 }>;
 
 async function identifyChangesInLibrary(
-	plugin: RNPlugin,
 	remoteData: Collection[] | Item[],
 	localData: Collection[] | Item[]
 ): Promise<ChangedData<Item | Collection>> {
@@ -29,18 +29,19 @@ async function identifyChangesInLibrary(
 				subject: remoteItem,
 				method: 'add',
 			});
-		} else {
+		} else if (localItem) {
 			if (remoteItem.version > localItem.version) {
 				changedData.push({
 					subject: remoteItem,
 					method: 'modifyLocal',
 					snapshotRemBeforeModification: localItem.rem,
 				});
-			} else {
+			} else if (remoteItem.version < localItem.version) {
 				// TODO: compare the content of the data (I want to make a function for this - content comparison changes per type of data)
 				// this is where we will have to push back the changes to the remote data
-				new Error('Not implemented yet');
+			} else if (remoteItem.version === localItem.version) {
 			}
+			// FIXME: If the item on local was moved, it's ignored and treated as a non-edited item
 		}
 	}
 
@@ -87,23 +88,13 @@ async function mergeChangedItems(plugin: RNPlugin, changedData: ChangedData<Item
 				});
 				newItemRem.setParent(poolPowerup);
 				await newItemRem.addPowerup(powerupCodes.ZITEM);
-				await newItemRem.setText([changedItem.subject.data.title]);
-				await newItemRem.setIsDocument(true);
-				await newItemRem.setPowerupProperty(powerupCodes.ZITEM, 'citationKey', [
+				// await newItemRem.setIsDocument(true);
+				await newItemRem.setPowerupProperty(powerupCodes.ZITEM, 'key', [
 					changedItem.subject.data.key,
 				]);
-				await newItemRem.setPowerupProperty(powerupCodes.ZITEM, 'versionNumber', [
+				await newItemRem.setPowerupProperty(powerupCodes.ZITEM, 'version', [
 					String(changedItem.subject.version),
 				]);
-				try {
-					await newItemRem?.addSource(changedItem.subject.data.url);
-				} catch (error) {
-					await newItemRem.setPowerupProperty(powerupCodes.ZITEM, 'url', [
-						changedItem.subject.data.url,
-					]);
-					console.log('something done goofed');
-					console.log(error);
-				}
 
 				break;
 			case 'modifyLocal':
@@ -114,17 +105,7 @@ async function mergeChangedItems(plugin: RNPlugin, changedData: ChangedData<Item
 				addedItems.push({
 					rem: changedItem.snapshotRemBeforeModification,
 					item: changedItem.subject,
-				}); // TODO: Why do I need to add the item to the addedItems array? I don't do this for collections
-				const currentTitle =
-					await changedItem.snapshotRemBeforeModification.getPowerupProperty(
-						powerupCodes.ZITEM,
-						'title'
-					);
-				const currentVersion =
-					await changedItem.snapshotRemBeforeModification.getPowerupProperty(
-						powerupCodes.ZITEM,
-						'versionNumber'
-					);
+				});
 				break;
 			case 'deleteLocal':
 				await changedItem.subject.rem.remove();
@@ -184,6 +165,7 @@ async function mergeChangedCollections(plugin: RNPlugin, changedData: ChangedDat
 				});
 				break;
 			case 'modifyLocal':
+				/* Modification of Collections currently breaks the style of saving the data hydration for the wiring phase. TODO: I look to fix this, but I digress as it's not a worry. */
 				if (!changedCollection.snapshotRemBeforeModification) {
 					new Error('No snapshotRemBeforeModification found');
 					return;
@@ -215,11 +197,11 @@ async function mergeChangedCollections(plugin: RNPlugin, changedData: ChangedDat
 					'key'
 				);
 
-				if (changedCollection.subject.parentCollectionID !== currentParentCollectionID) {
-					if (changedCollection.subject.parentCollectionID) {
+				if (changedCollection.subject.parentCollection !== currentParentCollectionID) {
+					if (changedCollection.subject.parentCollection) {
 						const parentCollectionRem = await findCollection(
 							plugin,
-							changedCollection.subject.parentCollectionID,
+							changedCollection.subject.parentCollection,
 							false
 						);
 						if (parentCollectionRem) {
@@ -279,6 +261,80 @@ async function wireItems(plugin: RNPlugin, items: { rem: Rem; item: Item }[]) {
 		return;
 	}
 	for (const item of items) {
+		if (await checkForForceStop(plugin)) return; // TODO: Check if this bottlenecks the performance
+		let setText = false;
+		/* Property Hydrating */
+		// first we need to identify the itemType (this is found in the API response)
+		// then based on that, we apply the corresponding powerup to the item
+		// then we hydrate the properties needed for that specific item type (we use the same keys for the properties as the API response, so it should be easy to hydrate)
+
+		const itemType = item.item.data.itemType;
+
+		// match the itemType to the powerup
+		const powerupItemType = await plugin.powerup.getPowerupByCode(getCode(itemType));
+		if (!powerupItemType) {
+			console.error('Powerup not found!');
+			return;
+		}
+		await item.rem.addPowerup(getCode(itemType));
+		// get all possible properties for the item type
+		const properties = await filterAsync(await powerupItemType.getChildrenRem(), (c) =>
+			c.isProperty()
+		);
+
+		// hydrate the properties
+		for (const property of properties) {
+			if (property.text) {
+				const propertyKey = (
+					Array.isArray(property.text) && property.text.length > 0 ? property.text[0] : ''
+				) as string;
+
+				const formattedPropertyKey = propertyKey.toLowerCase().replace(/\s/g, '');
+				const matchingKey = Object.keys(item.item.data).find(
+					(key) => key.toLowerCase().replace(/\s/g, '') === formattedPropertyKey
+				);
+				if (!matchingKey) {
+					continue;
+				}
+				const propertyValue = matchingKey ? item.item.data[matchingKey] : undefined;
+				if (propertyValue) {
+					const slotCode = await plugin.powerup.getPowerupSlotByCode(
+						getCode(itemType),
+						getCode(matchingKey)
+					);
+					if (!slotCode) {
+						console.error('Slot not found!');
+						return;
+					}
+					if ((await property.getPropertyType()) == PropertyType.TITLE) {
+						setText = true;
+						await item.rem.setText([propertyValue]);
+						continue;
+					}
+					if ((await property.getPropertyType()) == PropertyType.URL) {
+						const linkID = await plugin.rem.createLinkRem(propertyValue, true);
+						if (!linkID) {
+							console.error('Failed to create link rem');
+							return;
+						}
+						await item.rem.setTagPropertyValue(
+							slotCode._id,
+							// @ts-ignore
+							plugin.richText.rem(linkID).richText
+						);
+						continue;
+					}
+					await item.rem.setTagPropertyValue(slotCode._id, [propertyValue]);
+				}
+			}
+		}
+
+		// if the item has the note data present (as in, item.item.data.note), and the item rem doesn't have text, then we set the text to the note data
+		if (item.item.data.note && !setText) {
+			await plugin.richText.parseAndInsertHtml(item.item.data.note, item.rem);
+		}
+
+		/* Hierarchical wiring */
 		if (item.item.data.parentItem) {
 			const parentItemRem = remnoteItems.find(
 				(remnoteItem) => remnoteItem.key === item.item.data.parentItem
@@ -350,10 +406,10 @@ async function wireCollections(
 	}
 	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem?.taggedRem())[0]; // TODO: There has to be a cleaner way to get the ZoteroLibraryRem
 	for (const collection of collections) {
-		if (collection.collection.parentCollectionID) {
+		if (collection.collection.parentCollection) {
 			const parentCollectionRem = await findCollection(
 				plugin,
-				collection.collection.parentCollectionID,
+				collection.collection.parentCollection,
 				false
 			);
 			if (parentCollectionRem) {
@@ -366,6 +422,7 @@ async function wireCollections(
 }
 
 export async function syncItems(plugin: RNPlugin) {
+	await birthZoteroRem(plugin);
 	const remoteItems = await getAllZoteroItems(plugin);
 	const localItems = await getAllRemNoteItems(plugin);
 	if (!localItems) {
@@ -373,7 +430,6 @@ export async function syncItems(plugin: RNPlugin) {
 		return;
 	}
 	const changedItems = (await identifyChangesInLibrary(
-		plugin,
 		remoteItems,
 		localItems
 	)) as ChangedData<Item>;
@@ -385,14 +441,11 @@ export async function syncItems(plugin: RNPlugin) {
 }
 
 export async function syncCollections(plugin: RNPlugin) {
+	await birthZoteroRem(plugin);
 	const remoteCollections = await getAllZoteroCollections(plugin);
-	const localCollections = await getAllRemNoteItems(plugin);
-	if (!localCollections) {
-		console.error('No collections found in RemNote!');
-		return;
-	}
+	const localCollections = await getAllRemNoteCollections(plugin);
+
 	const changedCollections = (await identifyChangesInLibrary(
-		plugin,
 		remoteCollections,
 		localCollections
 	)) as ChangedData<Collection>;
@@ -404,7 +457,6 @@ export async function syncCollections(plugin: RNPlugin) {
 }
 
 export async function syncLibrary(plugin: RNPlugin) {
-	await birthZoteroRem(plugin);
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode(
 		powerupCodes.ZOTERO_SYNCED_LIBRARY
 	);
@@ -413,8 +465,8 @@ export async function syncLibrary(plugin: RNPlugin) {
 		return;
 	}
 
-	await syncItems(plugin);
 	await syncCollections(plugin);
+	await syncItems(plugin);
 
 	return;
 }

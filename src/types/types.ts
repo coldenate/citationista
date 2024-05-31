@@ -13,6 +13,6 @@ export type Collection = {
 	key: string;
 	version: number;
 	name: string;
-	parentCollectionID: string;
+	parentCollection: string;
 	relations: Record<string, string>; // TODO: Implement Relations (if needed?)
 };
