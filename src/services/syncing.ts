@@ -5,7 +5,8 @@ import { birthZoteroRem } from './createLibraryRem';
 import { findCollection, getAllRemNoteCollections, getAllRemNoteItems } from './fetchRN';
 import { checkForForceStop } from './pluginIO';
 import { getAllZoteroCollections, getAllZoteroItems } from './fetchAPI';
-import { getCode } from '../utils/getCodeName';
+import { deriveName, getCode } from '../utils/getCodeName';
+import { checkStringForTitleWorthyNameAndStuffIAmTiredOfMakingVariableNames as hasTitleRelatedField } from './zoteroSchemaToRemNote';
 
 export type ChangedData<T extends Item | Collection> = Array<{
 	subject: T;
@@ -165,7 +166,7 @@ async function mergeChangedCollections(plugin: RNPlugin, changedData: ChangedDat
 				});
 				break;
 			case 'modifyLocal':
-				/* Modification of Collections currently breaks the style of saving the data hydration for the wiring phase. TODO: I look to fix this, but I digress as it's not a worry. */
+				/* Modification of Collections currently breaks the CODE STYLE (NOTHING SERIOUS) of saving the data hydration for the wiring phase. TODO: I look to fix this, but I digress as it's not a worry. */
 				if (!changedCollection.snapshotRemBeforeModification) {
 					new Error('No snapshotRemBeforeModification found');
 					return;
@@ -282,36 +283,53 @@ async function wireItems(plugin: RNPlugin, items: { rem: Rem; item: Item }[]) {
 			c.isProperty()
 		);
 
+		// add fullData
+		await item.rem.setPowerupProperty(powerupCodes.ZITEM, 'fullData', [
+			JSON.stringify(item.item.data),
+		]);
+		// test if the fullData is hydrated
+
+		const fullData = await item.rem.getPowerupProperty(powerupCodes.ZITEM, 'fullData');
+		if (!fullData) {
+			console.error('Failed to hydrate fullData');
+			return;
+		}
+
 		// hydrate the properties
 		for (const property of properties) {
 			if (property.text) {
-				const propertyKey = (
-					Array.isArray(property.text) && property.text.length > 0 ? property.text[0] : ''
-				) as string;
+				const propertyKey = deriveName(
+					(Array.isArray(property.text) && property.text.length > 0
+						? property.text[0]
+						: '') as string
+				);
 
 				const formattedPropertyKey = propertyKey.toLowerCase().replace(/\s/g, '');
+
 				const matchingKey = Object.keys(item.item.data).find(
 					(key) => key.toLowerCase().replace(/\s/g, '') === formattedPropertyKey
 				);
+
 				if (!matchingKey) {
+					console.log(formattedPropertyKey, matchingKey);
 					continue;
 				}
 				const propertyValue = matchingKey ? item.item.data[matchingKey] : undefined;
 				if (propertyValue) {
+					const propertyTypeOfProperty = await property.getPropertyType();
 					const slotCode = await plugin.powerup.getPowerupSlotByCode(
 						getCode(itemType),
 						getCode(matchingKey)
 					);
 					if (!slotCode) {
-						console.error('Slot not found!');
 						return;
 					}
-					if ((await property.getPropertyType()) == PropertyType.TITLE) {
+					if (hasTitleRelatedField(matchingKey)) {
 						setText = true;
 						await item.rem.setText([propertyValue]);
 						continue;
 					}
-					if ((await property.getPropertyType()) == PropertyType.URL) {
+					if (propertyTypeOfProperty == PropertyType.URL) {
 						const linkID = await plugin.rem.createLinkRem(propertyValue, true);
 						if (!linkID) {
 							console.error('Failed to create link rem');

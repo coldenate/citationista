@@ -1,5 +1,10 @@
-import { PropertyLocation, PropertyType } from '@remnote/plugin-sdk';
-import { getCode } from '../utils/getCodeName';
+import {
+	PowerupCode,
+	PropertyLocation,
+	PropertyType,
+	RegisterPowerupOptions,
+} from '@remnote/plugin-sdk';
+import { getCode, getName } from '../utils/getCodeName';
 
 type Field = {
 	field: string;
@@ -16,6 +21,15 @@ export type ItemType = {
 	fields: Field[];
 	creatorTypes: CreatorType[];
 };
+
+export function checkStringForTitleWorthyNameAndStuffIAmTiredOfMakingVariableNames(field: string): boolean {
+	return (
+		field.includes('title') ||
+		field.includes('Title') ||
+		field.includes('name') ||
+		field.includes('Name')
+	);
+}
 
 function getPropertyType(field: string): PropertyType {
 	if (field.includes('date') || field.includes('Date')) {
@@ -35,7 +49,7 @@ function getPropertyType(field: string): PropertyType {
 		field.includes('name') ||
 		field.includes('Name')
 	) {
-		return PropertyType.TITLE;
+		return PropertyType.TEXT;
 	} else if (field.includes('abstractNote')) {
 		return PropertyType.TEXT;
 	} else {
@@ -43,25 +57,40 @@ function getPropertyType(field: string): PropertyType {
 	}
 }
 
+type RegisterPowerup = {
+	name: string;
+	code: PowerupCode;
+	description: string;
+	options: RegisterPowerupOptions;
+};
+
 export function registerItemPowerups(itemTypes: ItemType[]) {
 	const powerups = [];
 
 	for (const itemType of itemTypes) {
-		const slots = itemType.fields.map((field) => ({
-			code: getCode(field.field),
-			name: field.field.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
-			onlyProgrammaticModifying: false,
-			hidden: getPropertyType(field.field) === PropertyType.TITLE,
-			propertyType: getPropertyType(field.field),
-			propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-		}));
-
-		const powerup = {
-			name: itemType.itemType.charAt(0).toUpperCase() + itemType.itemType.slice(1),
+		const powerup: RegisterPowerup = {
+			name: getName(itemType.itemType.charAt(0).toUpperCase() + itemType.itemType.slice(1)),
 			code: getCode(itemType.itemType),
 			description: `Powerup for ${itemType.itemType}`,
 			options: {
-				slots: slots,
+				slots: itemType.fields.map((field) => ({
+					code: getCode(field.field),
+					name: field.field
+						.replace(/([A-Z])/g, ' $1')
+						.replace(/^./, (str) => str.toUpperCase()),
+					onlyProgrammaticModifying: false,
+					hidden:
+						field.field === 'title' ||
+						field.field === 'Title' ||
+						field.field === 'name' ||
+						field.field === 'Name',
+					propertyType: getPropertyType(field.field),
+					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
+					defaultEnumValue: undefined,
+					dontPublishToSharedArticle: undefined,
+					enumValues: undefined,
+					selectSourceType: undefined,
+				})),
 			},
 		};
 

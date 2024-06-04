@@ -236,8 +236,13 @@ async function onActivate(plugin: RNPlugin) {
 		throw new Error('ZItem ID not found');
 	}
 	for (const powerup of freshZItemPowerups) {
-		await plugin.app.registerPowerup(powerup);
-
+		try {
+			await plugin.app.registerPowerup(powerup);
+		} catch (error) {
+			console.error(error, powerup);
+			await plugin.app.toast('Error registering powerup: ' + powerup.name);
+			return;
+		}
 		const powerUpRem = await plugin.powerup.getPowerupByCode(powerup.code);
 		if (powerUpRem) {
 			await powerUpRem.addTag(zItemID);
