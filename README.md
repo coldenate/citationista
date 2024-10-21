@@ -30,6 +30,16 @@ Citationista is a RemNote plugin that enhances your research management and cita
 -   Independent Citation Management: Even if you don't use Zotero, Citationista provides its own citation management capabilities.
     -   Citationista utilizes RemNote's basic Rem Source feature to store citation data. This means that you can use Citationista without Zotero.
 
+## ⚠️ Known Issues
+
+- Certain child items (notes, tags, etc.) are not being wired correctly and are instead being orphaned. 👶
+
+## 🚧 Work in Progress
+
+> Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista development!
+
+Citationista is currently a side project and a work in progress. Any feedback/contribution is greatly appreciated; please understand that this project is without any strict timelines or commitments. If you have an issue with the plugin, please make a GitHub issue.
+
 ## 📅 Planned Features
 
 > lovingly organized by how confident I think it's possible to complete 🫡
@@ -49,11 +59,6 @@ Please be sure to check out the [Roadmap](https://www.remnote.com/a/Citationista
 <!-- -   [ ] Full Bi-Directional Syncing with Zotero
     > [!NOTE] This is a long-term goal, but some is already implemented :D -->
 
-## 🚧 Work in Progress
-
-> Have an idea for a new feature? [Contribute](CONTRIBUTING.md) to Citationista development!
-
-Citationista is currently a personal side project and a work in progress. Any feedback/contribution is greatly appreciated, but please understand that it's a hobby project without any strict timelines or commitments. If you have an issue with the plugin, please make a GitHub issue.
 
 <!-- This is a comment ## 💝 Thanks to Our Contributors
 

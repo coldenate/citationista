@@ -8,7 +8,8 @@ import { itemTypes } from './constants/zoteroItemSchema';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 
 async function onActivate(plugin: RNPlugin) {
-	await plugin.settings.registerNumberSetting({
+	// TODO: RETURN THIS TO A NUMBER SETTINGS
+	await plugin.settings.registerStringSetting({
 		id: 'zotero-user-id',
 		title: 'Zotero userID',
 		description: 'Find this at https://www.zotero.org/settings/keys',
@@ -53,8 +54,7 @@ async function onActivate(plugin: RNPlugin) {
 		quickCode: 'cite',
 		icon: '📑',
 		keywords: 'citation, export',
-		action: async () => exportCitations(plugin),
-		// FIXME: I might need to await exportCitations(plugin) here (if so we will need to wrap the thingy
+		action: async () => await exportCitations(plugin),
 	});
 
 	await plugin.app.registerPowerup({
@@ -298,6 +298,12 @@ async function onActivate(plugin: RNPlugin) {
 						'Logs remote (Zotero Cloud) and Local (This RemNote KB) Collections, Items, and other values.',
 					action: async () => {
 						// TODO: implement this feature
+						// log the key API key
+						console.log(
+							'Zotero API Key:',
+							(await plugin.settings.getSetting('zotero-api-key')) ||
+								'key not detected oops not good :('
+						);
 					},
 				});
 				await plugin.app.registerCommand({
@@ -407,6 +413,25 @@ async function onActivate(plugin: RNPlugin) {
 							.then((result) => {
 								plugin.app.toast(result);
 							});
+					},
+				});
+				await plugin.app.registerCommand({
+					id: 'go-to-rem-id',
+					name: 'Go to Rem ID',
+					description: 'Go to a Rem ID',
+					quickCode: 'gtri',
+					action: async () => {
+						const activeRem = await plugin.focus.getFocusedRem();
+						const remId = activeRem?.text?.[0];
+						if (remId && typeof remId === 'string') {
+							const newRemId = remId.replace(/['"]+/g, '');
+							const gfind = await plugin.rem.findOne(newRemId);
+							if (gfind) {
+								await plugin.window.openRem(gfind);
+							}
+						} else {
+							plugin.app.toast('Invalid Rem ID');
+						}
 					},
 				});
 			}

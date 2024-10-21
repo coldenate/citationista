@@ -347,11 +347,6 @@ async function wireItems(plugin: RNPlugin, items: { rem: Rem; item: Item }[]) {
 			}
 		}
 
-		// if the item has the note data present (as in, item.item.data.note), and the item rem doesn't have text, then we set the text to the note data
-		if (item.item.data.note && !setText) {
-			await plugin.richText.parseAndInsertHtml(item.item.data.note, item.rem);
-		}
-
 		/* Hierarchical wiring */
 		if (item.item.data.parentItem) {
 			const parentItemRem = remnoteItems.find(

@@ -1,16 +1,17 @@
 {
 	"manifestVersion": 1,
-	"id": "citationista",
-	"name": "Citationista | Reference Manager + Zotero Integration",
+	"id": "zotero",
+	"name": "Citationista test | Reference Manager + Zotero Integration",
 	"author": "coldenate",
 	"repoUrl": "https://github.com/coldenate/citationista",
 	"version": {
 		"major": 0,
 		"minor": 1,
-		"patch": 0
+		"patch": 1
 	},
 	"theme": [],
 	"enableOnMobile": true,
+	"unlisted": true,
 	"description": "📚 RemNote's Reference Manager! Official Zotero Integration, Export Sources as Bibliography, and more!",
 	"requestNative": false,
 	"requiredScopes": [
