@@ -1,12 +1,11 @@
 import { PropertyType, RNPlugin, Rem, filterAsync } from '@remnote/plugin-sdk';
 import { Collection, Item } from '../types/types';
 import { powerupCodes } from '../constants/constants';
-import { birthZoteroRem } from './createLibraryRem';
-import { findCollection, getAllRemNoteCollections, getAllRemNoteItems } from './fetchRN';
-import { checkForForceStop } from './pluginIO';
-import { getAllZoteroCollections, getAllZoteroItems } from './fetchAPI';
+import { birthZoteroRem } from '../services/createLibraryRem';
+import { findCollection, getAllRemNoteCollections, getAllRemNoteItems } from '../utils/fetchRN-deprecated';
+import { checkForForceStop } from '../services/pluginIO';
 import { deriveName, getCode } from '../utils/getCodeName';
-import { checkStringForTitleWorthyNameAndStuffIAmTiredOfMakingVariableNames as hasTitleRelatedField } from './zoteroSchemaToRemNote';
+import { hasTitleRelatedField as hasTitleRelatedField } from '../services/zoteroSchemaToRemNote';
 
 export type ChangedData<T extends Item | Collection> = Array<{
 	subject: T;

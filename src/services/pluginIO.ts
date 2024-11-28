@@ -11,7 +11,7 @@ export async function checkForForceStop(plugin: RNPlugin) {
 		case false:
 			return false;
 		case true:
-			console.log('Force stop detected. Stopping sync.');
+			console.warn('Force stop detected. Stopping sync.');
 			await plugin.app.toast('Force stop detected. Stopping sync.');
 			await plugin.storage.setSession('isBeingStopped', false);
 			return true;

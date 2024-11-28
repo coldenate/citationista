@@ -8,6 +8,7 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 	if (zoteroLibraryRemId != undefined) {
 		const doesRemExist = await plugin.rem.findOne(zoteroLibraryRemId as string);
 		if (doesRemExist !== undefined) {
+			logMessage(plugin, 'Zotero Library Rem already exists', LogType.Info, false);
 			return;
 		}
 	}

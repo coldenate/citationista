@@ -1,6 +1,6 @@
 import { Rem } from '@remnote/plugin-sdk';
 
-export async function extractAllFollowingChildren({
+export async function gatherFlattenedDescendantRems({
 	remCursorAt,
 }: {
 	remCursorAt: Rem;

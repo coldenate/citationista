@@ -1,6 +1,6 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
 import { Collection, Item } from '../types/types';
-import { LogType, logMessage } from '../utils/logging';
+import { LogType, logMessage } from './logging';
 import { powerupCodes } from '../constants/constants';
 
 export async function getAllRemNoteItems(plugin: RNPlugin) {
@@ -16,13 +16,14 @@ export async function getAllRemNoteItems(plugin: RNPlugin) {
 		const version = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'version');
 		const message = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'extra');
 		const key = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'key');
+		const fullData = await zoteroItem.getPowerupProperty(powerupCodes.ZITEM, 'fullData');
 
 		const item: Item = {
 			version: Number(version),
 			message: message,
 			key: key,
 			rem: zoteroItem,
-			data: {}, //TODO: GET THIS FROM THE POWERUP PROPERTY FULL_DATA
+			data: JSON.parse(fullData[0]),
 		};
 		remnoteItems.push(item);
 	}

@@ -2,10 +2,10 @@ import { PropertyLocation, PropertyType, RNPlugin, declareIndexPlugin } from '@r
 import { citationFormats, powerupCodes } from './constants/constants';
 import { setForceStop } from './services/pluginIO';
 import { exportCitations } from './services/exportCitations';
-import { syncCollections, syncLibrary } from './services/syncing';
 import { birthZoteroRem } from './services/createLibraryRem';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
+import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 
 async function onActivate(plugin: RNPlugin) {
 	// TODO: RETURN THIS TO A NUMBER SETTINGS
@@ -276,7 +276,8 @@ async function onActivate(plugin: RNPlugin) {
 					icon: '🔁',
 					keywords: 'zotero, sync',
 					action: async () => {
-						await syncLibrary(plugin);
+						const zoteroSyncManager = new ZoteroSyncManager(plugin);
+						await zoteroSyncManager.sync();
 						await plugin.app.toast('🔁 Synced with Zotero!');
 					},
 				});
@@ -304,14 +305,6 @@ async function onActivate(plugin: RNPlugin) {
 							(await plugin.settings.getSetting('zotero-api-key')) ||
 								'key not detected oops not good :('
 						);
-					},
-				});
-				await plugin.app.registerCommand({
-					id: 'sync-collections',
-					name: 'Sync Collections',
-					description: 'Sync collections with Zotero',
-					action: async () => {
-						await syncCollections(reactivePlugin);
 					},
 				});
 				await plugin.app.registerCommand({
@@ -434,13 +427,23 @@ async function onActivate(plugin: RNPlugin) {
 						}
 					},
 				});
+				// command reset synced storage of 'zoteroData'
+				await plugin.app.registerCommand({
+					id: 'reset-synced-zotero-data',
+					name: 'Reset Synced Zotero Data',
+					description: 'Reset Synced Zotero Data',
+					quickCode: 'rszd',
+					action: async () => {
+						await plugin.storage.setSynced('zoteroData', undefined);
+					},
+				});
 			}
 		});
 	});
 
 	await plugin.app.waitForInitialSync();
 	if (!isNewDebugMode) {
-		await syncLibrary(plugin);
+		// await syncLibrary(plugin);
 	}
 }
 

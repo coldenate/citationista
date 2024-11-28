@@ -22,7 +22,7 @@ export type ItemType = {
 	creatorTypes: CreatorType[];
 };
 
-export function checkStringForTitleWorthyNameAndStuffIAmTiredOfMakingVariableNames(field: string): boolean {
+export function hasTitleRelatedField(field: string): boolean {
 	return (
 		field.includes('title') ||
 		field.includes('Title') ||
