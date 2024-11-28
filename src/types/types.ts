@@ -28,25 +28,9 @@ export type Collection = {
 	relations: Record<string, string>; // TODO: Implement Relations (if needed?)
 };
 
-export interface ZoteroNode {
-	id: string;
-	parentId: string | null;
-	type: 'collection' | 'item';
-	data: Item | Collection;
-}
-
 export interface RemNode {
 	remId: string;
 	zoteroId: string;
 	zoteroParentId: string | string[] | null;
 	rem: Rem;
 }
-
-export interface SyncTree {
-	nodes: Map<string, RemNode>;
-	rootId: string;
-}
-
-export type SerializableItem = Omit<Item, 'rem'>;
-export type SerializableCollection = Omit<Collection, 'rem'>;
-
