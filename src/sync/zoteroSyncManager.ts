@@ -24,6 +24,7 @@ export class ZoteroSyncManager {
 
 	async sync(): Promise<void> {
 		const rem = await birthZoteroRem(this.plugin);
+		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
 		// Fetch current data from Zotero
 		const currentData = await this.api.getAllData();
 
@@ -51,7 +52,7 @@ export class ZoteroSyncManager {
 		await this.treeBuilder.applyChanges(changes);
 
 		// Hydrate properties of affected Rems
-		await this.propertyHydrator.hydrateProperties(changes);
+		if (!isSimpleSync) await this.propertyHydrator.hydrateProperties(changes);
 
 		const serializableCurrentData = {
 			items: currentData.items.map((item) => {

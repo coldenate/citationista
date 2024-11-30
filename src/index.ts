@@ -6,6 +6,7 @@ import { birthZoteroRem } from './services/createLibraryRem';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
+import { logMessage, LogType } from './utils/logging';
 
 async function onActivate(plugin: RNPlugin) {
 	// TODO: RETURN THIS TO A NUMBER SETTINGS
@@ -23,11 +24,10 @@ async function onActivate(plugin: RNPlugin) {
 	});
 
 	await plugin.settings.registerBooleanSetting({
-		// TODO: implement this feature
 		id: 'simple-mode',
 		title: 'Simple Syncing Mode',
 		description:
-			'Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
+			'(not recommended) Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
 		defaultValue: false,
 	});
 
@@ -298,12 +298,12 @@ async function onActivate(plugin: RNPlugin) {
 					description:
 						'Logs remote (Zotero Cloud) and Local (This RemNote KB) Collections, Items, and other values.',
 					action: async () => {
-						// TODO: implement this feature
-						// log the key API key
-						console.log(
-							'Zotero API Key:',
-							(await plugin.settings.getSetting('zotero-api-key')) ||
-								'key not detected oops not good :('
+						await logMessage(
+							plugin,
+							'Zotero API Key: ' +
+								((await plugin.settings.getSetting('zotero-api-key')) ||
+									'key not detected oops not good :('),
+							LogType.Info
 						);
 					},
 				});

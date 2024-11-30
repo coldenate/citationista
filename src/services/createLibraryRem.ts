@@ -3,7 +3,16 @@ import { LogType, logMessage } from '../utils/logging';
 import { powerupCodes } from '../constants/constants';
 
 export async function birthZoteroRem(plugin: RNPlugin) {
-	await plugin.app.waitForInitialSync(); //TODO: Test to see if this slows down the plugin
+	// Measure the time taken
+	const startTime = Date.now();
+	await plugin.app.waitForInitialSync();
+	const endTime = Date.now(); // TODO: figure this out
+	await logMessage(
+		plugin,
+		`waitForInitialSync took ${endTime - startTime} ms`,
+		LogType.Info,
+		false
+	);
 	const zoteroLibraryRemId = await plugin.storage.getSynced('zoteroLibraryRemId');
 	if (zoteroLibraryRemId != undefined) {
 		const doesRemExist = await plugin.rem.findOne(zoteroLibraryRemId as string);
