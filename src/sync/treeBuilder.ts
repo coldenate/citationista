@@ -2,6 +2,7 @@ import { RNPlugin, Rem, filterAsync } from '@remnote/plugin-sdk';
 import { Collection, Item, RemNode, ChangeSet } from '../types/types';
 import { powerupCodes } from '../constants/constants';
 import { logMessage, LogType } from '../utils/logging';
+import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/createLibraryRem';
 
 export class TreeBuilder {
 	getNodeCache(): Map<string, RemNode> {
@@ -15,7 +16,7 @@ export class TreeBuilder {
 	}
 
 	async initializeNodeCache(): Promise<void> {
-		logMessage(this.plugin, 'Initializing Node Cache', LogType.Info);
+		logMessage(this.plugin, 'Initializing Node Cache', LogType.Info, false);
 		// Fetch all Rems with the 'zoteroId' property
 		const collectionPowerup = await this.plugin.powerup.getPowerupByCode(
 			powerupCodes.COLLECTION
@@ -72,6 +73,8 @@ export class TreeBuilder {
 				rem,
 			});
 		}
+
+		logMessage(this.plugin, 'Node Cache Initialized', LogType.Info, false, this.nodeCache);
 	}
 
 	async applyChanges(changes: ChangeSet): Promise<void> {
@@ -164,7 +167,7 @@ export class TreeBuilder {
 					await remNode.rem.setParent(parentNode.rem);
 				} else {
 					// Assign to root or a default parent
-					const zoteroLibraryRem = await this.getZoteroLibraryRem();
+					const zoteroLibraryRem = await getZoteroLibraryRem(this.plugin);
 					if (zoteroLibraryRem) {
 						await remNode.rem.setParent(zoteroLibraryRem);
 					}
@@ -238,13 +241,8 @@ export class TreeBuilder {
 	}
 
 	private async moveItems(items: Item[]): Promise<void> {
-		// Sort items to process parents first
-		items.sort((a, b) => {
-			if (a.key === b.data.parentItem) return -1;
-			if (b.key === a.data.parentItem) return 1;
-			return 0;
-		});
-
+		const unfiledZoteroItemsRem = await getUnfiledItemsRem(this.plugin);
+		const listOfUnfiledItems = [];
 		for (const item of items) {
 			const remNode = this.nodeCache.get(item.key);
 			if (remNode) {
@@ -259,54 +257,46 @@ export class TreeBuilder {
 				}
 
 				// Include all collections
-				if (item.data.collections) {
+				if (item.data.collections && item.data.collections.length > 0) {
 					for (const collectionId of item.data.collections) {
 						const collectionNode = this.nodeCache.get(collectionId);
 						if (collectionNode) {
 							parentNodes.push(collectionNode);
+						} else {
+							// Log missing collection
+							console.warn(
+								`Collection ${collectionId} not found for item ${item.key}`
+							);
 						}
 					}
+				} else {
+					// If no collections or parentItem, assign to root
+					listOfUnfiledItems.push(remNode);
+					if (unfiledZoteroItemsRem) {
+						await remNode.rem.setParent(unfiledZoteroItemsRem);
+					}
+					continue;
 				}
 
 				if (parentNodes.length > 0) {
-					// Set primary parent (parentItem or first collection)
+					// Set primary parent
 					const primaryParent = parentNodes[0];
 					await remNode.rem.setParent(primaryParent.rem);
 
-					// Add portals to other collections if applicable
-					if (parentNodes.length > 1) {
-						// Start from index 1 since index 0 is the primary parent
-						for (let i = 1; i < parentNodes.length; i++) {
-							const additionalParent = parentNodes[i];
-							// Create a portal in the additional parent Rem pointing to remNode.rem
-							// await additionalParent.rem.addPortal(remNode.rem._id);
-							console.warn('Portals not implemented yet');
-						}
+					// Add portals to other parents
+					for (let i = 1; i < parentNodes.length; i++) {
+						console.log('Adding portal to parent:', parentNodes[i].remId);
+						const additionalParent = parentNodes[i];
+						const portal = await this.plugin.rem.createPortal();
+						portal?.setParent(additionalParent.rem);
+						remNode.rem.addToPortal(portal!);
 					}
 
 					// Update remNode.zoteroParentId
 					remNode.zoteroParentId = primaryParent.zoteroId;
-				} else {
-					// Assign to root or default parent
-					const zoteroLibraryRem = await this.getZoteroLibraryRem();
-					if (zoteroLibraryRem) {
-						await remNode.rem.setParent(zoteroLibraryRem);
-					}
-					remNode.zoteroParentId = null;
 				}
 			}
 		}
-	}
-	// Helper method to get Zotero Library Rem
-	private async getZoteroLibraryRem(): Promise<Rem | null> {
-		const zoteroLibraryPowerUpRem = await this.plugin.powerup.getPowerupByCode(
-			powerupCodes.ZOTERO_SYNCED_LIBRARY
-		);
-		if (!zoteroLibraryPowerUpRem) {
-			console.error('Zotero Library Power-Up not found!');
-			return null;
-		}
-		const zoteroLibraryRem = (await zoteroLibraryPowerUpRem.taggedRem())[0];
-		return zoteroLibraryRem || null;
+		console.log('Unfiled Items:', listOfUnfiledItems);
 	}
 }

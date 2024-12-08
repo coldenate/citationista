@@ -1,0 +1,163 @@
+import { RNPlugin, Rem } from '@remnote/plugin-sdk';
+import { Item, Collection, RemNode } from '../types/types';
+import { TreeBuilder } from './treeBuilder';
+import { logMessage, LogType } from '../utils/logging';
+import { powerupCodes } from '../constants/constants';
+
+export class Validator {
+  private plugin: RNPlugin;
+  private treeBuilder: TreeBuilder;
+
+  constructor(plugin: RNPlugin) {
+    this.plugin = plugin;
+    this.treeBuilder = new TreeBuilder(plugin);
+  }
+
+  async validateTreeStructure(): Promise<ValidationResult> {
+    const errors: ValidationError[] = [];
+    await this.treeBuilder.initializeNodeCache();
+    const nodeCache = this.treeBuilder.getNodeCache();
+
+    for (const [key, remNode] of nodeCache) {
+      // Validate tree structure
+      const structureErrors = await this.validateNodeStructure(remNode, nodeCache);
+      errors.push(...structureErrors);
+
+      // Validate properties
+      const propertyErrors = await this.validateProperties(remNode);
+      errors.push(...propertyErrors);
+
+      // Validate relationships
+      const relationshipErrors = await this.validateRelationships(remNode, nodeCache);
+      errors.push(...relationshipErrors);
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+    };
+  }
+
+  private async validateNodeStructure(
+    remNode: RemNode,
+    nodeCache: Map<string, RemNode>
+  ): Promise<ValidationError[]> {
+    const errors: ValidationError[] = [];
+    const rem = remNode.rem;
+
+    // Validate parent-child relationships
+    const parentRem = await rem.getParentRem();
+    if (!parentRem && remNode.zoteroParentId) {
+      errors.push({
+        type: 'ParentMissing',
+        message: `Rem ${rem._id} is missing expected parent ${remNode.zoteroParentId}`,
+        remId: rem._id,
+      });
+    }
+
+    // Validate powerup presence
+    const hasPowerup = await this.validatePowerupPresence(rem);
+    if (!hasPowerup) {
+      errors.push({
+        type: 'PowerupMissing',
+        message: `Rem ${rem._id} is missing required powerup`,
+        remId: rem._id,
+      });
+    }
+
+    return errors;
+  }
+
+  private async validateProperties(remNode: RemNode): Promise<ValidationError[]> {
+    const errors: ValidationError[] = [];
+    const rem = remNode.rem;
+
+    // Validate key property
+    const keyProperty = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
+    if (!keyProperty || keyProperty[0] !== remNode.zoteroId) {
+      errors.push({
+        type: 'InvalidKey',
+        message: `Rem ${rem._id} has incorrect 'key' property`,
+        remId: rem._id,
+      });
+    }
+
+    // Validate version property
+    const versionProperty = await rem.getPowerupProperty(powerupCodes.ZITEM, 'version');
+    if (!versionProperty || !this.isValidVersion(versionProperty[0])) {
+      errors.push({
+        type: 'InvalidVersion',
+        message: `Rem ${rem._id} has invalid version property`,
+        remId: rem._id,
+      });
+    }
+
+    // Validate required text content
+    const text = await rem.getText();
+    if (!text || text.length === 0) {
+      errors.push({
+        type: 'MissingText',
+        message: `Rem ${rem._id} is missing required text content`,
+        remId: rem._id,
+      });
+    }
+
+    return errors;
+  }
+
+  private async validateRelationships(
+    remNode: RemNode,
+    nodeCache: Map<string, RemNode>
+  ): Promise<ValidationError[]> {
+    const errors: ValidationError[] = [];
+    const rem = remNode.rem;
+
+    // Validate parent-child bidirectional relationships
+    if (remNode.zoteroParentId) {
+      const parentNode = nodeCache.get(Array.isArray(remNode.zoteroParentId)
+        ? remNode.zoteroParentId[0]
+        : remNode.zoteroParentId);
+
+      if (parentNode) {
+        const isChild = await this.isChildOf(rem, parentNode.rem);
+        if (!isChild) {
+          errors.push({
+            type: 'BrokenRelationship',
+            message: `Rem ${rem._id} is not properly linked to parent ${parentNode.rem._id}`,
+            remId: rem._id,
+          });
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  private async validatePowerupPresence(rem: Rem): Promise<boolean> {
+    const itemPowerup = await rem.hasPowerup(powerupCodes.ZITEM);
+    const collectionPowerup = await rem.hasPowerup(powerupCodes.COLLECTION);
+    return itemPowerup || collectionPowerup;
+  }
+
+  private isValidVersion(version: string): boolean {
+    const versionNum = parseInt(version);
+    return !isNaN(versionNum) && versionNum >= 0;
+  }
+
+  private async isChildOf(childRem: Rem, parentRem: Rem): Promise<boolean> {
+    const actualParent = await childRem.getParentRem();
+    return actualParent?._id === parentRem._id;
+  }
+}
+
+interface ValidationError {
+  type: 'ParentMissing' | 'PowerupMissing' | 'InvalidKey' | 'InvalidVersion' |
+        'MissingText' | 'BrokenRelationship';
+  message: string;
+  remId: string;
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
+}

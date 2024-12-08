@@ -5,7 +5,8 @@ import { TreeBuilder } from './treeBuilder';
 import { ChangeDetector } from './changeDetector';
 import { PropertyHydrator } from './propertyHydrator';
 import { ChangeSet, Collection, Item } from '../types/types';
-import { birthZoteroRem } from '../services/createLibraryRem';
+import { birthZoteroRem, ensureUnfiledItemsRem } from '../services/createLibraryRem';
+import { logMessage, LogType } from '../utils/logging';
 
 export class ZoteroSyncManager {
 	private plugin: RNPlugin;
@@ -23,7 +24,13 @@ export class ZoteroSyncManager {
 	}
 
 	async sync(): Promise<void> {
+		// avoid doing anything if the surface level change detector says nothing has changed
+
+		// const libVersion = await this.api.getCurrentLibraryVersion(); can't figure out how to do this #TODO: Implement this
+
 		const rem = await birthZoteroRem(this.plugin);
+		await ensureUnfiledItemsRem(this.plugin);
+
 		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
 		// Fetch current data from Zotero
 		const currentData = await this.api.getAllData();
@@ -46,7 +53,7 @@ export class ZoteroSyncManager {
 		await this.treeBuilder.initializeNodeCache();
 
 		// Detect changes
-		const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
+		const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData); // this does not use the nodeCache
 
 		// Apply changes to the RemNote tree
 		await this.treeBuilder.applyChanges(changes);
@@ -67,5 +74,6 @@ export class ZoteroSyncManager {
 
 		// Store current data for future comparisons
 		await this.plugin.storage.setSynced('zoteroData', serializableCurrentData);
+		logMessage(this.plugin, '🔁 Synced with Zotero!', LogType.Info, true);
 	}
 }

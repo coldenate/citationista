@@ -51,3 +51,63 @@ export async function birthZoteroRem(plugin: RNPlugin) {
 	// await helpInfoRem.setParent(rem!);
 	return rem;
 }
+
+export async function ensureUnfiledItemsRem(plugin: RNPlugin): Promise<void> {
+	const unfiledRemId = await plugin.storage.getSynced('unfiledItemsRemId');
+	if (unfiledRemId) {
+		const existingRem = await plugin.rem.findOne(unfiledRemId as string);
+		if (existingRem) {
+			logMessage(plugin, '"Unfiled Items" Rem already exists', LogType.Info, false);
+			return;
+		}
+	}
+
+	// Create the "Unfiled Items" Rem
+	const unfiledRem = await plugin.rem.createRem();
+	if (!unfiledRem) {
+		await logMessage(plugin, 'Failed to create "Unfiled Items" Rem', LogType.Error, false);
+		return;
+	}
+
+	await unfiledRem.setText(['Unfiled Items']);
+	await unfiledRem.addPowerup(powerupCodes.ZOTERO_UNFILED_ITEMS);
+	const zoteroRem = await getZoteroLibraryRem(plugin);
+	if (zoteroRem) {
+		await unfiledRem.setParent(zoteroRem);
+	} else {
+		await logMessage(
+			plugin,
+			'Failed to set parent for "Unfiled Items" Rem',
+			LogType.Error,
+			false
+		);
+		return;
+	}
+
+	await plugin.storage.setSynced('unfiledItemsRemId', unfiledRem._id);
+	logMessage(plugin, 'Created "Unfiled Items" Rem', LogType.Info, false);
+}
+
+export async function getZoteroLibraryRem(plugin: RNPlugin): Promise<Rem | null> {
+	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode(
+		powerupCodes.ZOTERO_SYNCED_LIBRARY
+	);
+	if (!zoteroLibraryPowerUpRem) {
+		console.error('Zotero Library Power-Up not found!');
+		return null;
+	}
+	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem.taggedRem())[0];
+	return zoteroLibraryRem || null;
+}
+
+export async function getUnfiledItemsRem(plugin: RNPlugin): Promise<Rem | null> {
+	const unfiledZoteroItemsPowerup = await plugin.powerup.getPowerupByCode(
+		powerupCodes.ZOTERO_UNFILED_ITEMS
+	);
+	if (!unfiledZoteroItemsPowerup) {
+		console.error('Unfiled Power-Up not found!');
+		return null;
+	}
+	const firstUnfiledZoteroItem = (await unfiledZoteroItemsPowerup.taggedRem())[0];
+	return firstUnfiledZoteroItem || null;
+}

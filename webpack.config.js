@@ -118,6 +118,17 @@ if (isProd) {
 			'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
 			'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
 		},
+		proxy: {
+			'/zotero': {
+				target: 'https://api.zotero.org',
+				changeOrigin: true,
+				secure: false,
+				pathRewrite: { '^/goodreads': '' },
+				onProxyReq: (proxyReq) => {
+					proxyReq.setHeader('origin', 'https://api.zotero.org');
+				},
+			},
+		},
 	};
 }
 

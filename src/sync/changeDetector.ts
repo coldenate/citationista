@@ -28,14 +28,15 @@ export class ChangeDetector {
 			if (!prevItem) {
 				changes.newItems.push(currentItem);
 			} else {
+				const prevCollections = prevItem.data.collections || [];
+				const currentCollections = currentItem.data.collections || [];
+
 				if (JSON.stringify(prevItem.data) !== JSON.stringify(currentItem.data)) {
 					changes.updatedItems.push(currentItem);
 				}
-				// Check for moved items if it even has a collection
-				if (prevItem.data.collections) {
-					if (prevItem.data.collections[0] !== currentItem.data.collections[0]) {
-						changes.movedItems.push(currentItem);
-					}
+				// Detect moved items based on all associated collections
+				if (!arraysEqual(prevCollections, currentCollections)) {
+					changes.movedItems.push(currentItem);
 				}
 			}
 		}
@@ -53,7 +54,8 @@ export class ChangeDetector {
 			if (!prevCollection) {
 				changes.newCollections.push(currentCollection);
 			} else {
-				if (prevCollection !== currentCollection) {
+				// Compare collection contents instead of references
+				if (JSON.stringify(prevCollection) !== JSON.stringify(currentCollection)) {
 					changes.updatedCollections.push(currentCollection);
 				}
 				// Check for moved collections
@@ -78,4 +80,12 @@ export class ChangeDetector {
 
 		return changes;
 	}
+}
+
+// Helper function to compare arrays irrespective of order
+function arraysEqual(a: any[], b: any[]): boolean {
+	if (a.length !== b.length) return false;
+	const sortedA = [...a].sort();
+	const sortedB = [...b].sort();
+	return sortedA.every((value, index) => value === sortedB[index]);
 }

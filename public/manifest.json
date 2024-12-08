@@ -6,8 +6,8 @@
 	"repoUrl": "https://github.com/coldenate/citationista",
 	"version": {
 		"major": 0,
-		"minor": 1,
-		"patch": 1
+		"minor": 2,
+		"patch": 0
 	},
 	"theme": [],
 	"enableOnMobile": true,
@@ -52,6 +52,11 @@
 		{
 			"type": "Powerup",
 			"powerupCode": "coolPool",
+			"level": "ReadCreateModifyDelete"
+		},
+		{
+			"type": "Powerup",
+			"powerupCode": "zotero-unfiled-items",
 			"level": "ReadCreateModifyDelete"
 		}
 	]
