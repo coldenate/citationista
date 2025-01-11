@@ -83,6 +83,7 @@ export class PropertyHydrator {
 					}
 
 					if (propertyType === PropertyType.URL) {
+						// TODO: what if there are multiple URLs?
 						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
 						if (!linkID) {
 							console.error('Failed to create link rem for URL:', propertyValue);
@@ -93,6 +94,8 @@ export class PropertyHydrator {
 							// @ts-ignore
 							this.plugin.richText.rem(linkID).richText
 						);
+						// attempt to add these as Rem's Sources for RemNote Reader Interoperability
+						await rem.addSource(linkID);
 					} else {
 						await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
 					}

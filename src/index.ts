@@ -38,6 +38,26 @@ async function onActivate(plugin: RNPlugin) {
 		options: citationFormats,
 	});
 
+	await plugin.settings.registerDropdownSetting({
+		id: 'multiple-colections-behavior',
+		title: 'Items in Multiple Collections Display Behavior',
+		description:
+			'Decide how items should behave when they appear in more than one collection. Portal: Links all instances of the item to a SINGLE shared version (changes apply everywhere). References: Creates SEPARATE versions of the item for each collection (changes apply only in that collection).',
+		defaultValue: 'portal',
+		options: [
+			{
+				key: 'portal',
+				label: 'Portal',
+				value: 'portal',
+			},
+			{
+				key: 'reference',
+				label: 'Reference',
+				value: 'reference',
+			},
+		],
+	});
+
 	await plugin.settings.registerBooleanSetting({
 		id: 'debug-mode',
 		title: 'Debug Mode (Citationista)',
@@ -261,6 +281,7 @@ async function onActivate(plugin: RNPlugin) {
 		await isDebugMode(reactivePlugin).then(async (debugMode) => {
 			if (debugMode) {
 				plugin.app.toast('Debug Mode Enabled; Registering Debug Tools for Citationista...');
+
 				await plugin.app.registerCommand({
 					name: 'Citationista Force Syncing of Zotero Library',
 					description: 'Forces synchronization with Zotero.',
@@ -415,6 +436,19 @@ async function onActivate(plugin: RNPlugin) {
 									await rem!.remove();
 								});
 							}
+						}
+					},
+				});
+				// console log rem contents of focused rem
+				await plugin.app.registerCommand({
+					id: 'log-rem-contents',
+					name: 'Log Rem Contents',
+					description: 'Log Rem Contents',
+					quickCode: 'lrc',
+					action: async () => {
+						const focusedRem = await plugin.focus.getFocusedRem();
+						if (focusedRem) {
+							console.log(focusedRem.text);
 						}
 					},
 				});

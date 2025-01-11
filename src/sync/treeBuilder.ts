@@ -176,7 +176,6 @@ export class TreeBuilder {
 			}
 		}
 	}
-
 	// Item methods
 	private async createItems(items: Item[]): Promise<void> {
 		for (const item of items) {
@@ -242,6 +241,10 @@ export class TreeBuilder {
 
 	private async moveItems(items: Item[]): Promise<void> {
 		const unfiledZoteroItemsRem = await getUnfiledItemsRem(this.plugin);
+		const multipleCollectionsBehavior = (await this.plugin.settings.getSetting(
+			'multiple-colections-behavior'
+		)) as 'portal' | 'reference';
+		console.log('Multiple Collections Behavior:', multipleCollectionsBehavior);
 		const listOfUnfiledItems = [];
 		for (const item of items) {
 			const remNode = this.nodeCache.get(item.key);
@@ -283,13 +286,24 @@ export class TreeBuilder {
 					const primaryParent = parentNodes[0];
 					await remNode.rem.setParent(primaryParent.rem);
 
-					// Add portals to other parents
-					for (let i = 1; i < parentNodes.length; i++) {
-						console.log('Adding portal to parent:', parentNodes[i].remId);
-						const additionalParent = parentNodes[i];
-						const portal = await this.plugin.rem.createPortal();
-						portal?.setParent(additionalParent.rem);
-						remNode.rem.addToPortal(portal!);
+					if (multipleCollectionsBehavior === 'portal') {
+						// Add portals to other parents
+						for (let i = 1; i < parentNodes.length; i++) {
+							console.log('Adding portal to parent:', parentNodes[i].remId);
+							const additionalParent = parentNodes[i];
+							const portal = await this.plugin.rem.createPortal();
+							portal?.setParent(additionalParent.rem);
+							remNode.rem.addToPortal(portal!);
+						}
+					} else if (multipleCollectionsBehavior === 'reference') {
+						// Create separate references for each parent
+						for (let i = 1; i < parentNodes.length; i++) {
+							console.log('Creating reference for parent:', parentNodes[i].remId);
+							const additionalParent = parentNodes[i];
+							const emptyRem = await this.plugin.rem.createRem();
+							emptyRem?.setParent(additionalParent.rem);
+							emptyRem?.setText([{ i: 'q', _id: remNode.rem._id }]); //what the hell is this?? why does this work??
+						}
 					}
 
 					// Update remNode.zoteroParentId

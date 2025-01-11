@@ -24,10 +24,6 @@ export class ZoteroSyncManager {
 	}
 
 	async sync(): Promise<void> {
-		// avoid doing anything if the surface level change detector says nothing has changed
-
-		// const libVersion = await this.api.getCurrentLibraryVersion(); can't figure out how to do this #TODO: Implement this
-
 		const rem = await birthZoteroRem(this.plugin);
 		await ensureUnfiledItemsRem(this.plugin);
 
