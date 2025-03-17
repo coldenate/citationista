@@ -5,7 +5,7 @@ import { TreeBuilder } from './treeBuilder';
 import { ChangeDetector } from './changeDetector';
 import { PropertyHydrator } from './propertyHydrator';
 import { ChangeSet, Collection, Item } from '../types/types';
-import { birthZoteroRem, ensureUnfiledItemsRem } from '../services/createLibraryRem';
+import { birthZoteroRem as ensureZoteroRemExists, ensureUnfiledItemsRem } from '../services/createLibraryRem';
 import { logMessage, LogType } from '../utils/logging';
 
 export class ZoteroSyncManager {
@@ -24,7 +24,7 @@ export class ZoteroSyncManager {
 	}
 
 	async sync(): Promise<void> {
-		const rem = await birthZoteroRem(this.plugin);
+		const rem = await ensureZoteroRemExists(this.plugin);
 		await ensureUnfiledItemsRem(this.plugin);
 
 		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
