@@ -310,15 +310,6 @@ async function registerDebugCommands(plugin: RNPlugin) {
 		},
 	});
 	await plugin.app.registerCommand({
-		id: 'delete-all-citationista-rems',
-		name: 'Delete all Citationista Rems',
-		description: 'Delete all Citationista-generated Rems (Items and Collections)',
-		quickCode: 'dacr',
-		action: async () => {
-			await deleteTaggedRems(plugin, [powerupCodes.ZITEM, powerupCodes.COLLECTION]);
-		},
-	});
-	await plugin.app.registerCommand({
 		id: 'test-make-rem-tag-with-zitem-powerup',
 		name: 'Test Make Rem and Tag with Zitem Powerup',
 		description: 'Test Make Rem and Tag with Zitem Powerup',

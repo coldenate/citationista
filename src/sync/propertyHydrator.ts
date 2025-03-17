@@ -13,6 +13,30 @@ export class PropertyHydrator {
 		this.plugin = plugin;
 	}
 
+	/**
+	 * Hydrates properties for items and collections based on the provided changes.
+	 * 
+	 * //TODO: I think this is heavily dependent on #zoteroSyncManager.ts's buildTreeWithChanges function.
+	 *
+	 * @param {ChangeSet} changes - The set of changes containing new and updated items and collections.
+	 * @returns {Promise<void>} A promise that resolves when the hydration process is complete.
+	 *
+	 * This function performs the following steps:
+	 * 1. Combines new and updated items into a single list and hydrates their properties.
+	 * 2. Combines new and updated collections into a single list and hydrates their properties.
+	 *
+	 * For each item, it:
+	 * - Retrieves the corresponding Rem object.
+	 * - Sets custom properties and adds content.
+	 * - Adds powerups and sets powerup properties.
+	 * - Filters and processes properties, setting values based on matching keys.
+	 * - Handles special cases for URL properties and title-related fields.
+	 *
+	 * For each collection, it:
+	 * - Retrieves the corresponding Rem object.
+	 * - Adds powerups and sets powerup properties.
+	 * - Sets the text and other properties for the collection.
+	 */
 	async hydrateProperties(changes: ChangeSet): Promise<void> {
 		const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
 		const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];

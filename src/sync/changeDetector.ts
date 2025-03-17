@@ -72,12 +72,10 @@ export class ChangeDetector {
 			}
 		}
 
-		// Initial sync handling
 		if (prevData.items.length === 0 && prevData.collections.length === 0) {
 			changes.newItems = currentData.items;
 			changes.newCollections = currentData.collections;
 		}
-
 		return changes;
 	}
 }

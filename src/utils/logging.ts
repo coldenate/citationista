@@ -43,7 +43,6 @@ export async function logMessage(
 	params?: any
 ) {
 	const debugMode = await plugin.settings.getSetting('debug-mode');
-	const showToasts = await plugin.settings.getSetting('show-toasts');
 
 	if (debugMode) {
 		const baseplateIdentifier = `${logTypeToEmoji[type].emoji}+📚`;
@@ -68,7 +67,7 @@ export async function logMessage(
 				break;
 		}
 	}
-	if (isToast && showToasts) {
+	if (isToast && debugMode) {
 		await plugin.app.toast(`${logTypeToEmoji[type].emoji} ${message}`);
 	}
 }

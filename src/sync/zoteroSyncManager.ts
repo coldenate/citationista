@@ -1,15 +1,15 @@
 import { RNPlugin } from '@remnote/plugin-sdk';
-// @ts-ignore
 import { ZoteroAPI } from '../api/zotero';
 import { TreeBuilder } from './treeBuilder';
 import { ChangeDetector } from './changeDetector';
 import { PropertyHydrator } from './propertyHydrator';
-import { ChangeSet, Collection, Item } from '../types/types';
-import {
-	ensureZoteroRemExists as ensureZoteroRemExists,
-	ensureUnfiledItemsRem,
-} from '../services/ensureUIPrettyZoteroRemExist';
+import { ChangeSet, Item, Collection } from '../types/types';
 import { logMessage, LogType } from '../utils/logging';
+import {
+	ensureUnfiledItemsRem,
+	ensureZoteroRemExists,
+} from '../services/ensureUIPrettyZoteroRemExist';
+import { mergeUpdatedItems } from './mergeUpdatedItems';
 
 export class ZoteroSyncManager {
 	private plugin: RNPlugin;
@@ -27,52 +27,51 @@ export class ZoteroSyncManager {
 	}
 
 	async sync(): Promise<void> {
-		const rem = await ensureZoteroRemExists(this.plugin);
+		// 1. Ensure essential Rems exist (e.g., Zotero Library Rem, Unfiled Items Rem).
+		await ensureZoteroRemExists(this.plugin);
 		await ensureUnfiledItemsRem(this.plugin);
 
-		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
-		// Fetch current data from Zotero
+		// 2. Fetch current data from Zotero.
 		const currentData = await this.api.getAllData();
 
-		// Retrieve previous data from storage
+		// 3. Retrieve previous sync data (shadow copy) from storage.
 		let prevData = ((await this.plugin.storage.getSynced('zoteroData')) as {
 			items: Item[];
 			collections: Collection[];
-		}) || {
-			items: [],
-			collections: [],
-		};
+		}) || { items: [], collections: [] };
 
-		// Check if previous data exists
-		if (!prevData.items || !prevData.collections) {
-			prevData = { items: [], collections: [] };
-		}
-
-		// **Initialize nodeCache** 
+		// 4. Initialize node cache for the current Rem tree.
 		await this.treeBuilder.initializeNodeCache();
 
-		// Detect changes
-		const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData); // this does not use the nodeCache
+		// 5. Detect changes by comparing prevData and currentData.
+		const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
 
-		// Apply changes to the RemNote tree
+		// 6. For each updated item, merge local modifications with remote data,
+		//    using the previous sync (shadow) data as the base.
+		await mergeUpdatedItems(this.plugin, changes, prevData.items);
+
+		// 7. Apply structural changes to update the Rem tree.
 		await this.treeBuilder.applyChanges(changes);
 
-		// Hydrate properties of affected Rems
-		if (!isSimpleSync) await this.propertyHydrator.hydrateProperties(changes);
+		// 8. Populate detailed properties (build fields) on each Rem.
+		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
+		if (!isSimpleSync) {
+			await this.propertyHydrator.hydrateProperties(changes);
+		}
 
-		const serializableCurrentData = {
+		// 9. Save the current data as the new shadow copy for future syncs.
+		const serializableData = {
 			items: currentData.items.map((item) => {
-				const { rem, ...serializableItem } = item;
-				return serializableItem;
+				const { rem, ...rest } = item;
+				return rest;
 			}),
 			collections: currentData.collections.map((collection) => {
-				const { rem, ...serializableCollection } = collection;
-				return serializableCollection;
+				const { rem, ...rest } = collection;
+				return rest;
 			}),
 		};
+		await this.plugin.storage.setSynced('zoteroData', serializableData);
 
-		// Store current data for future comparisons
-		await this.plugin.storage.setSynced('zoteroData', serializableCurrentData);
-		logMessage(this.plugin, '🔁 Synced with Zotero!', LogType.Info, true);
+		logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
 	}
 }

@@ -15,23 +15,51 @@ export class TreeBuilder {
 		this.plugin = plugin;
 	}
 
+	/**
+	 * Initializes the node cache by fetching all Rems tagged with specific power-ups
+	 * and storing relevant information in the cache.
+	 *
+	 * The node cache is a Map that maintains associations between Zotero objects and their
+	 * corresponding RemNote Rems. It maps Zotero IDs (keys) to RemNode objects containing:
+	 * - remId: The RemNote Rem identifier
+	 * - zoteroId: The Zotero object's unique key
+	 * - zoteroParentId: The parent object's ID (collection or item parent)
+	 * - rem: The actual RemNote Rem object
+	 *
+	 * This cache enables efficient:
+	 * - Quick lookups of RemNote Rems by Zotero ID
+	 * - Tracking of parent-child relationships between objects
+	 * - Tree operations (creation, updates, moves, deletions) without repeated database queries
+	 *
+	 * This method performs the following steps:
+	 * 1. Logs the start of the initialization process.
+	 * 2. Fetches the power-ups for collections and items.
+	 * 3. Retrieves all Rems tagged with the collection and item power-ups.
+	 * 4. Filters out power-up definition Rems.
+	 * 5. Logs the number of collection and item Rems found.
+	 * 6. Iterates over the collection Rems, extracting the Zotero ID and parent collection ID,
+	 *    and stores them in the node cache.
+	 * 7. Iterates over the item Rems, extracting the Zotero ID and collection ID,
+	 *    and stores them in the node cache.
+	 * 8. Logs the completion of the initialization process.
+	 *
+	 * @throws {Error} If the required power-ups are not found.
+	 * @returns {Promise<void>} A promise that resolves when the node cache has been initialized.
+	 */
 	async initializeNodeCache(): Promise<void> {
 		logMessage(this.plugin, 'Initializing Node Cache', LogType.Info, false);
-		// Fetch all Rems with the 'zoteroId' property
+
 		const collectionPowerup = await this.plugin.powerup.getPowerupByCode(
 			powerupCodes.COLLECTION
 		);
 		const itemPowerup = await this.plugin.powerup.getPowerupByCode(powerupCodes.ZITEM);
-
 		if (!collectionPowerup || !itemPowerup) {
 			throw new Error('Required powerups not found');
 		}
-
-		// Get all Rems tagged with the power-ups
 		let itemRems = await itemPowerup.taggedRem();
 		let collectionRems = await collectionPowerup.taggedRem();
 
-		// Filter out power-up definition Rems
+		// Filter out definition Rems.
 		itemRems = await filterAsync(itemRems, async (rem) => !(await rem.isPowerup()));
 		collectionRems = await filterAsync(collectionRems, async (rem) => !(await rem.isPowerup()));
 
@@ -41,11 +69,12 @@ export class TreeBuilder {
 			LogType.Info
 		);
 
+		// Populate nodeCache for collections.
 		for (const rem of collectionRems) {
 			const zoteroId = await rem.getPowerupProperty(powerupCodes.COLLECTION, 'key');
 			if (!zoteroId) {
 				console.warn('Collection Rem missing key property:', rem._id);
-				continue; // Skip this rem
+				continue;
 			}
 			const parentZoteroId = await rem.getPowerupProperty(
 				powerupCodes.COLLECTION,
@@ -59,17 +88,18 @@ export class TreeBuilder {
 			});
 		}
 
+		// Populate nodeCache for items.
 		for (const rem of itemRems) {
 			const zoteroId = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
 			if (!zoteroId) {
 				logMessage(this.plugin, `Item Rem missing key property: ${rem._id}`, LogType.Info);
-				continue; // Skip this rem
+				continue;
 			}
 			const parentZoteroId = await rem.getPowerupProperty(powerupCodes.ZITEM, 'collection');
 			this.nodeCache.set(zoteroId, {
 				remId: rem._id,
 				zoteroId,
-				zoteroParentId: parentZoteroId || null, // FIXME: only works if there is one collection, but there can be more. to fix this, we'll need to go to types.ts and refactor the type, thne refactor all the code referencing it to use the list.
+				zoteroParentId: parentZoteroId || null,
 				rem,
 			});
 		}
@@ -100,20 +130,14 @@ export class TreeBuilder {
 		await this.moveItems([...changes.newItems, ...changes.movedItems, ...changes.updatedItems]);
 	}
 
-	// Collection methods
+	// Collection methods.
 	private async createCollections(collections: Collection[]): Promise<void> {
 		for (const collection of collections) {
 			const rem = await this.plugin.rem.createRem();
 			if (!rem) continue;
-
 			await rem.addPowerup(powerupCodes.COLLECTION);
 			await rem.setPowerupProperty(powerupCodes.COLLECTION, 'key', [collection.key]);
-
 			collection.rem = rem;
-
-			// await rem.setText([collection.data.name]);
-			// Add powerup tags or properties if needed
-
 			this.nodeCache.set(collection.key, {
 				remId: rem._id,
 				zoteroId: collection.key,
@@ -129,14 +153,11 @@ export class TreeBuilder {
 			if (remNode) {
 				await remNode.rem.setText([collection.name]);
 				collection.rem = remNode.rem;
-
 				const newParentId = collection.parentCollection || null;
 				if (remNode.zoteroParentId !== newParentId) {
 					remNode.zoteroParentId = newParentId;
-					// Re-parenting is handled in moveCollections
 				}
 			} else {
-				// Rem doesn't exist, create it
 				logMessage(
 					this.plugin,
 					`Collection ${collection.key} not found, creating it`,
@@ -166,7 +187,7 @@ export class TreeBuilder {
 				if (parentNode) {
 					await remNode.rem.setParent(parentNode.rem);
 				} else {
-					// Assign to root or a default parent
+					// Fallback: assign to the Zotero Library Rem.
 					const zoteroLibraryRem = await getZoteroLibraryRem(this.plugin);
 					if (zoteroLibraryRem) {
 						await remNode.rem.setParent(zoteroLibraryRem);
@@ -176,7 +197,8 @@ export class TreeBuilder {
 			}
 		}
 	}
-	// Item methods
+
+	// Item methods.
 	private async createItems(items: Item[]): Promise<void> {
 		for (const item of items) {
 			const rem = await this.plugin.rem.createRem();
@@ -184,25 +206,21 @@ export class TreeBuilder {
 				console.error('Failed to create Rem for item:', item.key);
 				continue;
 			}
-
 			await rem.addPowerup(powerupCodes.ZITEM);
 			await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]);
-
-			// check if the key was set
 			const remKey = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
 			if (!remKey) {
 				console.error('Key not set for item:', item.key);
 				continue;
 			}
-
 			item.rem = rem;
-			// await rem.setText([item.data.title]);
-			// Add powerup tags or properties if needed
-
 			this.nodeCache.set(item.key, {
 				remId: rem._id,
 				zoteroId: item.key,
-				zoteroParentId: item.data.parentItem || item.data.collections[0] || null,
+				zoteroParentId:
+					item.data.parentItem ||
+					(item.data.collections && item.data.collections[0]) ||
+					null,
 				rem,
 			});
 		}
@@ -212,17 +230,16 @@ export class TreeBuilder {
 		for (const item of items) {
 			const remNode = this.nodeCache.get(item.key);
 			if (remNode) {
-				const rem = remNode.rem;
 				await remNode.rem.setText([item.data.title]);
-				item.rem = rem;
-
-				const newParentId = item.data.parentItem || item.data.collections[0] || null;
+				item.rem = remNode.rem;
+				const newParentId =
+					item.data.parentItem ||
+					(item.data.collections && item.data.collections[0]) ||
+					null;
 				if (remNode.zoteroParentId !== newParentId) {
 					remNode.zoteroParentId = newParentId;
-					// Re-parenting is handled in moveItems
 				}
 			} else {
-				// Rem doesn't exist, create it
 				logMessage(this.plugin, `Item ${item.key} not found, creating it`, LogType.Info);
 				await this.createItems([item]);
 			}
@@ -250,44 +267,34 @@ export class TreeBuilder {
 			const remNode = this.nodeCache.get(item.key);
 			if (remNode) {
 				const parentNodes: RemNode[] = [];
-
-				// Include parentItem if it exists
+				// Include parentItem if available.
 				if (item.data.parentItem) {
 					const parentItemNode = this.nodeCache.get(item.data.parentItem);
-					if (parentItemNode) {
-						parentNodes.push(parentItemNode);
-					}
+					if (parentItemNode) parentNodes.push(parentItemNode);
 				}
-
-				// Include all collections
+				// Include collections.
 				if (item.data.collections && item.data.collections.length > 0) {
 					for (const collectionId of item.data.collections) {
 						const collectionNode = this.nodeCache.get(collectionId);
 						if (collectionNode) {
 							parentNodes.push(collectionNode);
 						} else {
-							// Log missing collection
 							console.warn(
 								`Collection ${collectionId} not found for item ${item.key}`
 							);
 						}
 					}
 				} else {
-					// If no collections or parentItem, assign to root
 					listOfUnfiledItems.push(remNode);
 					if (unfiledZoteroItemsRem) {
 						await remNode.rem.setParent(unfiledZoteroItemsRem);
 					}
 					continue;
 				}
-
 				if (parentNodes.length > 0) {
-					// Set primary parent
 					const primaryParent = parentNodes[0];
 					await remNode.rem.setParent(primaryParent.rem);
-
 					if (multipleCollectionsBehavior === 'portal') {
-						// Add portals to other parents
 						for (let i = 1; i < parentNodes.length; i++) {
 							console.log('Adding portal to parent:', parentNodes[i].remId);
 							const additionalParent = parentNodes[i];
@@ -296,17 +303,14 @@ export class TreeBuilder {
 							remNode.rem.addToPortal(portal!);
 						}
 					} else if (multipleCollectionsBehavior === 'reference') {
-						// Create separate references for each parent
 						for (let i = 1; i < parentNodes.length; i++) {
 							console.log('Creating reference for parent:', parentNodes[i].remId);
 							const additionalParent = parentNodes[i];
 							const emptyRem = await this.plugin.rem.createRem();
 							emptyRem?.setParent(additionalParent.rem);
-							emptyRem?.setText([{ i: 'q', _id: remNode.rem._id }]); //what the hell is this?? why does this work??
+							emptyRem?.setText([{ i: 'q', _id: remNode.rem._id }]); // a workaround behavior
 						}
 					}
-
-					// Update remNode.zoteroParentId
 					remNode.zoteroParentId = primaryParent.zoteroId;
 				}
 			}
