@@ -27,7 +27,6 @@ const logTypeToEmoji: LogTypeInfo = {
 	Critical: { name: LogType.Critical, emoji: '🚨' },
 };
 
-
 /**
  * Logs a message to the console and displays a toast notification.
  * @param plugin - The plugin object.
@@ -44,6 +43,8 @@ export async function logMessage(
 	params?: any
 ) {
 	const debugMode = await plugin.settings.getSetting('debug-mode');
+	const showToasts = await plugin.settings.getSetting('show-toasts');
+
 	if (debugMode) {
 		const baseplateIdentifier = `${logTypeToEmoji[type].emoji}+📚`;
 		const consoleEmitType = type.toLowerCase() as 'warn' | 'info' | 'error' | 'log';
@@ -55,14 +56,19 @@ export async function logMessage(
 				console.info(baseplateIdentifier, message, params);
 				break;
 			case 'error':
-				console.error(baseplateIdentifier, message, params);
+				// Changed: Preserve stack trace if message is an Error instance
+				if (message instanceof Error) {
+					console.error(baseplateIdentifier, message.stack, params);
+				} else {
+					console.error(baseplateIdentifier, message, params);
+				}
 				break;
 			default:
 				console.log(baseplateIdentifier, message, params);
 				break;
 		}
 	}
-	if (isToast) {
+	if (isToast && showToasts) {
 		await plugin.app.toast(`${logTypeToEmoji[type].emoji} ${message}`);
 	}
 }
