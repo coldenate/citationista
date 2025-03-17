@@ -5,7 +5,10 @@ import { TreeBuilder } from './treeBuilder';
 import { ChangeDetector } from './changeDetector';
 import { PropertyHydrator } from './propertyHydrator';
 import { ChangeSet, Collection, Item } from '../types/types';
-import { birthZoteroRem as ensureZoteroRemExists, ensureUnfiledItemsRem } from '../services/createLibraryRem';
+import {
+	ensureZoteroRemExists as ensureZoteroRemExists,
+	ensureUnfiledItemsRem,
+} from '../services/ensureUIPrettyZoteroRemExist';
 import { logMessage, LogType } from '../utils/logging';
 
 export class ZoteroSyncManager {
@@ -45,7 +48,7 @@ export class ZoteroSyncManager {
 			prevData = { items: [], collections: [] };
 		}
 
-		// **Initialize nodeCache**
+		// **Initialize nodeCache** 
 		await this.treeBuilder.initializeNodeCache();
 
 		// Detect changes

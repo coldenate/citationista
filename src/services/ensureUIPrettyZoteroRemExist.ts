@@ -2,7 +2,7 @@ import { BuiltInPowerupCodes, RNPlugin, Rem } from '@remnote/plugin-sdk';
 import { LogType, logMessage } from '../utils/logging';
 import { powerupCodes } from '../constants/constants';
 
-export async function birthZoteroRem(plugin: RNPlugin) {
+export async function ensureZoteroRemExists(plugin: RNPlugin) {
 	// Measure the time taken
 	const startTime = Date.now();
 	await plugin.app.waitForInitialSync();

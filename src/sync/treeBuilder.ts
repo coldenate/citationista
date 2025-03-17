@@ -2,7 +2,7 @@ import { RNPlugin, Rem, filterAsync } from '@remnote/plugin-sdk';
 import { Collection, Item, RemNode, ChangeSet } from '../types/types';
 import { powerupCodes } from '../constants/constants';
 import { logMessage, LogType } from '../utils/logging';
-import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/createLibraryRem';
+import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
 
 export class TreeBuilder {
 	getNodeCache(): Map<string, RemNode> {
