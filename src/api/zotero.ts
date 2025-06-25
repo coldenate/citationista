@@ -96,6 +96,11 @@ export class ZoteroAPI {
 
 	async getAllData(): Promise<{ items: Item[]; collections: Collection[] }> {
 		const [items, collections] = await Promise.all([this.getItems(), this.getCollections()]);
+		console.log(
+			`Fetched ${items.length} items and ${collections.length} collections from Zotero.`,
+			items,
+			collections
+		);
 		return { items, collections };
 	}
 }
