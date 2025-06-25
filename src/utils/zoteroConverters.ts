@@ -4,7 +4,11 @@ export function fromZoteroItem(raw: any) {
         version: raw.version,
         message: raw.message,
         rem: null,
-        data: raw.data,
+        data: {
+            key: raw.key,
+            version: raw.version,
+            ...raw.data,
+        },
     } as import('../types/types').Item;
 }
 
@@ -13,7 +17,7 @@ export function fromZoteroCollection(raw: any) {
         rem: null,
         key: raw.key,
         version: raw.version,
-        name: raw.data?.name,
+        name: raw.data?.name ?? '',
         parentCollection: raw.data?.parentCollection ?? '',
         relations: raw.relations ?? {},
     } as import('../types/types').Collection;
