@@ -35,10 +35,21 @@ export class ZoteroSyncManager {
 		const currentData = await this.api.getAllData();
 
 		// 3. Retrieve previous sync data (shadow copy) from storage.
-		let prevData = ((await this.plugin.storage.getSynced('zoteroData')) as {
-			items: Item[];
-			collections: Collection[];
-		}) || { items: [], collections: [] };
+                let prevDataRaw = (await this.plugin.storage.getSynced('zoteroData')) as {
+                        items?: Partial<Item>[];
+                        collections?: Partial<Collection>[];
+                } | undefined;
+                const prevData = {
+                        items: (prevDataRaw?.items || []).map((i) => ({
+                                rem: null,
+                                // spread to capture stored fields
+                                ...i,
+                        })) as Item[],
+                        collections: (prevDataRaw?.collections || []).map((c) => ({
+                                rem: null,
+                                ...c,
+                        })) as Collection[],
+                };
 
 		// 4. Initialize node cache for the current Rem tree.
 		await this.treeBuilder.initializeNodeCache();
@@ -47,7 +58,7 @@ export class ZoteroSyncManager {
 		const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
 		// 6. For each updated item, merge local modifications with remote data,
 		//    using the previous sync (shadow) data as the base.
-		await mergeUpdatedItems(this.plugin, changes, prevData.items);
+                await mergeUpdatedItems(this.plugin, changes, prevData.items, this.treeBuilder.getNodeCache());
 
 		// 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.) 
 		console.log('Changes detected:', changes);

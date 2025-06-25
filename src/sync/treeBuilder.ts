@@ -230,7 +230,7 @@ export class TreeBuilder {
 		for (const item of items) {
 			const remNode = this.nodeCache.get(item.key);
 			if (remNode) {
-				await remNode.rem.setText([item.data.title]);
+                                await remNode.rem.setText([item.data.title ?? '']);
 				item.rem = remNode.rem;
 				const newParentId =
 					item.data.parentItem ||
