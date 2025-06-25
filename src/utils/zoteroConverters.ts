@@ -21,7 +21,7 @@ export function fromZoteroItem(raw: ZoteroItemResponse): Item {
 
 export function fromZoteroCollection(raw: ZoteroCollectionResponse): Collection {
 	return {
-		rem: null,
+		rem: raw.rem ?? null,
 		key: raw.key,
 		version: raw.version,
 		name: raw.name ?? '',
