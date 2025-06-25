@@ -93,8 +93,32 @@ export interface Tag {
 }
 
 export interface Relations {
-	'dc:replaces'?: string[] | string;
-	'dc:relation'?: string;
+        'dc:replaces'?: string[] | string;
+        'dc:relation'?: string;
+}
+
+/**
+ * Raw item object returned directly from the Zotero API.
+ */
+export interface ZoteroItemResponse {
+        key: string;
+        version: number;
+        message?: string;
+        rem?: Record<string, unknown> | null;
+        data?: Partial<ZoteroItemData>;
+        relations?: Relations;
+}
+
+/**
+ * Raw collection object returned directly from the Zotero API.
+ */
+export interface ZoteroCollectionResponse {
+        key: string;
+        version: number;
+        name?: string;
+        parentCollection?: string | false;
+        rem?: Record<string, unknown> | null;
+        relations?: Record<string, string>;
 }
 
 export enum ItemType {
