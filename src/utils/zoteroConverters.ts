@@ -27,5 +27,5 @@ export function fromZoteroCollection(raw: ZoteroCollectionResponse): Collection 
 		name: raw.name ?? '',
 		parentCollection: typeof raw.parentCollection === 'string' ? raw.parentCollection : '',
 		relations: raw.relations ?? {},
-	} as Collection;
+	};
 }
