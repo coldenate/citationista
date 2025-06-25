@@ -15,7 +15,7 @@ export class PropertyHydrator {
 
 	/**
 	 * Hydrates properties for items and collections based on the provided changes.
-	 * 
+	 *
 	 * //TODO: I think this is heavily dependent on #zoteroSyncManager.ts's buildTreeWithChanges function.
 	 *
 	 * @param {ChangeSet} changes - The set of changes containing new and updated items and collections.

@@ -51,48 +51,48 @@ export class ZoteroAPI {
 		return this.connection;
 	}
 
-        private async getItems(): Promise<Item[]> {
-                try {
-                        const conn = await this.ensureConnection();
-                        const items: Item[] = [];
-                        let start = 0;
-                        const limit = 100; // Maximize limit to reduce number of requests
+	private async getItems(): Promise<Item[]> {
+		try {
+			const conn = await this.ensureConnection();
+			const items: Item[] = [];
+			let start = 0;
+			const limit = 100; // Maximize limit to reduce number of requests
 
-                        while (true) {
-                                const response = await conn.items().get({ start, limit });
-                                const rawItems = response.raw as any[];
-                                for (const raw of rawItems) {
-                                        items.push(fromZoteroItem(raw));
-                                }
+			while (true) {
+				const response = await conn.items().get({ start, limit });
+				const rawItems = response.raw as any[];
+				for (const raw of rawItems) {
+					items.push(fromZoteroItem(raw));
+				}
 
-                                if (rawItems.length < limit) {
-                                        break; // All items have been fetched
-                                }
+				if (rawItems.length < limit) {
+					break; // All items have been fetched
+				}
 
-                                // Update the start position for the next batch
-                                start += limit;
-                        }
+				// Update the start position for the next batch
+				start += limit;
+			}
 
-                        return items;
-                } catch (error) {
-                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                        await this.plugin.app.toast(`Failed to fetch Zotero items: ${errorMessage}`);
-                        throw error;
-                }
-        }
+			return items;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			await this.plugin.app.toast(`Failed to fetch Zotero items: ${errorMessage}`);
+			throw error;
+		}
+	}
 
-        private async getCollections(): Promise<Collection[]> {
-                try {
-                        const conn = await this.ensureConnection();
-                        const response = await conn.collections().get();
-                        const rawCollections = response.getData() as any[];
-                        return rawCollections.map(fromZoteroCollection);
-                } catch (error) {
-                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                        await this.plugin.app.toast(`Failed to fetch Zotero collections: ${errorMessage}`);
-                        throw error;
-                }
-        }
+	private async getCollections(): Promise<Collection[]> {
+		try {
+			const conn = await this.ensureConnection();
+			const response = await conn.collections().get();
+			const rawCollections = response.getData() as any[];
+			return rawCollections.map(fromZoteroCollection);
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			await this.plugin.app.toast(`Failed to fetch Zotero collections: ${errorMessage}`);
+			throw error;
+		}
+	}
 
 	async getAllData(): Promise<{ items: Item[]; collections: Collection[] }> {
 		const [items, collections] = await Promise.all([this.getItems(), this.getCollections()]);
