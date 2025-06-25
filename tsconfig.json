@@ -10,12 +10,12 @@
 		"allowJs": true,
 		"skipLibCheck": true,
 		"isolatedModules": true,
-		"esModuleInterop": true
+		"esModuleInterop": true,
 	},
 	"ts-node": {
 		"compilerOptions": {
-			"module": "CommonJS"
-		}
+			"module": "CommonJS",
+		},
 	},
-	"include": ["src"]
+	"include": ["src"],
 }
