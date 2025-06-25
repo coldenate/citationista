@@ -1,9 +1,8 @@
-import { filterAsync, PropertyType, RNPlugin } from '@remnote/plugin-sdk';
-import { Item, Collection, ChangeSet } from '../types/types';
-import { Rem } from '@remnote/plugin-sdk';
+import { filterAsync, PropertyType, type RNPlugin } from '@remnote/plugin-sdk';
+import type { ChangeSet } from '../types/types';
 import { powerupCodes } from '../constants/constants';
 import { deriveName, getCode } from '../utils/getCodeName';
-import { hasTitleRelatedField as hasTitleRelatedField } from '../services/zoteroSchemaToRemNote';
+import { hasTitleRelatedField } from '../services/zoteroSchemaToRemNote';
 import { logMessage, LogType } from '../utils/logging';
 
 export class PropertyHydrator {
