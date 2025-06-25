@@ -1,6 +1,11 @@
-import type { Collection, Item } from '../types/types';
+import type {
+	Collection,
+	Item,
+	ZoteroCollectionResponse,
+	ZoteroItemResponse,
+} from '../types/types';
 
-export function fromZoteroItem(raw: any) {
+export function fromZoteroItem(raw: ZoteroItemResponse): Item {
 	return {
 		key: raw.key,
 		version: raw.version,
@@ -14,13 +19,13 @@ export function fromZoteroItem(raw: any) {
 	} as Item;
 }
 
-export function fromZoteroCollection(raw: any) {
+export function fromZoteroCollection(raw: ZoteroCollectionResponse): Collection {
 	return {
 		rem: null,
 		key: raw.key,
 		version: raw.version,
 		name: raw.name ?? '',
-		parentCollection: raw.parentCollection ?? '',
+		parentCollection: raw.parentCollection || '',
 		relations: raw.relations ?? {},
-	} as Collection;
+	};
 }

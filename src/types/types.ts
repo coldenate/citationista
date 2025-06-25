@@ -1,6 +1,30 @@
 import type { Rem } from '@remnote/plugin-sdk';
 
 /**
+ * Raw item object returned directly from the Zotero API.
+ */
+export interface ZoteroItemResponse {
+	key: string;
+	version: number;
+	message?: string;
+	rem?: Record<string, unknown> | null;
+	data?: Partial<ZoteroItemData>;
+	relations?: Relations;
+}
+
+/**
+ * Raw collection object returned directly from the Zotero API.
+ */
+export interface ZoteroCollectionResponse {
+	key: string;
+	version: number;
+	name?: string;
+	parentCollection?: string | false;
+	rem?: Record<string, unknown> | null;
+	relations?: Record<string, string>;
+}
+
+/**
  * Detailed data for a Zotero item. This attempts to mirror the fields
  * returned by the Zotero Web API. All fields are optional because not every
  * item type makes use of every field.
