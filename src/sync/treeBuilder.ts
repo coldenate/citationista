@@ -285,7 +285,7 @@ export class TreeBuilder {
 						}
 					}
 				} else {
-					listOfUnfiledItems.push(remNode);
+					listOfUnfiledItems.push(item);
 					if (unfiledZoteroItemsRem) {
 						await remNode.rem.setParent(unfiledZoteroItemsRem);
 					}

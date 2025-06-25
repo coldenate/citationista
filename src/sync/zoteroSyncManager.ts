@@ -45,14 +45,13 @@ export class ZoteroSyncManager {
 
 		// 5. Detect changes by comparing prevData and currentData.
 		const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
-
 		// 6. For each updated item, merge local modifications with remote data,
 		//    using the previous sync (shadow) data as the base.
 		await mergeUpdatedItems(this.plugin, changes, prevData.items);
 
-		// 7. Apply structural changes to update the Rem tree.
+		// 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.) 
+		console.log('Changes detected:', changes);
 		await this.treeBuilder.applyChanges(changes);
-
 		// 8. Populate detailed properties (build fields) on each Rem.
 		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
 		if (!isSimpleSync) {

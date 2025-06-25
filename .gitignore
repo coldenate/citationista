@@ -6,3 +6,4 @@ dist-ssr
 *.zip
 exampleCollections.json
 exampleItems.json
+exampleUnfileditems.json
