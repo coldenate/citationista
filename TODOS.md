@@ -1,0 +1,18 @@
+-   [ ] Handling multiple URLs when hydrating properties.
+
+-   [ ] Converting the Zotero Library Rem into a folder.
+
+-   [ ] _Completing the exportCitations command (not sure)_
+
+-   [x] Finalize Zotero Item Type Definitions
+
+-   [x] Continue merging your “attempt 1” and “attempt 2” type files into a comprehensive Data interface aligned with Zotero’s schema (see src/types).
+
+-   [x] Replace the any in types.ts so synced items carry strongly typed data.
+
+-   [ ] Expand treeBuilder and mergeUpdatedItems to recognize Zotero notes/annotations and create corresponding child Rems instead of dumping them into “Unfiled Items.”
+
+-   [ ] Add logging/breakpoints around the unfiled-items code path to inspect data and ensure proper parentage
+-   [ ] Identify which fields should always favor remote values and which should merge (e.g., tags, notes).
+
+-   [ ] Update threeWayMerge.ts accordingly and add more unit tests or console output to verify results.

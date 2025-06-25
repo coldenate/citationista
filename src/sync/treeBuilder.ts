@@ -65,7 +65,7 @@ export class TreeBuilder {
 
 		logMessage(
 			this.plugin,
-			`Found ${collectionRems.length} collection Rems and ${itemRems.length} item Rems`,
+			`Found ${collectionRems.length} collection Rems and ${itemRems.length} item Rems already in RemNote.`,
 			LogType.Info
 		);
 

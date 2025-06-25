@@ -19,8 +19,8 @@ export function fromZoteroCollection(raw: any) {
 		rem: null,
 		key: raw.key,
 		version: raw.version,
-		name: raw.data?.name ?? '',
-		parentCollection: raw.data?.parentCollection ?? '',
+		name: raw.name ?? '',
+		parentCollection: raw.parentCollection ?? '',
 		relations: raw.relations ?? {},
 	} as Collection;
 }
