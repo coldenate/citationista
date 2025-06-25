@@ -1,5 +1,5 @@
-import { filterAsync, PropertyType, RNPlugin, SetRemType } from '@remnote/plugin-sdk';
-import { Item, Collection, ChangeSet, RemNode } from '../types/types';
+import { filterAsync, PropertyType, RNPlugin } from '@remnote/plugin-sdk';
+import { Item, Collection, ChangeSet } from '../types/types';
 import { Rem } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { deriveName, getCode } from '../utils/getCodeName';

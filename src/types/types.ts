@@ -161,10 +161,10 @@ export interface ChangeSet {
 }
 
 export type Collection = {
-	/** Rem corresponding to this collection. May be `null` until created */
-	rem: Rem | null;
-	key: string;
-	version: number;
+       remId: string;
+       zoteroId: string;
+       zoteroParentId: string | null;
+       rem: Rem;
 	name: string;
 	parentCollection: string;
 	relations: Record<string, string>; // TODO: Implement Relations (if needed?)
