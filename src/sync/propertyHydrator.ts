@@ -1,9 +1,8 @@
-import { filterAsync, PropertyType, RNPlugin, SetRemType } from '@remnote/plugin-sdk';
-import { Item, Collection, ChangeSet, RemNode } from '../types/types';
-import { Rem } from '@remnote/plugin-sdk';
+import { filterAsync, PropertyType, type RNPlugin } from '@remnote/plugin-sdk';
+import type { ChangeSet } from '../types/types';
 import { powerupCodes } from '../constants/constants';
 import { deriveName, getCode } from '../utils/getCodeName';
-import { hasTitleRelatedField as hasTitleRelatedField } from '../services/zoteroSchemaToRemNote';
+import { hasTitleRelatedField } from '../services/zoteroSchemaToRemNote';
 import { logMessage, LogType } from '../utils/logging';
 
 export class PropertyHydrator {
@@ -15,7 +14,7 @@ export class PropertyHydrator {
 
 	/**
 	 * Hydrates properties for items and collections based on the provided changes.
-	 * 
+	 *
 	 * //TODO: I think this is heavily dependent on #zoteroSyncManager.ts's buildTreeWithChanges function.
 	 *
 	 * @param {ChangeSet} changes - The set of changes containing new and updated items and collections.
