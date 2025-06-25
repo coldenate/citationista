@@ -1,4 +1,4 @@
-import { BuiltInPowerupCodes, RNPlugin, Rem } from '@remnote/plugin-sdk';
+import { BuiltInPowerupCodes, type RNPlugin, type Rem } from '@remnote/plugin-sdk';
 import { LogType, logMessage } from '../utils/logging';
 import { powerupCodes } from '../constants/constants';
 
@@ -14,7 +14,7 @@ export async function ensureZoteroRemExists(plugin: RNPlugin) {
 		false
 	);
 	const zoteroLibraryRemId = await plugin.storage.getSynced('zoteroLibraryRemId');
-	if (zoteroLibraryRemId != undefined) {
+	if (zoteroLibraryRemId !== undefined) {
 		const doesRemExist = await plugin.rem.findOne(zoteroLibraryRemId as string);
 		if (doesRemExist !== undefined) {
 			logMessage(plugin, 'Zotero Library Rem already exists', LogType.Info, false);
@@ -24,7 +24,7 @@ export async function ensureZoteroRemExists(plugin: RNPlugin) {
 	await logMessage(plugin, 'Zotero Library Ensured', LogType.Info, false);
 
 	let rem: Rem | undefined = await plugin.rem.createRem();
-	if (rem == undefined) {
+	if (rem === undefined) {
 		await logMessage(plugin, 'Failed to create Rem', LogType.Error, false);
 		return;
 	}

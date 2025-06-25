@@ -1,4 +1,4 @@
-import { PropertyLocation, PropertyType, RNPlugin, declareIndexPlugin } from '@remnote/plugin-sdk';
+import { PropertyLocation, PropertyType, type RNPlugin, declareIndexPlugin } from '@remnote/plugin-sdk';
 import { citationFormats, powerupCodes } from './constants/constants';
 import { setForceStop } from './services/pluginIO';
 import { exportCitations } from './services/exportCitations';
@@ -259,13 +259,13 @@ async function registerPowerups(plugin: RNPlugin) {
 	}
 }
 
-async function deleteTaggedRems(plugin: RNPlugin, powerupCodes: string[]): Promise<void> {
+async function _deleteTaggedRems(plugin: RNPlugin, powerupCodes: string[]): Promise<void> {
 	for (const code of powerupCodes) {
 		const powerup = await plugin.powerup.getPowerupByCode(code);
 		const taggedRems = await powerup?.taggedRem();
 		if (taggedRems) {
 			for (const rem of taggedRems) {
-				await rem!.remove();
+				await rem?.remove();
 			}
 		}
 	}

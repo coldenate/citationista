@@ -1,7 +1,7 @@
-import { RNPlugin } from '@remnote/plugin-sdk';
+import type { RNPlugin } from '@remnote/plugin-sdk';
 // @ts-ignore
 import api from 'zotero-api-client';
-import { Collection, Item } from '../types/types';
+import type { Collection, Item, ZoteroCollectionResponse, ZoteroItemResponse } from '../types/types';
 import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters';
 
 /**
@@ -28,12 +28,14 @@ import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters'
  */
 export class ZoteroAPI {
 	private plugin: RNPlugin;
+	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
 	private connection: any | null = null;
 
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
 	}
 
+	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
 	private async ensureConnection(): Promise<any> {
 		if (this.connection) return this.connection;
 
@@ -60,7 +62,7 @@ export class ZoteroAPI {
 
 			while (true) {
 				const response = await conn.items().get({ start, limit });
-				const rawItems = response.raw as any[];
+				const rawItems = response.raw as ZoteroItemResponse[];
 				for (const raw of rawItems) {
 					items.push(fromZoteroItem(raw));
 				}
@@ -85,7 +87,7 @@ export class ZoteroAPI {
 		try {
 			const conn = await this.ensureConnection();
 			const response = await conn.collections().get();
-			const rawCollections = response.getData() as any[];
+			const rawCollections = response.getData() as ZoteroCollectionResponse[];
 			return rawCollections.map(fromZoteroCollection);
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
