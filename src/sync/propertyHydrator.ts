@@ -1,5 +1,5 @@
-import { filterAsync, PropertyType, type RNPlugin } from '@remnote/plugin-sdk';
-import type { ChangeSet } from '../types/types';
+import { filterAsync, PropertyType, type RNPlugin, type Rem } from '@remnote/plugin-sdk';
+import type { ChangeSet, ZoteroItemData } from '../types/types';
 import { powerupCodes } from '../constants/constants';
 import { deriveName, getCode } from '../utils/getCodeName';
 import { hasTitleRelatedField } from '../services/zoteroSchemaToRemNote';
@@ -64,6 +64,10 @@ export class PropertyHydrator {
 				const properties = await filterAsync(await powerupItemType.getChildrenRem(), (c) =>
 					c.isProperty()
 				);
+
+				// Collect all URLs for adding as sources
+				const urlSources: string[] = [];
+
 				for (const property of properties) {
 					if (!property.text || property.text.length === 0) continue;
 
@@ -106,7 +110,6 @@ export class PropertyHydrator {
 					}
 
 					if (propertyType === PropertyType.URL) {
-						// TODO: what if there are multiple URLs?
 						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
 						if (!linkID) {
 							console.error('Failed to create link rem for URL:', propertyValue);
@@ -117,12 +120,15 @@ export class PropertyHydrator {
 							// @ts-ignore
 							this.plugin.richText.rem(linkID).richText
 						);
-						// attempt to add these as Rem's Sources for RemNote Reader Interoperability
-						await rem.addSource(linkID);
+						// Collect URL for adding as source
+						urlSources.push(propertyValue);
 					} else {
 						await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
 					}
 				}
+
+				// Handle multiple URLs as sources
+				await this.addMultipleUrlSources(rem, item.data, urlSources);
 			}
 		}
 
@@ -140,6 +146,76 @@ export class PropertyHydrator {
 
 				await rem.setPowerupProperty(powerupCodes.COLLECTION, 'name', [collection.name]);
 			}
+		}
+	}
+
+	/**
+	 * Adds multiple URLs as sources to a Rem for RemNote Reader interoperability.
+	 * Handles various URL-like fields from Zotero items including DOI, archive URLs, etc.
+	 *
+	 * @param rem - The RemNote Rem to add sources to
+	 * @param itemData - The Zotero item data containing potential URL fields
+	 * @param existingUrls - URLs that have already been processed from the property loop
+	 */
+	private async addMultipleUrlSources(
+		rem: Rem,
+		itemData: ZoteroItemData,
+		existingUrls: string[]
+	): Promise<void> {
+		const urlsToAdd = new Set<string>();
+
+		// Add URLs that were already processed in the property loop
+		existingUrls.forEach((url) => {
+			if (this.isValidUrl(url)) {
+				urlsToAdd.add(url);
+			}
+		});
+
+		// Additional URL-like fields that might not be caught in the property loop
+		const additionalUrlFields = ['DOI', 'archive', 'repository'];
+
+		for (const field of additionalUrlFields) {
+			const value = itemData[field];
+			if (value && typeof value === 'string') {
+				let processedUrl = value;
+
+				// Handle DOI conversion to URL
+				if (field === 'DOI' && !value.startsWith('http')) {
+					processedUrl = `https://doi.org/${value}`;
+				}
+
+				if (this.isValidUrl(processedUrl)) {
+					urlsToAdd.add(processedUrl);
+				}
+			}
+		}
+
+		// Add all valid URLs as sources
+		for (const url of urlsToAdd) {
+			try {
+				const linkID = await this.plugin.rem.createLinkRem(url, true);
+				if (linkID) {
+					await rem.addSource(linkID);
+					logMessage(this.plugin, `Added URL source: ${url}`, LogType.Info, false);
+				}
+			} catch (error) {
+				console.error(`Failed to add URL source ${url}:`, error);
+				logMessage(this.plugin, `Failed to add URL source: ${url}`, LogType.Error);
+			}
+		}
+	}
+
+	/**
+	 * Validates if a string is a valid URL
+	 * @param url - The string to validate
+	 * @returns true if the string is a valid URL, false otherwise
+	 */
+	private isValidUrl(url: string): boolean {
+		try {
+			new URL(url);
+			return true;
+		} catch {
+			return false;
 		}
 	}
 }

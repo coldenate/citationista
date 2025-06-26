@@ -1,9 +1,9 @@
-import { RNPlugin } from '@remnote/plugin-sdk';
+import type { RNPlugin } from '@remnote/plugin-sdk';
 import { ZoteroAPI } from '../api/zotero';
 import { TreeBuilder } from './treeBuilder';
 import { ChangeDetector } from './changeDetector';
 import { PropertyHydrator } from './propertyHydrator';
-import { ChangeSet, Item, Collection } from '../types/types';
+import type { ChangeSet, Item, Collection } from '../types/types';
 import { logMessage, LogType } from '../utils/logging';
 import {
 	ensureUnfiledItemsRem,
@@ -35,7 +35,7 @@ export class ZoteroSyncManager {
 		const currentData = await this.api.getAllData();
 
 		// 3. Retrieve previous sync data (shadow copy) from storage.
-		let prevDataRaw = (await this.plugin.storage.getSynced('zoteroData')) as
+		const prevDataRaw = (await this.plugin.storage.getSynced('zoteroData')) as
 			| {
 					items?: Partial<Item>[];
 					collections?: Partial<Collection>[];

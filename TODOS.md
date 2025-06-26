@@ -1,4 +1,4 @@
--   [ ] Handling multiple URLs when hydrating properties.
+-   [x] Handling multiple URLs when hydrating properties.
 
 -   [ ] Converting the Zotero Library Rem into a folder. #TODO: waiting on Plugin SDK to be patched
 
