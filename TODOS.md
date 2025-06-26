@@ -1,6 +1,6 @@
 -   [ ] Handling multiple URLs when hydrating properties.
 
--   [ ] Converting the Zotero Library Rem into a folder.
+-   [ ] Converting the Zotero Library Rem into a folder. #TODO: waiting on Plugin SDK to be patched
 
 -   [ ] _Completing the exportCitations command (not sure)_
 

@@ -1,4 +1,4 @@
-import { BuiltInPowerupCodes, type RNPlugin, type Rem } from '@remnote/plugin-sdk';
+import { BuiltInPowerupCodes, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { LogType, logMessage } from '../utils/logging';
 import { powerupCodes } from '../constants/constants';
 
@@ -28,6 +28,7 @@ export async function ensureZoteroRemExists(plugin: RNPlugin) {
 		await logMessage(plugin, 'Failed to create Rem', LogType.Error, false);
 		return;
 	}
+
 	const poolPowerup = await plugin.powerup.getPowerupByCode(powerupCodes.COOL_POOL);
 	await plugin.storage.setSynced('zoteroLibraryRemId', rem._id);
 
