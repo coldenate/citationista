@@ -284,13 +284,16 @@ export class TreeBuilder {
 							);
 						}
 					}
-				} else {
+				}
+
+				if (parentNodes.length === 0) {
 					listOfUnfiledItems.push(item);
 					if (unfiledZoteroItemsRem) {
 						await remNode.rem.setParent(unfiledZoteroItemsRem);
 					}
 					continue;
 				}
+
 				if (parentNodes.length > 0) {
 					const primaryParent = parentNodes[0];
 					await remNode.rem.setParent(primaryParent.rem);
