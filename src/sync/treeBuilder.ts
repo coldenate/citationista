@@ -266,35 +266,35 @@ export class TreeBuilder {
 		for (const item of items) {
 			const remNode = this.nodeCache.get(item.key);
 			if (remNode) {
-                                const parentNodes: RemNode[] = [];
-                                // Include parentItem if available.
-                                if (item.data.parentItem) {
-                                        const parentItemNode = this.nodeCache.get(item.data.parentItem);
-                                        if (parentItemNode) parentNodes.push(parentItemNode);
-                                }
-                                // Include collections.
-                                if (item.data.collections && item.data.collections.length > 0) {
-                                        for (const collectionId of item.data.collections) {
-                                                const collectionNode = this.nodeCache.get(collectionId);
-                                                if (collectionNode) {
-                                                        parentNodes.push(collectionNode);
-                                                } else {
-                                                        console.warn(
-                                                                `Collection ${collectionId} not found for item ${item.key}`
-                                                        );
-                                                }
-                                        }
-                                }
+				const parentNodes: RemNode[] = [];
+				// Include parentItem if available.
+				if (item.data.parentItem) {
+					const parentItemNode = this.nodeCache.get(item.data.parentItem);
+					if (parentItemNode) parentNodes.push(parentItemNode);
+				}
+				// Include collections.
+				if (item.data.collections && item.data.collections.length > 0) {
+					for (const collectionId of item.data.collections) {
+						const collectionNode = this.nodeCache.get(collectionId);
+						if (collectionNode) {
+							parentNodes.push(collectionNode);
+						} else {
+							console.warn(
+								`Collection ${collectionId} not found for item ${item.key}`
+							);
+						}
+					}
+				}
 
-                                if (parentNodes.length === 0) {
-                                        listOfUnfiledItems.push(item);
-                                        if (unfiledZoteroItemsRem) {
-                                                await remNode.rem.setParent(unfiledZoteroItemsRem);
-                                        }
-                                        continue;
-                                }
+				if (parentNodes.length === 0) {
+					listOfUnfiledItems.push(item);
+					if (unfiledZoteroItemsRem) {
+						await remNode.rem.setParent(unfiledZoteroItemsRem);
+					}
+					continue;
+				}
 
-                                if (parentNodes.length > 0) {
+				if (parentNodes.length > 0) {
 					const primaryParent = parentNodes[0];
 					await remNode.rem.setParent(primaryParent.rem);
 					if (multipleCollectionsBehavior === 'portal') {
