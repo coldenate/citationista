@@ -257,64 +257,69 @@ export class TreeBuilder {
 	}
 
 	private async moveItems(items: Item[]): Promise<void> {
-		const unfiledZoteroItemsRem = await getUnfiledItemsRem(this.plugin);
-		const multipleCollectionsBehavior = (await this.plugin.settings.getSetting(
-			'multiple-colections-behavior'
-		)) as 'portal' | 'reference';
-		console.log('Multiple Collections Behavior:', multipleCollectionsBehavior);
-		const listOfUnfiledItems = [];
-		for (const item of items) {
-			const remNode = this.nodeCache.get(item.key);
-			if (remNode) {
-				const parentNodes: RemNode[] = [];
-				// Include parentItem if available.
-				if (item.data.parentItem) {
-					const parentItemNode = this.nodeCache.get(item.data.parentItem);
-					if (parentItemNode) parentNodes.push(parentItemNode);
-				}
-				// Include collections.
-				if (item.data.collections && item.data.collections.length > 0) {
-					for (const collectionId of item.data.collections) {
-						const collectionNode = this.nodeCache.get(collectionId);
-						if (collectionNode) {
-							parentNodes.push(collectionNode);
-						} else {
-							console.warn(
-								`Collection ${collectionId} not found for item ${item.key}`
-							);
-						}
-					}
-				} else {
-					listOfUnfiledItems.push(item);
-					if (unfiledZoteroItemsRem) {
-						await remNode.rem.setParent(unfiledZoteroItemsRem);
-					}
-					continue;
-				}
-				if (parentNodes.length > 0) {
-					const primaryParent = parentNodes[0];
-					await remNode.rem.setParent(primaryParent.rem);
-					if (multipleCollectionsBehavior === 'portal') {
-						for (let i = 1; i < parentNodes.length; i++) {
-							console.log('Adding portal to parent:', parentNodes[i].remId);
-							const additionalParent = parentNodes[i];
-							const portal = await this.plugin.rem.createPortal();
-							portal?.setParent(additionalParent.rem);
-							remNode.rem.addToPortal(portal!);
-						}
-					} else if (multipleCollectionsBehavior === 'reference') {
-						for (let i = 1; i < parentNodes.length; i++) {
-							console.log('Creating reference for parent:', parentNodes[i].remId);
-							const additionalParent = parentNodes[i];
-							const emptyRem = await this.plugin.rem.createRem();
-							emptyRem?.setParent(additionalParent.rem);
-							emptyRem?.setText([{ i: 'q', _id: remNode.rem._id }]); // a workaround behavior
-						}
-					}
-					remNode.zoteroParentId = primaryParent.zoteroId;
-				}
-			}
-		}
-		console.log('Unfiled Items:', listOfUnfiledItems);
+                const unfiledZoteroItemsRem = await getUnfiledItemsRem(this.plugin);
+                const multipleCollectionsBehavior = (await this.plugin.settings.getSetting(
+                        'multiple-colections-behavior'
+                )) as 'portal' | 'reference';
+                console.log('Multiple Collections Behavior:', multipleCollectionsBehavior);
+                const listOfUnfiledItems = [];
+                for (const item of items) {
+                        const remNode = this.nodeCache.get(item.key);
+                        if (!remNode) continue;
+
+                        const parentNodes: RemNode[] = [];
+
+                        // Include parentItem if available.
+                        if (item.data.parentItem) {
+                                const parentItemNode = this.nodeCache.get(item.data.parentItem);
+                                if (parentItemNode) parentNodes.push(parentItemNode);
+                        }
+
+                        // Include collections.
+                        if (item.data.collections && item.data.collections.length > 0) {
+                                for (const collectionId of item.data.collections) {
+                                        const collectionNode = this.nodeCache.get(collectionId);
+                                        if (collectionNode) {
+                                                parentNodes.push(collectionNode);
+                                        } else {
+                                                console.warn(
+                                                        `Collection ${collectionId} not found for item ${item.key}`
+                                                );
+                                        }
+                                }
+                        }
+
+                        if (parentNodes.length === 0) {
+                                listOfUnfiledItems.push(item);
+                                if (unfiledZoteroItemsRem) {
+                                        await remNode.rem.setParent(unfiledZoteroItemsRem);
+                                }
+                                continue;
+                        }
+
+                        const primaryParent = parentNodes[0];
+                        await remNode.rem.setParent(primaryParent.rem);
+
+                        if (multipleCollectionsBehavior === 'portal') {
+                                for (let i = 1; i < parentNodes.length; i++) {
+                                        console.log('Adding portal to parent:', parentNodes[i].remId);
+                                        const additionalParent = parentNodes[i];
+                                        const portal = await this.plugin.rem.createPortal();
+                                        portal?.setParent(additionalParent.rem);
+                                        remNode.rem.addToPortal(portal!);
+                                }
+                        } else if (multipleCollectionsBehavior === 'reference') {
+                                for (let i = 1; i < parentNodes.length; i++) {
+                                        console.log('Creating reference for parent:', parentNodes[i].remId);
+                                        const additionalParent = parentNodes[i];
+                                        const emptyRem = await this.plugin.rem.createRem();
+                                        emptyRem?.setParent(additionalParent.rem);
+                                        emptyRem?.setText([{ i: 'q', _id: remNode.rem._id }]); // a workaround behavior
+                                }
+                        }
+
+                        remNode.zoteroParentId = primaryParent.zoteroId;
+                }
+                console.log('Unfiled Items:', listOfUnfiledItems);
 	}
 }
