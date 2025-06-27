@@ -6,7 +6,7 @@
     📚 Citationista
 </h3>
 <p align="center">
-    <i>Streamlined reference management for RemNote</i>
+    <i>Streamlined reference management and Zotero Integration for RemNote</i>
 </p>
 
 <p align="center">
@@ -17,57 +17,50 @@
 
 ## Overview
 
-Citationista enhances your research workflow by bringing robust citation tools directly into RemNote. Quickly capture sources, manage references, and export formatted bibliographies without leaving your notes.
+Citationista is a RemNote plugin that integrates with Zotero, the reference management software. It syncs your Zotero library into RemNote and provides tools for managing citations and sources within your notes.
 
-- **Easy Source Capture** – Use `/source` to attach a link or file.
-- **Flexible Export** – Convert citation data into a variety of formats (BibTeX, APA, MLA, and more).
-- **Zotero Integration** – Sync your Zotero library, including notes and tags.
-- **Independent Citation Management** – Manage citations in RemNote even without Zotero.
+**Core Features:**
+
+-   **Zotero Library Sync** – Import your Zotero items, notes, and tags into RemNote
+-   **Citation Management** – Work with academic sources and maintain citation integrity
+-   **Source Integration** – Connect RemNote sources with proper bibliographic data
 
 ## Project Status
 
-### Key Completed Features
-- Zodoro note import is fully implemented.
-- Tag importing is functional.
-- Compatibility with the RemNote Reader is in place.
-- Pre-release candidate is nearly ready.
+**Currently Working:**
 
-### Major Work Remaining
-- Finalization of bidirectional sync framework.
-- New citation features, including ad hoc bibliography generation from source links.
-- Enhanced in-text citation functionality mirroring the Word extension.
-- Improved onboarding and installation documentation.
-- UI/UX polish (plugin visuals, onboarding flow, custom icons).
-- LaTeX support for all titles.
-- Source aggregation compatibility.
-- Background sync interval implementation.
+-   Zotero library sync (items, notes, tags)
+-   Basic citation management
+-   RemNote Reader compatibility
 
-## Roadmap
+**In Development:**
 
-### Core Functionality
-- **Bidirectional Sync** – Complete sync between Zodoro and RemNote.
-- **Ad Hoc Bibliography Generation** – Generate formatted citations from source links via the omnibar and store them as child Rems.
-- **Advanced Citation Integration** – Detect ZITEM references, fetch bibliography entries in the user’s citation style, and offer one-click bibliography auto-completion with document-level updates.
+-   [ ] Installation and setup documentation
+-   [ ] User interface improvements
+-   [ ] Bibliography generation from source links
+-   [ ] Automated sync intervals
+-   [ ] LaTeX title rendering
+-   [ ] Advanced citation features
+-   [ ] Source aggregation tools
 
-### User Experience & Documentation
-- **Installation Instructions** – Clarify and simplify setup steps.
-- **Onboarding Experience** – Streamline initial user journey and visuals.
-- **Custom Icons** – Replace standard Rem bullets with Zodoro icons.
-- **LaTeX Title Support** – Ensure all titles render in LaTeX.
-- **Improved Sync Feedback** – Enhance error handling and progress messaging.
-- **Source Aggregation Compatibility** – Support source aggregation similar to the Zodoro Clipper extension.
-- **Background Sync** – Add configurable sync intervals for background operations.
+## Development Roadmap
 
-### Acceptance Criteria
-- Accurate detection of ZITEM references.
-- Retrieval of correct bibliography data.
-- Output formatted according to the user’s citation style.
-- Single-click bibliography completion.
-- Seamless integration with the writing workflow.
+**Next Steps:**
 
-## Bugs and Issues
+-   Complete bidirectional sync between Zotero and RemNote
+-   Add bibliography generation from RemNote source links
+-   Improve citation detection and formatting
+-   Better installation and setup process
 
-Please report problems or feature requests via [GitHub Issues](https://github.com/coldenate/citationista/issues). Detailed bug reports are appreciated.
+**Future Goals:**
+
+-   Background sync automation
+-   Enhanced source management tools
+-   Citation style formatting options
+
+## Issues and Feedback
+
+Please report bugs or suggest features via [GitHub Issues](https://github.com/coldenate/citationista/issues).
 
 ---
 
