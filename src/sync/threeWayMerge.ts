@@ -44,7 +44,7 @@ export function mergeChildContent(local: any, remote: any, base: any): any {
 
 	const addEntry = (entry: any) => {
 		if (!entry) return;
-		const key = typeof entry === 'string' ? entry : JSON.stringify(entry);
+		const key = typeof entry === 'string' ? entry : canonicalSerialize(entry);
 		if (!seen.has(key)) {
 			seen.add(key);
 			merged.push(entry);
