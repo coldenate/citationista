@@ -1,4 +1,4 @@
-import { ItemType } from '../services/zoteroSchemaToRemNote';
+import type { ItemType } from '../services/zoteroSchemaToRemNote';
 
 export const itemTypes: ItemType[] = [
 	{ itemType: 'annotation', fields: [], creatorTypes: [] },

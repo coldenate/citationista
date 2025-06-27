@@ -1,4 +1,4 @@
-import { Collection, Item, ChangeSet } from '../types/types';
+import type { ChangeSet, Collection, Item } from '../types/types';
 
 export class ChangeDetector {
 	detectChanges(
@@ -81,7 +81,7 @@ export class ChangeDetector {
 }
 
 // Helper function to compare arrays irrespective of order
-function arraysEqual(a: any[], b: any[]): boolean {
+function arraysEqual(a: string[], b: string[]): boolean {
 	if (a.length !== b.length) return false;
 	const sortedA = [...a].sort();
 	const sortedB = [...b].sort();

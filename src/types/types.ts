@@ -30,7 +30,8 @@ export interface ZoteroCollectionResponse {
  * item type makes use of every field.
  */
 export interface ZoteroItemData {
-	[key: string]: any; // allow indexing for unknown fields
+	// biome-ignore lint/suspicious/noExplicitAny: allow indexing for flexibility
+	[key: string]: any;
 	key: string;
 	version: number;
 	itemType: ItemType;

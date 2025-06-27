@@ -1,4 +1,4 @@
-import { Rem } from '@remnote/plugin-sdk';
+import type { Rem } from '@remnote/plugin-sdk';
 
 export async function gatherFlattenedDescendantRems({
 	remCursorAt,

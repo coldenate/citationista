@@ -1,10 +1,10 @@
 // Rename summary: PropertyHydrator -> ZoteroPropertyHydrator; hydrateProperties -> hydrateItemAndCollectionProperties; addMultipleUrlSources -> addAllUrlSources
-import { filterAsync, PropertyType, type RNPlugin, type Rem } from '@remnote/plugin-sdk';
-import type { ChangeSet, ZoteroItemData } from '../types/types';
+import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
-import { stripPowerupSuffix, generatePowerupCode } from '../utils/getCodeName';
 import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
-import { logMessage, LogType } from '../utils/logging';
+import type { ChangeSet, ZoteroItemData } from '../types/types';
+import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
+import { LogType, logMessage } from '../utils/logging';
 
 export class ZoteroPropertyHydrator {
 	private plugin: RNPlugin;
@@ -37,7 +37,7 @@ export class ZoteroPropertyHydrator {
 	 * - Adds powerups and sets powerup properties.
 	 * - Sets the text and other properties for the collection.
 	 */
-        async hydrateItemAndCollectionProperties(changes: ChangeSet): Promise<void> {
+	async hydrateItemAndCollectionProperties(changes: ChangeSet): Promise<void> {
 		const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
 		const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];
 		// Hydrate properties for items
@@ -47,7 +47,7 @@ export class ZoteroPropertyHydrator {
 				// Tag, Safety, and Hydrate item properties here
 				// For example, set custom properties or add content
 				// await rem.setCustomProperty('authors', item.data.creators);
-                                const itemTypeCode = generatePowerupCode(item.data.itemType);
+				const itemTypeCode = generatePowerupCode(item.data.itemType);
 				const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
 				if (!powerupItemType) {
 					console.error('Powerup not found!');
@@ -106,7 +106,7 @@ export class ZoteroPropertyHydrator {
 				for (const property of properties) {
 					if (!property.text || property.text.length === 0) continue;
 
-                                        const propertyKey = stripPowerupSuffix(property.text[0] as string);
+					const propertyKey = stripPowerupSuffix(property.text[0] as string);
 					const formattedKey = propertyKey.toLowerCase().replace(/\s/g, '');
 
 					// **Skip the 'key' property to prevent overwriting**
@@ -131,7 +131,7 @@ export class ZoteroPropertyHydrator {
 					const propertyType = await property.getPropertyType();
 					const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
 						itemTypeCode,
-                                                generatePowerupCode(matchingKey)
+						generatePowerupCode(matchingKey)
 					);
 
 					if (!slotCode) {
@@ -139,7 +139,7 @@ export class ZoteroPropertyHydrator {
 						continue;
 					}
 
-                                        if (isTitleLikeField(matchingKey)) {
+					if (isTitleLikeField(matchingKey)) {
 						await rem.setText([propertyValue]);
 						continue;
 					}
@@ -163,7 +163,7 @@ export class ZoteroPropertyHydrator {
 				}
 
 				// Handle multiple URLs as sources
-                                await this.addAllUrlSources(rem, item.data, urlSources);
+				await this.addAllUrlSources(rem, item.data, urlSources);
 			}
 		}
 
@@ -192,7 +192,7 @@ export class ZoteroPropertyHydrator {
 	 * @param itemData - The Zotero item data containing potential URL fields
 	 * @param existingUrls - URLs that have already been processed from the property loop
 	 */
-        private async addAllUrlSources(
+	private async addAllUrlSources(
 		rem: Rem,
 		itemData: ZoteroItemData,
 		existingUrls: string[]
@@ -201,7 +201,7 @@ export class ZoteroPropertyHydrator {
 
 		// Add URLs that were already processed in the property loop
 		existingUrls.forEach((url) => {
-                                if (this.isValidUrlString(url)) {
+			if (this.isValidUrlString(url)) {
 				urlsToAdd.add(url);
 			}
 		});
@@ -219,7 +219,7 @@ export class ZoteroPropertyHydrator {
 					processedUrl = `https://doi.org/${value}`;
 				}
 
-                                if (this.isValidUrlString(processedUrl)) {
+				if (this.isValidUrlString(processedUrl)) {
 					urlsToAdd.add(processedUrl);
 				}
 			}
@@ -245,7 +245,7 @@ export class ZoteroPropertyHydrator {
 	 * @param url - The string to validate
 	 * @returns true if the string is a valid URL, false otherwise
 	 */
-        private isValidUrlString(url: string): boolean {
+	private isValidUrlString(url: string): boolean {
 		try {
 			new URL(url);
 			return true;

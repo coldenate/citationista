@@ -1,5 +1,5 @@
 // Rename summary: setForceStop -> markForceStopRequested; checkForForceStop -> checkForceStopFlag
-import { RNPlugin } from '@remnote/plugin-sdk';
+import type { RNPlugin } from '@remnote/plugin-sdk';
 
 export async function markForceStopRequested(plugin: RNPlugin) {
 	await plugin.storage.setSession('isBeingStopped', true);

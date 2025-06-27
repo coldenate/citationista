@@ -1,9 +1,9 @@
 // Rename summary: getCode/getName -> generatePowerupCode/generatePowerupName; hasTitleRelatedField -> isTitleLikeField; getPropertyType -> inferPropertyType
 import {
-	PowerupCode,
+	type PowerupCode,
 	PropertyLocation,
 	PropertyType,
-	RegisterPowerupOptions,
+	type RegisterPowerupOptions,
 } from '@remnote/plugin-sdk';
 import { generatePowerupCode, generatePowerupName } from '../utils/getCodeName';
 
@@ -70,12 +70,14 @@ export function registerItemPowerups(itemTypes: ItemType[]) {
 
 	for (const itemType of itemTypes) {
 		const powerup: RegisterPowerup = {
-                        name: generatePowerupName(itemType.itemType.charAt(0).toUpperCase() + itemType.itemType.slice(1)),
-                        code: generatePowerupCode(itemType.itemType),
+			name: generatePowerupName(
+				itemType.itemType.charAt(0).toUpperCase() + itemType.itemType.slice(1)
+			),
+			code: generatePowerupCode(itemType.itemType),
 			description: `Powerup for ${itemType.itemType}`,
 			options: {
 				slots: itemType.fields.map((field) => ({
-                                        code: generatePowerupCode(field.field),
+					code: generatePowerupCode(field.field),
 					name: field.field
 						.replace(/([A-Z])/g, ' $1')
 						.replace(/^./, (str) => str.toUpperCase()),
@@ -85,7 +87,7 @@ export function registerItemPowerups(itemTypes: ItemType[]) {
 						field.field === 'Title' ||
 						field.field === 'name' ||
 						field.field === 'Name',
-                                        propertyType: inferPropertyType(field.field),
+					propertyType: inferPropertyType(field.field),
 					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
 					defaultEnumValue: undefined,
 					dontPublishToSharedArticle: undefined,

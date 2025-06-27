@@ -1,12 +1,16 @@
 // Rename summary: setForceStop -> markForceStopRequested; COOL_POOL -> CITATION_POOL
-import { PropertyLocation, PropertyType, type RNPlugin, declareIndexPlugin } from '@remnote/plugin-sdk';
+import {
+	declareIndexPlugin,
+	PropertyLocation,
+	PropertyType,
+	type RNPlugin,
+} from '@remnote/plugin-sdk';
 import { citationFormats, powerupCodes } from './constants/constants';
-import { markForceStopRequested } from './services/pluginIO';
-import { exportCitations } from './services/exportCitations';
 import { itemTypes } from './constants/zoteroItemSchema';
+import { markForceStopRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
-import { logMessage, LogType } from './utils/logging';
+import { LogType, logMessage } from './utils/logging';
 
 // Helper functions for organizing registration logic
 
@@ -56,15 +60,15 @@ async function registerSettings(plugin: RNPlugin) {
 }
 
 async function registerPowerups(plugin: RNPlugin) {
-	await plugin.app.registerCommand({
-		name: 'Citationista export citations',
-		description: 'Exports all citations of this Rem to clipboard...',
-		id: 'export-citations',
-		quickCode: 'cite',
-		icon: '📑',
-		keywords: 'citation, export',
-		action: async () => await exportCitations(plugin),
-	});
+	// await plugin.app.registerCommand({
+	// 	name: 'Citationista export citations',
+	// 	description: 'Exports all citations of this Rem to clipboard...',
+	// 	id: 'export-citations',
+	// 	quickCode: 'cite',
+	// 	icon: '📑',
+	// 	keywords: 'citation, export',
+	// 	action: async () => await exportCitations(plugin),
+	// });
 	await plugin.app.registerPowerup({
 		name: 'Zotero Collection',
 		code: powerupCodes.COLLECTION,
@@ -116,7 +120,7 @@ async function registerPowerups(plugin: RNPlugin) {
 	});
 	await plugin.app.registerPowerup({
 		name: 'Citationista Pool',
-                code: powerupCodes.CITATION_POOL,
+		code: powerupCodes.CITATION_POOL,
 		description: 'A pool of citationista rems.',
 		options: {
 			properties: [],
@@ -250,7 +254,7 @@ async function registerPowerups(plugin: RNPlugin) {
 			await plugin.app.registerPowerup(powerup);
 		} catch (error) {
 			console.error(error, powerup);
-			await plugin.app.toast('Error registering powerup: ' + powerup.name);
+			await plugin.app.toast(`Error registering powerup: ${powerup.name}`);
 			return;
 		}
 		const powerUpRem = await plugin.powerup.getPowerupByCode(powerup.code);
@@ -292,7 +296,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 		icon: '🛑',
 		keywords: 'zotero, stop, sync',
 		action: async () => {
-                        await markForceStopRequested(plugin);
+			await markForceStopRequested(plugin);
 		},
 	});
 	await plugin.app.registerCommand({
@@ -318,8 +322,10 @@ async function registerDebugCommands(plugin: RNPlugin) {
 		action: async () => {
 			const currentRem = await plugin.focus.getFocusedRem();
 			const rem = await plugin.rem.createRem();
-			rem?.setParent(currentRem!);
-			await rem!.addPowerup(powerupCodes.ZITEM);
+			if (currentRem) {
+				rem?.setParent(currentRem);
+			}
+			await rem?.addPowerup(powerupCodes.ZITEM);
 			await rem?.setPowerupProperty(powerupCodes.ZITEM, 'fullData', ["I'm a test!"]);
 			await rem?.getPowerupProperty(powerupCodes.ZITEM, 'fullData').then((result) => {
 				plugin.app.toast(result);
@@ -365,7 +371,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 					powerupCodes.ZOTERO_SYNCED_LIBRARY
 				);
 				const citationistaPowerup = await plugin.powerup.getPowerupByCode(
-                                       powerupCodes.CITATION_POOL
+					powerupCodes.CITATION_POOL
 				);
 				const unfiledItemsPowerup = await plugin.powerup.getPowerupByCode(
 					powerupCodes.ZOTERO_UNFILED_ITEMS
@@ -379,7 +385,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 				]).then((results) => results.flat());
 				if (taggedRems) {
 					taggedRems.forEach(async (rem) => {
-						await rem!.remove();
+						await rem?.remove();
 					});
 				}
 			}

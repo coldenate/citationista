@@ -1,17 +1,17 @@
 // src/sync/mergeUpdatedItems.ts
-import { RNPlugin } from '@remnote/plugin-sdk';
-import { ChangeSet, Item, RemNode } from '../types/types';
-import { threeWayMerge } from './threeWayMerge';
+import type { RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
+import type { ChangeSet, Item, RemNode, ZoteroItemData } from '../types/types';
+import { threeWayMerge } from './threeWayMerge';
 
 /**
  * For each updated item in the ChangeSet, merge the local data, remote data, and the previous shadow copy.
- * @param plugin - The RNPlugin instance.
+ * @param _plugin - The RNPlugin instance.
  * @param changes - The ChangeSet produced by the ChangeDetector.
  * @param prevItems - The list of items from the previous sync (shadow copies).
  */
 export async function mergeUpdatedItems(
-	plugin: RNPlugin,
+	_plugin: RNPlugin,
 	changes: ChangeSet,
 	prevItems: Item[],
 	nodeCache: Map<string, RemNode>
@@ -29,7 +29,7 @@ export async function mergeUpdatedItems(
 				powerupCodes.ZITEM,
 				'fullData'
 			);
-			if (localDataStr && localDataStr[0]) {
+			if (localDataStr?.[0]) {
 				try {
 					localData = JSON.parse(localDataStr[0]);
 				} catch (e) {
@@ -43,6 +43,6 @@ export async function mergeUpdatedItems(
 		// Merge the three data versions.
 		const mergedData = threeWayMerge(localData, updatedItem.data, shadowItem.data);
 		// Update the item’s data in the ChangeSet.
-		updatedItem.data = mergedData;
+		updatedItem.data = mergedData as ZoteroItemData;
 	}
 }

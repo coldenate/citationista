@@ -1,4 +1,4 @@
-import { RNPlugin, ReactRNPlugin } from '@remnote/plugin-sdk';
+import type { ReactRNPlugin, RNPlugin } from '@remnote/plugin-sdk';
 
 // Define the log types enum
 export enum LogType {
@@ -27,6 +27,12 @@ const logTypeToEmoji: LogTypeInfo = {
 	Critical: { name: LogType.Critical, emoji: '🚨' },
 };
 
+// Type for messages that can be logged
+type LogMessage = string | Error | unknown[];
+
+// Type for additional parameters that can be logged
+type LogParams = Record<string, unknown> | unknown[] | string | number | boolean | null | undefined;
+
 /**
  * Logs a message to the console and displays a toast notification.
  * @param plugin - The plugin object.
@@ -37,10 +43,10 @@ const logTypeToEmoji: LogTypeInfo = {
  */
 export async function logMessage(
 	plugin: ReactRNPlugin | RNPlugin,
-	message: any[] | string,
+	message: LogMessage,
 	type: LogType,
 	isToast: boolean = true,
-	params?: any
+	params?: LogParams
 ) {
 	const debugMode = await plugin.settings.getSetting('debug-mode');
 
@@ -68,6 +74,13 @@ export async function logMessage(
 		}
 	}
 	if (isToast && debugMode) {
-		await plugin.app.toast(`${logTypeToEmoji[type].emoji} ${message}`);
+		// Convert message to string for toast display
+		const toastMessage =
+			message instanceof Error
+				? message.message
+				: Array.isArray(message)
+					? message.join(' ')
+					: String(message);
+		await plugin.app.toast(`${logTypeToEmoji[type].emoji} ${toastMessage}`);
 	}
 }

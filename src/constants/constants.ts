@@ -47,6 +47,6 @@ export const powerupCodes = {
 	ZOTERO_TAG: 'zotero-tag',
 	ZOTERO_NOTE: 'zotero-note',
 	ZITEM_ATTACHMENT: 'zitem-attachment',
-        CITATION_POOL: 'coolPool',
+	CITATION_POOL: 'coolPool',
 	ZOTERO_UNFILED_ITEMS: 'zotero-unfiled-items',
 };

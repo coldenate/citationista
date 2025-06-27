@@ -1,8 +1,8 @@
-import { RNPlugin, Rem, filterAsync } from '@remnote/plugin-sdk';
-import { Collection, Item, RemNode, ChangeSet } from '../types/types';
+import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
-import { logMessage, LogType } from '../utils/logging';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
+import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
+import { LogType, logMessage } from '../utils/logging';
 
 export class TreeBuilder {
 	getNodeCache(): Map<string, RemNode> {
@@ -104,7 +104,13 @@ export class TreeBuilder {
 			});
 		}
 
-		logMessage(this.plugin, 'Node Cache Initialized', LogType.Info, false, this.nodeCache);
+		logMessage(
+			this.plugin,
+			'Node Cache Initialized',
+			LogType.Info,
+			false,
+			Object.fromEntries(this.nodeCache)
+		);
 	}
 
 	async applyChanges(changes: ChangeSet): Promise<void> {
@@ -217,10 +223,7 @@ export class TreeBuilder {
 			this.nodeCache.set(item.key, {
 				remId: rem._id,
 				zoteroId: item.key,
-				zoteroParentId:
-					item.data.parentItem ||
-					(item.data.collections && item.data.collections[0]) ||
-					null,
+				zoteroParentId: item.data.parentItem || item.data.collections?.[0] || null,
 				rem,
 			});
 		}
@@ -232,10 +235,7 @@ export class TreeBuilder {
 			if (remNode) {
 				await remNode.rem.setText([item.data.title ?? '']);
 				item.rem = remNode.rem;
-				const newParentId =
-					item.data.parentItem ||
-					(item.data.collections && item.data.collections[0]) ||
-					null;
+				const newParentId = item.data.parentItem || item.data.collections?.[0] || null;
 				if (remNode.zoteroParentId !== newParentId) {
 					remNode.zoteroParentId = newParentId;
 				}
@@ -302,8 +302,10 @@ export class TreeBuilder {
 							console.log('Adding portal to parent:', parentNodes[i].remId);
 							const additionalParent = parentNodes[i];
 							const portal = await this.plugin.rem.createPortal();
-							portal?.setParent(additionalParent.rem);
-							remNode.rem.addToPortal(portal!);
+							if (portal) {
+								portal.setParent(additionalParent.rem);
+								remNode.rem.addToPortal(portal);
+							}
 						}
 					} else if (multipleCollectionsBehavior === 'reference') {
 						for (let i = 1; i < parentNodes.length; i++) {

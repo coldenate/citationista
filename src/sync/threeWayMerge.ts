@@ -1,3 +1,5 @@
+import type { Tag, ZoteroItemData } from '../types/types';
+
 /**
  * Implements a three‑way merge algorithm.
  * @param localData - The current local data from RemNote (including user modifications).
@@ -5,6 +7,9 @@
  * @param baseData - The shadow copy from the previous sync.
  * @returns The merged data.
  */
+
+// Type for array-based child content (notes and tags)
+type ChildContentEntry = string | Tag | Record<string, unknown>;
 
 export function isCoreField(key: string): boolean {
 	// Core bibliographic metadata should always prefer the remote value
@@ -37,12 +42,16 @@ export function isChildContentField(key: string): boolean {
 	return key === 'notes' || key === 'tags';
 }
 
-export function mergeChildContent(local: any, remote: any, base: any): any {
+export function mergeChildContent(
+	local: ChildContentEntry[] | undefined,
+	remote: ChildContentEntry[] | undefined,
+	base: ChildContentEntry[] | undefined
+): ChildContentEntry[] {
 	// Handles merging of array based child content like notes and tags.
-	const merged: any[] = [];
+	const merged: ChildContentEntry[] = [];
 	const seen = new Set<string>();
 
-	const addEntry = (entry: any) => {
+	const addEntry = (entry: ChildContentEntry) => {
 		if (!entry) return;
 		const key = typeof entry === 'string' ? entry : JSON.stringify(entry);
 		if (!seen.has(key)) {
@@ -73,23 +82,32 @@ export function mergeChildContent(local: any, remote: any, base: any): any {
 	return merged;
 }
 
-export function threeWayMerge(localData: any, remoteData: any, baseData: any): any {
-	const mergedData: any = { ...localData };
+export function threeWayMerge(
+	localData: Partial<ZoteroItemData> | undefined,
+	remoteData: Partial<ZoteroItemData> | undefined,
+	baseData: Partial<ZoteroItemData> | undefined
+): Partial<ZoteroItemData> {
+	const mergedData: Partial<ZoteroItemData> = { ...localData };
 	const allKeys = new Set([...Object.keys(remoteData || {}), ...Object.keys(localData || {})]);
 	allKeys.forEach((key) => {
-		const remoteVal = remoteData ? remoteData[key] : undefined;
-		const localVal = localData ? localData[key] : undefined;
-		const baseVal = baseData ? baseData[key] : undefined;
+		const remoteVal = remoteData ? remoteData[key as keyof ZoteroItemData] : undefined;
+		const localVal = localData ? localData[key as keyof ZoteroItemData] : undefined;
+		const baseVal = baseData ? baseData[key as keyof ZoteroItemData] : undefined;
 
 		if (isCoreField(key)) {
 			// For core fields, always adopt the remote value.
-			mergedData[key] = remoteVal;
+			(mergedData as Record<string, unknown>)[key] = remoteVal;
 		} else if (isChildContentField(key)) {
 			// Merge arrays (like notes) intelligently.
-			mergedData[key] = mergeChildContent(localVal, remoteVal, baseVal);
+			(mergedData as Record<string, unknown>)[key] = mergeChildContent(
+				localVal as ChildContentEntry[] | undefined,
+				remoteVal as ChildContentEntry[] | undefined,
+				baseVal as ChildContentEntry[] | undefined
+			);
 		} else {
 			// For other fields, if remote changed relative to base, use remote; else keep local.
-			mergedData[key] = baseVal !== undefined && remoteVal !== baseVal ? remoteVal : localVal;
+			(mergedData as Record<string, unknown>)[key] =
+				baseVal !== undefined && remoteVal !== baseVal ? remoteVal : localVal;
 		}
 	});
 	return mergedData;
