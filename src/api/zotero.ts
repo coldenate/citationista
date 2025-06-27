@@ -1,6 +1,7 @@
+// Rename summary: api -> createZoteroClient; connection -> zoteroConnection; getItems/getCollections/getAllData -> fetchItems/fetchCollections/fetchLibraryData
 import type { RNPlugin } from '@remnote/plugin-sdk';
 // @ts-ignore
-import api from 'zotero-api-client';
+import createZoteroClient from 'zotero-api-client';
 import type { Collection, Item, ZoteroCollectionResponse, ZoteroItemResponse } from '../types/types';
 import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters';
 
@@ -17,27 +18,27 @@ import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters'
  * @example
  * ```typescript
  * const api = new ZoteroAPI(plugin);
- * const items = await api.getItems();
- * const collections = await api.getCollections();
+ * const items = await api.fetchItems();
+ * const collections = await api.fetchCollections();
  * ```
  * @example
  * ```typescript
  * const api = new ZoteroAPI(plugin);
- *	const { items, collections } = await api.getAllData();
+ *	const { items, collections } = await api.fetchLibraryData();
  * ```
  */
 export class ZoteroAPI {
-	private plugin: RNPlugin;
-	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
-	private connection: any | null = null;
+        private plugin: RNPlugin;
+        // biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
+        private zoteroConnection: any | null = null;
 
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
 	}
 
 	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
-	private async ensureConnection(): Promise<any> {
-		if (this.connection) return this.connection;
+        private async getOrCreateConnection(): Promise<any> {
+                if (this.zoteroConnection) return this.zoteroConnection;
 
 		const apiKey = await this.plugin.settings.getSetting('zotero-api-key');
 		const userId = await this.plugin.settings.getSetting('zotero-user-id');
@@ -49,19 +50,19 @@ export class ZoteroAPI {
 			throw new Error('Zotero User ID not set');
 		}
 
-		this.connection = await api(apiKey).library('user', userId);
-		return this.connection;
+                this.zoteroConnection = await createZoteroClient(apiKey).library('user', userId);
+                return this.zoteroConnection;
 	}
 
-	private async getItems(): Promise<Item[]> {
+        private async fetchItems(): Promise<Item[]> {
 		try {
-			const conn = await this.ensureConnection();
+                        const apiConnection = await this.getOrCreateConnection();
 			const items: Item[] = [];
 			let start = 0;
 			const limit = 100; // Maximize limit to reduce number of requests
 
 			while (true) {
-				const response = await conn.items().get({ start, limit });
+                                const response = await apiConnection.items().get({ start, limit });
 				const rawItems = response.raw as ZoteroItemResponse[];
 				for (const raw of rawItems) {
 					items.push(fromZoteroItem(raw));
@@ -83,10 +84,10 @@ export class ZoteroAPI {
 		}
 	}
 
-	private async getCollections(): Promise<Collection[]> {
+        private async fetchCollections(): Promise<Collection[]> {
 		try {
-			const conn = await this.ensureConnection();
-			const response = await conn.collections().get();
+                        const apiConnection = await this.getOrCreateConnection();
+                        const response = await apiConnection.collections().get();
 			const rawCollections = response.getData() as ZoteroCollectionResponse[];
 			return rawCollections.map(fromZoteroCollection);
 		} catch (error) {
@@ -96,8 +97,8 @@ export class ZoteroAPI {
 		}
 	}
 
-	async getAllData(): Promise<{ items: Item[]; collections: Collection[] }> {
-		const [items, collections] = await Promise.all([this.getItems(), this.getCollections()]);
+        async fetchLibraryData(): Promise<{ items: Item[]; collections: Collection[] }> {
+                const [items, collections] = await Promise.all([this.fetchItems(), this.fetchCollections()]);
 		console.log(
 			`Fetched ${items.length} items and ${collections.length} collections from Zotero.`,
 			items,

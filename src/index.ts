@@ -1,6 +1,7 @@
+// Rename summary: setForceStop -> markForceStopRequested; COOL_POOL -> CITATION_POOL
 import { PropertyLocation, PropertyType, type RNPlugin, declareIndexPlugin } from '@remnote/plugin-sdk';
 import { citationFormats, powerupCodes } from './constants/constants';
-import { setForceStop } from './services/pluginIO';
+import { markForceStopRequested } from './services/pluginIO';
 import { exportCitations } from './services/exportCitations';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
@@ -115,7 +116,7 @@ async function registerPowerups(plugin: RNPlugin) {
 	});
 	await plugin.app.registerPowerup({
 		name: 'Citationista Pool',
-		code: powerupCodes.COOL_POOL,
+                code: powerupCodes.CITATION_POOL,
 		description: 'A pool of citationista rems.',
 		options: {
 			properties: [],
@@ -291,7 +292,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 		icon: '🛑',
 		keywords: 'zotero, stop, sync',
 		action: async () => {
-			await setForceStop(plugin);
+                        await markForceStopRequested(plugin);
 		},
 	});
 	await plugin.app.registerCommand({
@@ -364,7 +365,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 					powerupCodes.ZOTERO_SYNCED_LIBRARY
 				);
 				const citationistaPowerup = await plugin.powerup.getPowerupByCode(
-					powerupCodes.COOL_POOL
+                                       powerupCodes.CITATION_POOL
 				);
 				const unfiledItemsPowerup = await plugin.powerup.getPowerupByCode(
 					powerupCodes.ZOTERO_UNFILED_ITEMS

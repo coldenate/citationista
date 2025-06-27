@@ -1,13 +1,14 @@
+// Rename summary: PropertyHydrator -> ZoteroPropertyHydrator; ensureZoteroRemExists -> ensureZoteroLibraryRemExists; getAllData -> fetchLibraryData
 import type { RNPlugin } from '@remnote/plugin-sdk';
 import { ZoteroAPI } from '../api/zotero';
 import { TreeBuilder } from './treeBuilder';
 import { ChangeDetector } from './changeDetector';
-import { PropertyHydrator } from './propertyHydrator';
+import { ZoteroPropertyHydrator } from './propertyHydrator';
 import type { ChangeSet, Item, Collection } from '../types/types';
 import { logMessage, LogType } from '../utils/logging';
 import {
-	ensureUnfiledItemsRem,
-	ensureZoteroRemExists,
+        ensureUnfiledItemsRemExists,
+        ensureZoteroLibraryRemExists,
 } from '../services/ensureUIPrettyZoteroRemExist';
 import { mergeUpdatedItems } from './mergeUpdatedItems';
 
@@ -16,23 +17,23 @@ export class ZoteroSyncManager {
 	private api: ZoteroAPI;
 	private treeBuilder: TreeBuilder;
 	private changeDetector: ChangeDetector;
-	private propertyHydrator: PropertyHydrator;
+        private propertyHydrator: ZoteroPropertyHydrator;
 
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
 		this.api = new ZoteroAPI(plugin);
 		this.treeBuilder = new TreeBuilder(plugin);
 		this.changeDetector = new ChangeDetector();
-		this.propertyHydrator = new PropertyHydrator(plugin);
+                this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
 	}
 
 	async sync(): Promise<void> {
 		// 1. Ensure essential Rems exist (e.g., Zotero Library Rem, Unfiled Items Rem).
-		await ensureZoteroRemExists(this.plugin);
-		await ensureUnfiledItemsRem(this.plugin);
+                await ensureZoteroLibraryRemExists(this.plugin);
+                await ensureUnfiledItemsRemExists(this.plugin);
 
 		// 2. Fetch current data from Zotero.
-		const currentData = await this.api.getAllData();
+                const currentData = await this.api.fetchLibraryData();
 
 		// 3. Retrieve previous sync data (shadow copy) from storage.
 		const prevDataRaw = (await this.plugin.storage.getSynced('zoteroData')) as
@@ -73,7 +74,7 @@ export class ZoteroSyncManager {
 		// 8. Populate detailed properties (build fields) on each Rem.
 		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
 		if (!isSimpleSync) {
-			await this.propertyHydrator.hydrateProperties(changes);
+                        await this.propertyHydrator.hydrateItemAndCollectionProperties(changes);
 		}
 
 		// 9. Save the current data as the new shadow copy for future syncs.
