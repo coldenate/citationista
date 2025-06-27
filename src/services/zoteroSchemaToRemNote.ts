@@ -1,10 +1,11 @@
+// Rename summary: getCode/getName -> generatePowerupCode/generatePowerupName; hasTitleRelatedField -> isTitleLikeField; getPropertyType -> inferPropertyType
 import {
 	PowerupCode,
 	PropertyLocation,
 	PropertyType,
 	RegisterPowerupOptions,
 } from '@remnote/plugin-sdk';
-import { getCode, getName } from '../utils/getCodeName';
+import { generatePowerupCode, generatePowerupName } from '../utils/getCodeName';
 
 type Field = {
 	field: string;
@@ -22,7 +23,7 @@ export type ItemType = {
 	creatorTypes: CreatorType[];
 };
 
-export function hasTitleRelatedField(field: string): boolean {
+export function isTitleLikeField(field: string): boolean {
 	return (
 		field.includes('title') ||
 		field.includes('Title') ||
@@ -31,7 +32,7 @@ export function hasTitleRelatedField(field: string): boolean {
 	);
 }
 
-function getPropertyType(field: string): PropertyType {
+function inferPropertyType(field: string): PropertyType {
 	if (field.includes('date') || field.includes('Date')) {
 		return PropertyType.DATE;
 	} else if (field.includes('url') || field.includes('URL')) {
@@ -69,12 +70,12 @@ export function registerItemPowerups(itemTypes: ItemType[]) {
 
 	for (const itemType of itemTypes) {
 		const powerup: RegisterPowerup = {
-			name: getName(itemType.itemType.charAt(0).toUpperCase() + itemType.itemType.slice(1)),
-			code: getCode(itemType.itemType),
+                        name: generatePowerupName(itemType.itemType.charAt(0).toUpperCase() + itemType.itemType.slice(1)),
+                        code: generatePowerupCode(itemType.itemType),
 			description: `Powerup for ${itemType.itemType}`,
 			options: {
 				slots: itemType.fields.map((field) => ({
-					code: getCode(field.field),
+                                        code: generatePowerupCode(field.field),
 					name: field.field
 						.replace(/([A-Z])/g, ' $1')
 						.replace(/^./, (str) => str.toUpperCase()),
@@ -84,7 +85,7 @@ export function registerItemPowerups(itemTypes: ItemType[]) {
 						field.field === 'Title' ||
 						field.field === 'name' ||
 						field.field === 'Name',
-					propertyType: getPropertyType(field.field),
+                                        propertyType: inferPropertyType(field.field),
 					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
 					defaultEnumValue: undefined,
 					dontPublishToSharedArticle: undefined,

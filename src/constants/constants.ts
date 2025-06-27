@@ -1,3 +1,4 @@
+// Rename summary: powerupCodes.COOL_POOL -> powerupCodes.CITATION_POOL
 export const citationFormats = [
 	{
 		key: 'BibTeX',
@@ -46,6 +47,6 @@ export const powerupCodes = {
 	ZOTERO_TAG: 'zotero-tag',
 	ZOTERO_NOTE: 'zotero-note',
 	ZITEM_ATTACHMENT: 'zitem-attachment',
-	COOL_POOL: 'coolPool',
+        CITATION_POOL: 'coolPool',
 	ZOTERO_UNFILED_ITEMS: 'zotero-unfiled-items',
 };

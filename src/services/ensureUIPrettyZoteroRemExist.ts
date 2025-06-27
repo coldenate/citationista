@@ -1,8 +1,9 @@
+// Rename summary: ensureZoteroRemExists -> ensureZoteroLibraryRemExists; ensureUnfiledItemsRem -> ensureUnfiledItemsRemExists; COOL_POOL -> CITATION_POOL
 import { BuiltInPowerupCodes, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { LogType, logMessage } from '../utils/logging';
 import { powerupCodes } from '../constants/constants';
 
-export async function ensureZoteroRemExists(plugin: RNPlugin) {
+export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 	// Measure the time taken
 	const startTime = Date.now();
 	await plugin.app.waitForInitialSync();
@@ -29,7 +30,7 @@ export async function ensureZoteroRemExists(plugin: RNPlugin) {
 		return;
 	}
 
-	const poolPowerup = await plugin.powerup.getPowerupByCode(powerupCodes.COOL_POOL);
+        const poolPowerup = await plugin.powerup.getPowerupByCode(powerupCodes.CITATION_POOL);
 	await plugin.storage.setSynced('zoteroLibraryRemId', rem._id);
 
 	await rem.setText(['Zotero Library']);
@@ -53,7 +54,7 @@ export async function ensureZoteroRemExists(plugin: RNPlugin) {
 	return rem;
 }
 
-export async function ensureUnfiledItemsRem(plugin: RNPlugin): Promise<void> {
+export async function ensureUnfiledItemsRemExists(plugin: RNPlugin): Promise<void> {
 	const unfiledRemId = await plugin.storage.getSynced('unfiledItemsRemId');
 	if (unfiledRemId) {
 		const existingRem = await plugin.rem.findOne(unfiledRemId as string);
