@@ -47,15 +47,15 @@ Citationista is a RemNote plugin that integrates with Zotero, the reference mana
 
 **Next Steps:**
 
--   Complete bidirectional sync between Zotero and RemNote
+-   Background sync automation
 -   Add bibliography generation from RemNote source links
 -   Improve citation detection and formatting
 -   Better installation and setup process
 
 **Future Goals:**
 
--   Background sync automation
--   Enhanced source management tools
+-   Complete bidirectional sync between Zotero and RemNote
+-   Enhanced RemNote source management tools
 -   Citation style formatting options
 
 ## Issues and Feedback
