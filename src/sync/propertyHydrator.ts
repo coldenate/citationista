@@ -40,19 +40,29 @@ export class PropertyHydrator {
 		const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
 		const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];
 		// Hydrate properties for items
-		for (const item of itemsToHydrate) {
-			const rem = item.rem;
-			if (rem) {
-				// Tag, Safety, and Hydrate item properties here
-				// For example, set custom properties or add content
-				// await rem.setCustomProperty('authors', item.data.creators);
-				const itemTypeCode = getCode(item.data.itemType);
-				const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
-				if (!powerupItemType) {
-					console.error('Powerup not found!');
-					return;
-				}
-				await rem.addPowerup(itemTypeCode);
+                for (const item of itemsToHydrate) {
+                        const rem = item.rem;
+                        if (rem) {
+                                // Tag, Safety, and Hydrate item properties here
+                                // For example, set custom properties or add content
+                                // await rem.setCustomProperty('authors', item.data.creators);
+                                const itemTypeCode = getCode(item.data.itemType);
+                                const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
+                                if (!powerupItemType) {
+                                        console.error('Powerup not found!');
+                                        return;
+                                }
+                                await rem.addPowerup(itemTypeCode);
+
+                                // Basic text for notes or annotations
+                                if (item.data.itemType === 'note' && typeof item.data.note === 'string') {
+                                        await rem.setText([item.data.note]);
+                                } else if (
+                                        item.data.itemType === 'annotation' &&
+                                        typeof item.data.annotationText === 'string'
+                                ) {
+                                        await rem.setText([item.data.annotationText]);
+                                }
 
 				// await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]); we add this when we create it
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);

@@ -7,31 +7,70 @@
  */
 
 export function isCoreField(key: string): boolean {
-	// Core fields: always accept the remote version. TODO: identify which fields are core.
-	const coreFields = ['title', 'abstractNote', 'date', 'publisher', 'url'];
-	return coreFields.includes(key);
+        // Core bibliographic metadata should always prefer the remote value
+        // to ensure Zotero remains the source of truth.
+        const coreFields = [
+                'key',
+                'itemType',
+                'creators',
+                'title',
+                'publicationTitle',
+                'bookTitle',
+                'publisher',
+                'date',
+                'dateAdded',
+                'dateModified',
+                'url',
+                'DOI',
+                'ISSN',
+                'ISBN',
+                'linkMode',
+                'filename',
+                'path',
+                'md5',
+        ];
+        return coreFields.includes(key);
 }
 
 export function isChildContentField(key: string): boolean {
-	// For example, "notes" is treated as child content that should merge.
-	return key === 'notes';
+        // Notes and tags should be merged rather than overwritten.
+        return key === 'notes' || key === 'tags';
 }
 
 export function mergeChildContent(local: any, remote: any, base: any): any {
-	// If both local and remote store arrays (of notes), merge them by starting with remote
-	// and then adding any local note that did not exist in the base copy.
-	const merged = new Set<string>();
-	if (Array.isArray(remote)) {
-		remote.forEach((note) => merged.add(note));
-	}
-	if (Array.isArray(local)) {
-		local.forEach((note) => {
-			if (!base || (Array.isArray(base) && !base.includes(note))) {
-				merged.add(note);
-			}
-		});
-	}
-	return Array.from(merged);
+        // Handles merging of array based child content like notes and tags.
+        const merged: any[] = [];
+        const seen = new Set<string>();
+
+        const addEntry = (entry: any) => {
+                if (!entry) return;
+                const key = typeof entry === 'string' ? entry : JSON.stringify(entry);
+                if (!seen.has(key)) {
+                        seen.add(key);
+                        merged.push(entry);
+                }
+        };
+
+        if (Array.isArray(remote)) {
+                remote.forEach(addEntry);
+        }
+
+        if (Array.isArray(local)) {
+                local.forEach((entry) => {
+                        const key = typeof entry === 'string' ? entry : JSON.stringify(entry);
+                        if (
+                                !base ||
+                                (Array.isArray(base) &&
+                                        !base.some((b) =>
+                                                typeof b === 'string' ? b === entry : JSON.stringify(b) === key
+                                        ))
+                        ) {
+                                addEntry(entry);
+                        }
+                });
+        }
+
+        return merged;
 }
 
 export function threeWayMerge(localData: any, remoteData: any, baseData: any): any {
