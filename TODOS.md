@@ -1,6 +1,6 @@
 -   [ ] Converting the Zotero Library Rem into a folder. #TODO: waiting on Plugin SDK to be patched\
 -   [ ] _Completing the exportCitations command (not sure)_
--   [ ] Identify which fields should always favor remote values and which should merge (e.g., tags, notes).
+-   [x] Identify which fields should always favor remote values and which should merge (e.g., tags, notes).
 -   [ ] Update threeWayMerge.ts accordingly and add more unit tests or console output to verify results.
 -   [x] Handling multiple URLs when hydrating properties.
 -   [x] Finalize Zotero Item Type Definitions
