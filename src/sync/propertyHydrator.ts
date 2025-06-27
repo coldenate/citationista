@@ -40,29 +40,54 @@ export class PropertyHydrator {
 		const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
 		const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];
 		// Hydrate properties for items
-                for (const item of itemsToHydrate) {
-                        const rem = item.rem;
-                        if (rem) {
-                                // Tag, Safety, and Hydrate item properties here
-                                // For example, set custom properties or add content
-                                // await rem.setCustomProperty('authors', item.data.creators);
-                                const itemTypeCode = getCode(item.data.itemType);
-                                const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
-                                if (!powerupItemType) {
-                                        console.error('Powerup not found!');
-                                        return;
-                                }
-                                await rem.addPowerup(itemTypeCode);
+		for (const item of itemsToHydrate) {
+			const rem = item.rem;
+			if (rem) {
+				// Tag, Safety, and Hydrate item properties here
+				// For example, set custom properties or add content
+				// await rem.setCustomProperty('authors', item.data.creators);
+				const itemTypeCode = getCode(item.data.itemType);
+				const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
+				if (!powerupItemType) {
+					console.error('Powerup not found!');
+					return;
+				}
+				await rem.addPowerup(itemTypeCode);
 
-                                // Basic text for notes or annotations
-                                if (item.data.itemType === 'note' && typeof item.data.note === 'string') {
-                                        await rem.setText([item.data.note]);
-                                } else if (
-                                        item.data.itemType === 'annotation' &&
-                                        typeof item.data.annotationText === 'string'
-                                ) {
-                                        await rem.setText([item.data.annotationText]);
-                                }
+				// Basic text for notes or annotations
+				if (item.data.itemType === 'note' && item.data.note) {
+					// create a tree with markdown if there are multiple lines, otherwise set createSingleRem
+					console.log(item.data.note);
+					if (item.data.note.includes('\n')) {
+						const tempRemArray = await this.plugin.rem.createTreeWithMarkdown(
+							item.data.note
+						);
+						if (tempRemArray && tempRemArray.length > 0) {
+							// Only set the top-level rems as children, preserving internal hierarchy
+							const rootRems = tempRemArray.filter((childRem) => !childRem.parent);
+							rootRems.forEach((rootRem) => {
+								rootRem.setParent(rem._id);
+							});
+						}
+					} else {
+						const tempRem = await this.plugin.rem.createSingleRemWithMarkdown(
+							item.data.note
+						);
+						if (tempRem) {
+							tempRem.setParent(rem._id);
+						}
+					}
+				} else if (
+					item.data.itemType === 'annotation' &&
+					typeof item.data.annotationText === 'string'
+				) {
+					const tempRem = await this.plugin.rem.createSingleRemWithMarkdown(
+						item.data.annotationText
+					);
+					if (tempRem) {
+						tempRem.setParent(rem._id);
+					}
+				}
 
 				// await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]); we add this when we create it
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
