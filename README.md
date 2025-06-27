@@ -49,12 +49,12 @@ Please be sure to check out the [Roadmap](https://www.remnote.com/a/Citationista
 -   [x] Export Rem Sources to BibTeX, or generate APA/MLA/etc citations.
 -   [x] Import your **Zotero** Library 📚
     -   [x] Proper syncing them with RemNote.
-    -   [ ] Importing Zotero Notes
+    -   [x] Importing Zotero Notes
     -   [x] Advanced tagging system for sources.
-        -   [ ] Import Zotero Tags as RemNote Tags
+        -   [x] Import Zotero Tags as RemNote Tags
     -   [x] Create References from these syncs.
         -   [x] ~~Automatically Create References upon importing with slash command~~ (Built-in due to plugin being native to RemNote!)
-    -   [ ] Compatibility with RemNote Reader
+    -   [x] Compatibility with RemNote Reader
 -   [x] Support for RemNote AI
 <!-- -   [ ] Full Bi-Directional Syncing with Zotero
     > [!NOTE] This is a long-term goal, but some is already implemented :D -->
