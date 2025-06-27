@@ -57,7 +57,6 @@ export class PropertyHydrator {
 				// Basic text for notes or annotations
 				if (item.data.itemType === 'note' && item.data.note) {
 					// create a tree with markdown if there are multiple lines, otherwise set createSingleRem
-					console.log(item.data.note);
 					if (item.data.note.includes('\n')) {
 						const tempRemArray = await this.plugin.rem.createTreeWithMarkdown(
 							item.data.note
