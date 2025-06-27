@@ -230,7 +230,7 @@ export class PropertyHydrator {
 				const linkID = await this.plugin.rem.createLinkRem(url, true);
 				if (linkID) {
 					await rem.addSource(linkID);
-					logMessage(this.plugin, `Added URL source: ${url}`, LogType.Info, false);
+					// logMessage(this.plugin, `Added URL source: ${url}`, LogType.Info, false);
 				}
 			} catch (error) {
 				console.error(`Failed to add URL source ${url}:`, error);
