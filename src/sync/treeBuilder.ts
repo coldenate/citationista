@@ -1,6 +1,7 @@
 import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
+import { checkForceStopFlag } from '../services/pluginIO';
 import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
 
@@ -114,14 +115,45 @@ export class TreeBuilder {
 	}
 
 	async applyChanges(changes: ChangeSet): Promise<void> {
+		// Check for force stop before applying any changes
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.handleCollections(changes);
+		
+		// Check for force stop between collections and items
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.handleItems(changes);
 	}
 
 	private async handleCollections(changes: ChangeSet): Promise<void> {
+		// Check for force stop before collection operations
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.createCollections(changes.newCollections);
+		
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.updateCollections(changes.updatedCollections);
+		
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.deleteCollections(changes.deletedCollections);
+		
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.moveCollections([
 			...changes.newCollections,
 			...changes.movedCollections,
@@ -130,9 +162,29 @@ export class TreeBuilder {
 	}
 
 	private async handleItems(changes: ChangeSet): Promise<void> {
+		// Check for force stop before item operations
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.createItems(changes.newItems);
+		
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.updateItems(changes.updatedItems);
+		
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.deleteItems(changes.deletedItems);
+		
+		if (await checkForceStopFlag(this.plugin)) {
+			return;
+		}
+
 		await this.moveItems([...changes.newItems, ...changes.movedItems, ...changes.updatedItems]);
 	}
 

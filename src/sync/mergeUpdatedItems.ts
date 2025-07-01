@@ -1,6 +1,7 @@
 // src/sync/mergeUpdatedItems.ts
 import type { RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
+import { checkForceStopFlag } from '../services/pluginIO';
 import type { ChangeSet, Item, RemNode, ZoteroItemData } from '../types/types';
 import { threeWayMerge } from './threeWayMerge';
 
@@ -16,7 +17,16 @@ export async function mergeUpdatedItems(
 	prevItems: Item[],
 	nodeCache: Map<string, RemNode>
 ): Promise<void> {
+	// Check for force stop before processing updated items
+	if (await checkForceStopFlag(_plugin)) {
+		return;
+	}
+
 	for (const updatedItem of changes.updatedItems) {
+		// Check for force stop on each item (for long lists)
+		if (await checkForceStopFlag(_plugin)) {
+			return;
+		}
 		// Locate the corresponding shadow copy from the previous sync.
 		const shadowItem = prevItems.find((i) => i.key === updatedItem.key);
 		if (!shadowItem) continue;
