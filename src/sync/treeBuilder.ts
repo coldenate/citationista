@@ -3,6 +3,7 @@ import { powerupCodes } from '../constants/constants';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
 import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
+import { generatePowerupCode } from '../utils/getCodeName';
 
 export class TreeBuilder {
 	getNodeCache(): Map<string, RemNode> {
@@ -205,29 +206,45 @@ export class TreeBuilder {
 	}
 
 	// Item methods.
-	private async createItems(items: Item[]): Promise<void> {
-		for (const item of items) {
-			const rem = await this.plugin.rem.createRem();
-			if (!rem) {
-				console.error('Failed to create Rem for item:', item.key);
-				continue;
-			}
-			await rem.addPowerup(powerupCodes.ZITEM);
-			await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]);
-			const remKey = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
-			if (!remKey) {
-				console.error('Key not set for item:', item.key);
-				continue;
-			}
-			item.rem = rem;
-			this.nodeCache.set(item.key, {
-				remId: rem._id,
-				zoteroId: item.key,
-				zoteroParentId: item.data.parentItem || item.data.collections?.[0] || null,
-				rem,
-			});
-		}
-	}
+       private async createItems(items: Item[]): Promise<void> {
+               for (const item of items) {
+                       const itemTypeCode = generatePowerupCode(item.data.itemType);
+                       const itemTypePowerup = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
+
+                       if (!itemTypePowerup) {
+                               logMessage(
+                                       this.plugin,
+                                       `Power-up ${itemTypeCode} not found for item ${item.key}`,
+                                       LogType.Error
+                               );
+                               // Skip adding the specific item type power-up but continue
+                       }
+
+                       const rem = await this.plugin.rem.createRem();
+                       if (!rem) {
+                               console.error('Failed to create Rem for item:', item.key);
+                               continue;
+                       }
+                       await rem.addPowerup(powerupCodes.ZITEM);
+                       if (itemTypePowerup) {
+                               await rem.addPowerup(itemTypeCode);
+                       }
+                       await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]);
+                       const remKey = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
+                       if (!remKey) {
+                               console.error('Key not set for item:', item.key);
+                               continue;
+                       }
+                       item.rem = rem;
+                       this.nodeCache.set(item.key, {
+                               remId: rem._id,
+                               zoteroId: item.key,
+                               zoteroParentId:
+                                       item.data.parentItem || item.data.collections?.[0] || null,
+                               rem,
+                       });
+               }
+       }
 
 	private async updateItems(items: Item[]): Promise<void> {
 		for (const item of items) {
