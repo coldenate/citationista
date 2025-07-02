@@ -11,6 +11,7 @@ import { markForceStopRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
+import { registerIconCSS } from './services/iconCSS';
 
 // Helper functions for organizing registration logic
 
@@ -406,8 +407,9 @@ async function registerDebugCommands(plugin: RNPlugin) {
 }
 
 async function onActivate(plugin: RNPlugin) {
-	await registerSettings(plugin);
-	await registerPowerups(plugin);
+        await registerSettings(plugin);
+        await registerPowerups(plugin);
+        await registerIconCSS(plugin);
 
 	const isNewDebugMode = await isDebugMode(plugin);
 
