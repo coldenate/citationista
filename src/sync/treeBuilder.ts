@@ -1,5 +1,7 @@
-import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
+import { filterAsync, type RNPlugin, type Rem } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
+import { itemTypes } from '../constants/zoteroItemSchema';
+import { generatePowerupCode } from '../utils/getCodeName';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
 import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
@@ -49,15 +51,23 @@ export class TreeBuilder {
 	async initializeNodeCache(): Promise<void> {
 		logMessage(this.plugin, 'Initializing Node Cache', LogType.Info, false);
 
-		const collectionPowerup = await this.plugin.powerup.getPowerupByCode(
-			powerupCodes.COLLECTION
-		);
-		const itemPowerup = await this.plugin.powerup.getPowerupByCode(powerupCodes.ZITEM);
-		if (!collectionPowerup || !itemPowerup) {
-			throw new Error('Required powerups not found');
-		}
-		let itemRems = await itemPowerup.taggedRem();
-		let collectionRems = await collectionPowerup.taggedRem();
+                const collectionPowerup = await this.plugin.powerup.getPowerupByCode(
+                        powerupCodes.COLLECTION
+                );
+                if (!collectionPowerup) {
+                        throw new Error('Required powerups not found');
+                }
+
+                let itemRems: Rem[] = [];
+                for (const itemType of itemTypes) {
+                        const powerup = await this.plugin.powerup.getPowerupByCode(
+                                generatePowerupCode(itemType.itemType)
+                        );
+                        if (!powerup) continue;
+                        const tagged = await powerup.taggedRem();
+                        itemRems = itemRems.concat(tagged);
+                }
+                let collectionRems = await collectionPowerup.taggedRem();
 
 		// Filter out definition Rems.
 		itemRems = await filterAsync(itemRems, async (rem) => !(await rem.isPowerup()));
@@ -206,15 +216,16 @@ export class TreeBuilder {
 
 	// Item methods.
 	private async createItems(items: Item[]): Promise<void> {
-		for (const item of items) {
-			const rem = await this.plugin.rem.createRem();
-			if (!rem) {
-				console.error('Failed to create Rem for item:', item.key);
-				continue;
-			}
-			await rem.addPowerup(powerupCodes.ZITEM);
-			await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]);
-			const remKey = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
+                for (const item of items) {
+                        const rem = await this.plugin.rem.createRem();
+                        if (!rem) {
+                                console.error('Failed to create Rem for item:', item.key);
+                                continue;
+                        }
+                        const itemTypeCode = generatePowerupCode(item.data.itemType);
+                        await rem.addPowerup(itemTypeCode);
+                        await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]);
+                        const remKey = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
 			if (!remKey) {
 				console.error('Key not set for item:', item.key);
 				continue;

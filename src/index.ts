@@ -1,12 +1,14 @@
 // Rename summary: setForceStop -> markForceStopRequested; COOL_POOL -> CITATION_POOL
 import {
-	declareIndexPlugin,
-	PropertyLocation,
-	PropertyType,
-	type RNPlugin,
+        declareIndexPlugin,
+        PropertyLocation,
+        PropertyType,
+        type RNPlugin,
+        type Rem,
 } from '@remnote/plugin-sdk';
 import { citationFormats, powerupCodes } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
+import { generatePowerupCode } from './utils/getCodeName';
 import { registerIconCSS } from './services/iconCSS';
 import { markForceStopRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
@@ -364,26 +366,34 @@ async function registerDebugCommands(plugin: RNPlugin) {
 				)
 			) {
 				await plugin.storage.setSynced('zoteroData', undefined);
-				const zoteroItemPowerup = await plugin.powerup.getPowerupByCode(powerupCodes.ZITEM);
-				const zoteroCollectionPowerup = await plugin.powerup.getPowerupByCode(
-					powerupCodes.COLLECTION
-				);
-				const zoteroLibraryPowerup = await plugin.powerup.getPowerupByCode(
-					powerupCodes.ZOTERO_SYNCED_LIBRARY
-				);
-				const citationistaPowerup = await plugin.powerup.getPowerupByCode(
-					powerupCodes.CITATION_POOL
-				);
-				const unfiledItemsPowerup = await plugin.powerup.getPowerupByCode(
-					powerupCodes.ZOTERO_UNFILED_ITEMS
-				);
-				const taggedRems = await Promise.all([
-					zoteroItemPowerup?.taggedRem(),
-					zoteroCollectionPowerup?.taggedRem(),
-					zoteroLibraryPowerup?.taggedRem(),
-					citationistaPowerup?.taggedRem(),
-					unfiledItemsPowerup?.taggedRem(),
-				]).then((results) => results.flat());
+                                const zoteroCollectionPowerup = await plugin.powerup.getPowerupByCode(
+                                        powerupCodes.COLLECTION
+                                );
+                                const zoteroLibraryPowerup = await plugin.powerup.getPowerupByCode(
+                                        powerupCodes.ZOTERO_SYNCED_LIBRARY
+                                );
+                                const citationistaPowerup = await plugin.powerup.getPowerupByCode(
+                                        powerupCodes.CITATION_POOL
+                                );
+                                const unfiledItemsPowerup = await plugin.powerup.getPowerupByCode(
+                                        powerupCodes.ZOTERO_UNFILED_ITEMS
+                                );
+                                const itemTaggedRemPromises: Promise<Rem[]>[] = [];
+                                for (const itemType of itemTypes) {
+                                        const powerup = await plugin.powerup.getPowerupByCode(
+                                                generatePowerupCode(itemType.itemType)
+                                        );
+                                        if (powerup) {
+                                                itemTaggedRemPromises.push(powerup.taggedRem());
+                                        }
+                                }
+                                const taggedRems = await Promise.all([
+                                        ...itemTaggedRemPromises,
+                                        zoteroCollectionPowerup?.taggedRem(),
+                                        zoteroLibraryPowerup?.taggedRem(),
+                                        citationistaPowerup?.taggedRem(),
+                                        unfiledItemsPowerup?.taggedRem(),
+                                ]).then((results) => results.flat());
 				if (taggedRems) {
 					taggedRems.forEach(async (rem) => {
 						await rem?.remove();
