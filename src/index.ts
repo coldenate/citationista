@@ -7,11 +7,11 @@ import {
 } from '@remnote/plugin-sdk';
 import { citationFormats, powerupCodes } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
+import { registerIconCSS } from './services/iconCSS';
 import { markForceStopRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
-import { registerIconCSS } from './services/iconCSS';
 
 // Helper functions for organizing registration logic
 
@@ -404,16 +404,27 @@ async function registerDebugCommands(plugin: RNPlugin) {
 			}
 		},
 	});
+	// command to reregister icon CDD
+	await plugin.app.registerCommand({
+		id: 'register-icon-css',
+		name: 'Register Icon CSS',
+		description: 'Registers the icon CSS for Citationista.',
+		quickCode: 'ric',
+		action: async () => {
+			await registerIconCSS(plugin);
+			plugin.app.toast('Icon CSS registered successfully!');
+		},
+	});
 }
 
 async function onActivate(plugin: RNPlugin) {
-        await registerSettings(plugin);
-        await registerPowerups(plugin);
-        await registerIconCSS(plugin);
+	await registerSettings(plugin);
+	await registerPowerups(plugin);
 
 	const isNewDebugMode = await isDebugMode(plugin);
 
 	plugin.track(async (reactivePlugin) => {
+		await registerIconCSS(plugin);
 		await isDebugMode(reactivePlugin).then(async (debugMode) => {
 			if (debugMode) {
 				plugin.app.toast('Debug Mode Enabled; Registering Debug Tools for Citationista...');
