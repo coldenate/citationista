@@ -1,5 +1,7 @@
-import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
+import { filterAsync, type RNPlugin, type Rem } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
+import { itemTypes } from '../constants/zoteroItemSchema';
+import { generatePowerupCode } from '../utils/getCodeName';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
 import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
@@ -9,11 +11,25 @@ export class TreeBuilder {
 		return this.nodeCache;
 	}
 	private plugin: RNPlugin;
-	private nodeCache: Map<string, RemNode> = new Map();
+        private nodeCache: Map<string, RemNode> = new Map();
 
-	constructor(plugin: RNPlugin) {
-		this.plugin = plugin;
-	}
+        constructor(plugin: RNPlugin) {
+                this.plugin = plugin;
+        }
+
+        private async fetchItemTypeTaggedRems(): Promise<Rem[]> {
+                const powerups = await Promise.all(
+                        itemTypes.map(({ itemType }) =>
+                                this.plugin.powerup.getPowerupByCode(
+                                        generatePowerupCode(itemType)
+                                )
+                        )
+                );
+                const remArrays = await Promise.all(
+                        powerups.map((p) => (p ? p.taggedRem() : Promise.resolve([])))
+                );
+                return remArrays.flat();
+        }
 
 	/**
 	 * Initializes the node cache by fetching all Rems tagged with specific power-ups
@@ -49,15 +65,16 @@ export class TreeBuilder {
 	async initializeNodeCache(): Promise<void> {
 		logMessage(this.plugin, 'Initializing Node Cache', LogType.Info, false);
 
-		const collectionPowerup = await this.plugin.powerup.getPowerupByCode(
-			powerupCodes.COLLECTION
-		);
-		const itemPowerup = await this.plugin.powerup.getPowerupByCode(powerupCodes.ZITEM);
-		if (!collectionPowerup || !itemPowerup) {
-			throw new Error('Required powerups not found');
-		}
-		let itemRems = await itemPowerup.taggedRem();
-		let collectionRems = await collectionPowerup.taggedRem();
+                const collectionPowerup = await this.plugin.powerup.getPowerupByCode(
+                        powerupCodes.COLLECTION
+                );
+                if (!collectionPowerup) {
+                        throw new Error('Required powerups not found');
+                }
+                let [itemRems, collectionRems] = await Promise.all([
+                        this.fetchItemTypeTaggedRems(),
+                        collectionPowerup.taggedRem(),
+                ]);
 
 		// Filter out definition Rems.
 		itemRems = await filterAsync(itemRems, async (rem) => !(await rem.isPowerup()));
