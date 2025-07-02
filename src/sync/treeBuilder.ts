@@ -174,15 +174,17 @@ export class TreeBuilder {
 		}
 	}
 
-	private async deleteCollections(collections: Collection[]): Promise<void> {
-		for (const collection of collections) {
-			const remNode = this.nodeCache.get(collection.key);
-			if (remNode) {
-				await remNode.rem.remove();
-				this.nodeCache.delete(collection.key);
-			}
-		}
-	}
+        private async deleteCollections(collections: Collection[]): Promise<void> {
+                const deletionPromises: Promise<void>[] = [];
+                for (const collection of collections) {
+                        const remNode = this.nodeCache.get(collection.key);
+                        if (remNode) {
+                                deletionPromises.push(remNode.rem.remove());
+                                this.nodeCache.delete(collection.key);
+                        }
+                }
+                await Promise.all(deletionPromises);
+        }
 
 	private async moveCollections(collections: Collection[]): Promise<void> {
 		for (const collection of collections) {
@@ -246,15 +248,17 @@ export class TreeBuilder {
 		}
 	}
 
-	private async deleteItems(items: Item[]): Promise<void> {
-		for (const item of items) {
-			const remNode = this.nodeCache.get(item.key);
-			if (remNode) {
-				await remNode.rem.remove();
-				this.nodeCache.delete(item.key);
-			}
-		}
-	}
+        private async deleteItems(items: Item[]): Promise<void> {
+                const deletionPromises: Promise<void>[] = [];
+                for (const item of items) {
+                        const remNode = this.nodeCache.get(item.key);
+                        if (remNode) {
+                                deletionPromises.push(remNode.rem.remove());
+                                this.nodeCache.delete(item.key);
+                        }
+                }
+                await Promise.all(deletionPromises);
+        }
 
 	private async moveItems(items: Item[]): Promise<void> {
 		const unfiledZoteroItemsRem = await getUnfiledItemsRem(this.plugin);
