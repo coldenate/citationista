@@ -404,7 +404,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 			}
 		},
 	});
-	// command to reregister icon CDD
+	// command to reregister icon CSS
 	await plugin.app.registerCommand({
 		id: 'register-icon-css',
 		name: 'Register Icon CSS',
