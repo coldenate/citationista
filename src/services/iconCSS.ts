@@ -73,16 +73,27 @@ function buildRule(tag: string, base: string): string {
 /* ${tag} */
 [data-rem-tags~="${tag}"] .rem-bullet__core { display: none; }
 
+[data-rem-tags~="${tag}"] .rem-bullet {
+  background-color: rgba(128, 128, 128, 0.15);
+  border-radius: 50%;
+}
+
 [data-rem-tags~="${tag}"] .perfect-circle__inner {
   background-image: url('${dark}');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+  filter: contrast(1.2) brightness(1.1);
 }
 
 @media (prefers-color-scheme: light) {
+  [data-rem-tags~="${tag}"] .rem-bullet {
+    background-color: rgba(0, 0, 0, 0.08);
+  }
+
   [data-rem-tags~="${tag}"] .perfect-circle__inner {
     background-image: url('${light}');
+    filter: contrast(1.1) brightness(0.95);
   }
 }`;
 }
