@@ -266,15 +266,14 @@ async function registerPowerups(plugin: RNPlugin) {
 }
 
 async function _deleteTaggedRems(plugin: RNPlugin, powerupCodes: string[]): Promise<void> {
-	for (const code of powerupCodes) {
-		const powerup = await plugin.powerup.getPowerupByCode(code);
-		const taggedRems = await powerup?.taggedRem();
-		if (taggedRems) {
-			for (const rem of taggedRems) {
-				await rem?.remove();
-			}
-		}
-	}
+        for (const code of powerupCodes) {
+                const powerup = await plugin.powerup.getPowerupByCode(code);
+                const taggedRems = await powerup?.taggedRem();
+                if (taggedRems) {
+                        const removalPromises = taggedRems.map((rem) => rem?.remove());
+                        await Promise.all(removalPromises);
+                }
+        }
 }
 
 async function registerDebugCommands(plugin: RNPlugin) {
@@ -377,18 +376,17 @@ async function registerDebugCommands(plugin: RNPlugin) {
 				const unfiledItemsPowerup = await plugin.powerup.getPowerupByCode(
 					powerupCodes.ZOTERO_UNFILED_ITEMS
 				);
-				const taggedRems = await Promise.all([
-					zoteroItemPowerup?.taggedRem(),
-					zoteroCollectionPowerup?.taggedRem(),
-					zoteroLibraryPowerup?.taggedRem(),
-					citationistaPowerup?.taggedRem(),
-					unfiledItemsPowerup?.taggedRem(),
-				]).then((results) => results.flat());
-				if (taggedRems) {
-					taggedRems.forEach(async (rem) => {
-						await rem?.remove();
-					});
-				}
+                                const taggedRems = await Promise.all([
+                                        zoteroItemPowerup?.taggedRem(),
+                                        zoteroCollectionPowerup?.taggedRem(),
+                                        zoteroLibraryPowerup?.taggedRem(),
+                                        citationistaPowerup?.taggedRem(),
+                                        unfiledItemsPowerup?.taggedRem(),
+                                ]).then((results) => results.flat());
+                                if (taggedRems) {
+                                        const removalPromises = taggedRems.map((rem) => rem?.remove());
+                                        await Promise.all(removalPromises);
+                                }
 			}
 		},
 	});
