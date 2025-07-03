@@ -2,8 +2,8 @@ import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
 import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
-import { LogType, logMessage } from '../utils/logging';
 import { generatePowerupCode } from '../utils/getCodeName';
+import { LogType, logMessage } from '../utils/logging';
 
 export class TreeBuilder {
 	getNodeCache(): Map<string, RemNode> {
@@ -175,17 +175,17 @@ export class TreeBuilder {
 		}
 	}
 
-        private async deleteCollections(collections: Collection[]): Promise<void> {
-                const deletionPromises: Promise<void>[] = [];
-                for (const collection of collections) {
-                        const remNode = this.nodeCache.get(collection.key);
-                        if (remNode) {
-                                deletionPromises.push(remNode.rem.remove());
-                                this.nodeCache.delete(collection.key);
-                        }
-                }
-                await Promise.all(deletionPromises);
-        }
+	private async deleteCollections(collections: Collection[]): Promise<void> {
+		const deletionPromises: Promise<void>[] = [];
+		for (const collection of collections) {
+			const remNode = this.nodeCache.get(collection.key);
+			if (remNode) {
+				deletionPromises.push(remNode.rem.remove());
+				this.nodeCache.delete(collection.key);
+			}
+		}
+		await Promise.all(deletionPromises);
+	}
 
 	private async moveCollections(collections: Collection[]): Promise<void> {
 		for (const collection of collections) {
@@ -208,45 +208,44 @@ export class TreeBuilder {
 	}
 
 	// Item methods.
-       private async createItems(items: Item[]): Promise<void> {
-               for (const item of items) {
-                       const itemTypeCode = generatePowerupCode(item.data.itemType);
-                       const itemTypePowerup = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
+	private async createItems(items: Item[]): Promise<void> {
+		for (const item of items) {
+			const itemTypeCode = generatePowerupCode(item.data.itemType);
+			const itemTypePowerup = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
 
-                       if (!itemTypePowerup) {
-                               logMessage(
-                                       this.plugin,
-                                       `Power-up ${itemTypeCode} not found for item ${item.key}`,
-                                       LogType.Error
-                               );
-                               // Skip adding the specific item type power-up but continue
-                       }
+			if (!itemTypePowerup) {
+				logMessage(
+					this.plugin,
+					`Power-up ${itemTypeCode} not found for item ${item.key}`,
+					LogType.Error
+				);
+				// Skip adding the specific item type power-up but continue
+			}
 
-                       const rem = await this.plugin.rem.createRem();
-                       if (!rem) {
-                               console.error('Failed to create Rem for item:', item.key);
-                               continue;
-                       }
-                       await rem.addPowerup(powerupCodes.ZITEM);
-                       if (itemTypePowerup) {
-                               await rem.addPowerup(itemTypeCode);
-                       }
-                       await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]);
-                       const remKey = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
-                       if (!remKey) {
-                               console.error('Key not set for item:', item.key);
-                               continue;
-                       }
-                       item.rem = rem;
-                       this.nodeCache.set(item.key, {
-                               remId: rem._id,
-                               zoteroId: item.key,
-                               zoteroParentId:
-                                       item.data.parentItem || item.data.collections?.[0] || null,
-                               rem,
-                       });
-               }
-       }
+			const rem = await this.plugin.rem.createRem();
+			if (!rem) {
+				console.error('Failed to create Rem for item:', item.key);
+				continue;
+			}
+			await rem.addPowerup(powerupCodes.ZITEM);
+			if (itemTypePowerup) {
+				await rem.addPowerup(itemTypeCode);
+			}
+			await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]);
+			const remKey = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
+			if (!remKey) {
+				console.error('Key not set for item:', item.key);
+				continue;
+			}
+			item.rem = rem;
+			this.nodeCache.set(item.key, {
+				remId: rem._id,
+				zoteroId: item.key,
+				zoteroParentId: item.data.parentItem || item.data.collections?.[0] || null,
+				rem,
+			});
+		}
+	}
 
 	private async updateItems(items: Item[]): Promise<void> {
 		for (const item of items) {
@@ -265,17 +264,17 @@ export class TreeBuilder {
 		}
 	}
 
-        private async deleteItems(items: Item[]): Promise<void> {
-                const deletionPromises: Promise<void>[] = [];
-                for (const item of items) {
-                        const remNode = this.nodeCache.get(item.key);
-                        if (remNode) {
-                                deletionPromises.push(remNode.rem.remove());
-                                this.nodeCache.delete(item.key);
-                        }
-                }
-                await Promise.all(deletionPromises);
-        }
+	private async deleteItems(items: Item[]): Promise<void> {
+		const deletionPromises: Promise<void>[] = [];
+		for (const item of items) {
+			const remNode = this.nodeCache.get(item.key);
+			if (remNode) {
+				deletionPromises.push(remNode.rem.remove());
+				this.nodeCache.delete(item.key);
+			}
+		}
+		await Promise.all(deletionPromises);
+	}
 
 	private async moveItems(items: Item[]): Promise<void> {
 		const unfiledZoteroItemsRem = await getUnfiledItemsRem(this.plugin);
