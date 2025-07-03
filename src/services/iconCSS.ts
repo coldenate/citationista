@@ -1,16 +1,19 @@
 import type { RNPlugin } from '@remnote/plugin-sdk';
 
+/**
+ * Maps RemNote tag identifiers → icon basenames (no theme suffix).
+ */
 const iconTagMap: Record<string, string> = {
-	/* top-level Zotero helpers */
+	/* ─── Zotero helpers ─── */
 	collection: 'collection',
-	'zotero-collection': 'collection', // Alternative collection tag
-	coolPool: 'collection', // "pool" behaves like a smart collection
+	'zotero-collection': 'collection',
+	coolPool: 'collection',
 	'zotero-unfiled-items': 'unfiled',
-	'zotero-synced-library': 'library', // use 'library-group' if you prefer
-	'zotero-item': 'document', // Generic zotero item
+	'zotero-synced-library': 'library',
+	'zotero-item': 'document',
 	zitem: 'document',
 
-	/* Citationista power-ups */
+	/* ─── Citationista power‑ups ─── */
 	'citationista-annotation': 'note-annotation',
 	'artwork-citationista': 'artwork',
 	'attachment-citationista': 'attachment-file',
@@ -53,42 +56,81 @@ const iconTagMap: Record<string, string> = {
 	'webpage-citationista': 'webpage',
 };
 
-function generateCSS(): string {
-	const baseURL =
-		'https://raw.githubusercontent.com/coldenate/citationista/refs/heads/main/public/icons/flat-icons';
-	let css = '/* Citationista icon overrides */\n';
-	for (const [tag, base] of Object.entries(iconTagMap)) {
-		const dark = `${baseURL}/${base}-dark.svg`;
-		const light = `${baseURL}/${base}-light.svg`;
+/*───────────────────────────────────────────────────────────────────────────*/
+/* Utility helpers                                                          */
+/*───────────────────────────────────────────────────────────────────────────*/
 
-		// Hide the default SVG circle and replace with our custom icon
-		css += `[data-rem-tags~="${tag}"] .rem-bullet__core {\n`;
-		css += `  display: none;\n`;
-		css += `}\n`;
-		// Add our custom icon as a background on the bullet container
-		css += `[data-rem-tags~="${tag}"] .perfect-circle__inner {\n`;
-		css += `  background-image: url("${dark}");\n`;
-		css += `  background-size: contain;\n`;
-		css += `  background-repeat: no-repeat;\n`;
-		css += `  background-position: center;\n`;
-		css += `}\n`;
+/** Build a CSS block. */
+function rule(sel: string, decl: Record<string, string>): string {
+	const body = Object.entries(decl)
+		.map(([p, v]) => `  ${p}: ${v};`)
+		.join('\n');
+	return `${sel} {\n${body}\n}\n`;
+}
 
-		css += `@media (prefers-color-scheme: light) {\n`;
-		css += `  [data-rem-tags~="${tag}"] .perfect-circle__inner {\n`;
-		css += `    background-image: url("${light}");\n`;
-		css += `    background-size: contain;\n`;
-		css += `    background-repeat: no-repeat;\n`;
-		css += `    background-position: center;\n`;
-		css += `  }\n`;
-		css += `}\n`;
-	}
+/** Shortcut: selectors that should apply in *both* expanded & collapsed. */
+function both(tag: string, inner: string): string {
+	return `[data-rem-tags~="${tag}"] ${inner}, .rem-container--collapsed[data-rem-tags~="${tag}"] ${inner}`;
+}
+
+/*───────────────────────────────────────────────────────────────────────────*/
+/* Per‑tag CSS generator                                                    */
+/*───────────────────────────────────────────────────────────────────────────*/
+function iconCSS(tag: string, base: string, url: string): string {
+	const dark = `${url}/${base}-dark.svg`;
+	const light = `${url}/${base}-light.svg`;
+
+	// Elements we touch ------------------------------------------------------
+	const coreRing = both(tag, '.rem-bullet__core') + ', ' + both(tag, '.rem-bullet__ring');
+	const inner = both(tag, '.perfect-circle__inner');
+	const bullet = both(tag, '.rn-rem-bullet');
+
+	let css = '';
+
+	/* 1️⃣  Hide default ring / core so only our icon shows */
+	css += rule(coreRing, { display: 'none' });
+
+	/* 2️⃣  Keep bullet size consistent (override only the scale) */
+	css += rule(bullet, {
+		'--perfect-circle-scale': '10', // force scale(1)
+	});
+
+	/* 3️⃣  Dark‑theme icon */
+	const bgDecl = {
+		'background-image': `url("${dark}")`,
+		'background-repeat': 'no-repeat',
+		'background-position': 'center',
+		'background-size': 'contain',
+	} as const;
+	css += rule(inner, bgDecl);
+
+	/* 4️⃣  Light‑theme override */
+	css += `@media (prefers-color-scheme: light) {\n`;
+	css += rule(inner, {
+		...bgDecl,
+		'background-image': `url("${light}")`,
+	});
+	css += `}\n`;
 
 	return css;
 }
 
-export async function registerIconCSS(plugin: RNPlugin) {
-	const css = generateCSS();
-	console.log('Registering icon CSS:', css);
+/*───────────────────────────────────────────────────────────────────────────*/
+/* Build complete stylesheet                                               */
+/*───────────────────────────────────────────────────────────────────────────*/
+function buildCSS(): string {
+	const base =
+		'https://raw.githubusercontent.com/coldenate/citationista/refs/heads/main/public/icons/flat-icons';
+	let css = '/* Citationista icon overrides */\n';
+	for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base);
+	return css;
+}
 
+/*───────────────────────────────────────────────────────────────────────────*/
+/* RemNote plugin entry                                                    */
+/*───────────────────────────────────────────────────────────────────────────*/
+export async function registerIconCSS(plugin: RNPlugin): Promise<void> {
+	const css = buildCSS();
+	console.debug('[Citationista‑Icons] injecting', css.length, 'chars');
 	await plugin.app.registerCSS('citationista-icons', css);
 }
