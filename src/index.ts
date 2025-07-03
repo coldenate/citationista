@@ -12,6 +12,9 @@ import { markForceStopRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
+import { autoSync } from './services/autoSync';
+
+let autoSyncInterval: NodeJS.Timeout | undefined;
 
 // Helper functions for organizing registration logic
 
@@ -52,12 +55,18 @@ async function registerSettings(plugin: RNPlugin) {
 			{ key: 'reference', label: 'Reference', value: 'reference' },
 		],
 	});
-	await plugin.settings.registerBooleanSetting({
-		id: 'debug-mode',
-		title: 'Debug Mode (Citationista)',
-		description: 'Enables certain testing commands. Non-destructive.',
-		defaultValue: false,
-	});
+        await plugin.settings.registerBooleanSetting({
+                id: 'debug-mode',
+                title: 'Debug Mode (Citationista)',
+                description: 'Enables certain testing commands. Non-destructive.',
+                defaultValue: false,
+        });
+        await plugin.settings.registerBooleanSetting({
+                id: 'disable-auto-sync',
+                title: 'Disable Auto Sync',
+                description: 'Prevent Citationista from syncing every 5 minutes.',
+                defaultValue: false,
+        });
 }
 
 async function registerPowerups(plugin: RNPlugin) {
@@ -431,16 +440,27 @@ async function onActivate(plugin: RNPlugin) {
 		});
 	});
 
-	await plugin.app.waitForInitialSync();
-	if (!isNewDebugMode) {
-		// await syncLibrary(plugin);
-	}
+        await plugin.app.waitForInitialSync();
+        if (!isNewDebugMode) {
+                // await syncLibrary(plugin);
+        }
+
+        setTimeout(() => {
+                autoSyncInterval = setInterval(async () => {
+                        await plugin.app.waitForInitialSync();
+                        await autoSync(plugin);
+                }, 300000);
+        }, 25);
 }
 
 export async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {
 	return await reactivePlugin.settings.getSetting('debug-mode');
 }
 
-async function onDeactivate(_: RNPlugin) {}
+async function onDeactivate(_: RNPlugin) {
+        if (autoSyncInterval) {
+                clearInterval(autoSyncInterval);
+        }
+}
 
 declareIndexPlugin(onActivate, onDeactivate);
