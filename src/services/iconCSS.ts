@@ -1,118 +1,94 @@
 import type { RNPlugin } from '@remnote/plugin-sdk';
 
-/**
- * Map a power-up tag to the basename of an icon (without the `-dark.svg` / `-light.svg` suffix).
- */
-export const iconTagMap: Record<string, string> = {
-	// ──────────────────────── Zotero helpers ────────────────────────
+const iconTagMap: Record<string, string> = {
+	/* top-level Zotero helpers */
 	collection: 'collection',
-	'zotero-collection': 'collection',
-	coolPool: 'collection',
+	'zotero-collection': 'collection', // Alternative collection tag
+	coolPool: 'collection', // "pool" behaves like a smart collection
 	'zotero-unfiled-items': 'unfiled',
-	'zotero-synced-library': 'library', // Use `library-group` if you prefer
-	'zotero-item': 'document',
+	'zotero-synced-library': 'library', // use 'library-group' if you prefer
+	'zotero-item': 'document', // Generic zotero item
 	zitem: 'document',
 
-	// ───────────────────── Citationista power-ups ────────────────────
+	/* Citationista power-ups */
 	'citationista-annotation': 'note-annotation',
-	'citationista-artwork': 'artwork',
-	'citationista-attachment': 'attachment-file',
-	'citationista-audioRecording': 'audio-recording',
-	'citationista-bill': 'bill',
-	'citationista-blogPost': 'blog-post',
-	'citationista-book': 'book',
-	'citationista-bookSection': 'book-section',
-	'citationista-case': 'case',
-	'citationista-computerProgram': 'computer-program',
-	'citationista-conferencePaper': 'conference-paper',
-	'citationista-dataset': 'dataset',
-	'citationista-dictionaryEntry': 'dictionary-entry',
-	'citationista-document': 'document',
-	'citationista-email': 'email',
-	'citationista-encyclopediaArticle': 'encyclopedia-article',
-	'citationista-film': 'film',
-	'citationista-forumPost': 'forum-post',
-	'citationista-hearing': 'hearing',
-	'citationista-instantMessage': 'instant-message',
-	'citationista-interview': 'interview',
-	'citationista-journalArticle': 'journal-article',
-	'citationista-letter': 'letter',
-	'citationista-magazineArticle': 'magazine-article',
-	'citationista-manuscript': 'manuscript',
-	'citationista-map': 'map',
-	'citationista-newspaperArticle': 'newspaper-article',
-	'citationista-note': 'note',
-	'citationista-patent': 'patent',
-	'citationista-podcast': 'podcast',
-	'citationista-preprint': 'preprint',
-	'citationista-presentation': 'presentation',
-	'citationista-radioBroadcast': 'radio-broadcast',
-	'citationista-report': 'report',
-	'citationista-standard': 'standard',
-	'citationista-statute': 'statute',
-	'citationista-thesis': 'thesis',
-	'citationista-tvBroadcast': 'tv-broadcast',
-	'citationista-videoRecording': 'video-recording',
-	'citationista-webpage': 'webpage',
+	'artwork-citationista': 'artwork',
+	'attachment-citationista': 'attachment-file',
+	'audiorecording-citationista': 'audio-recording',
+	'bill-citationista': 'bill',
+	'blogpost-citationista': 'blog-post',
+	'book-citationista': 'book',
+	'booksection-citationista': 'book-section',
+	'case-citationista': 'case',
+	'computerprogram-citationista': 'computer-program',
+	'conferencepaper-citationista': 'conference-paper',
+	'dataset-citationista': 'dataset',
+	'dictionaryentry-citationista': 'dictionary-entry',
+	'document-citationista': 'document',
+	'email-citationista': 'email',
+	'encyclopediaarticle-citationista': 'encyclopedia-article',
+	'film-citationista': 'film',
+	'forumpost-citationista': 'forum-post',
+	'hearing-citationista': 'hearing',
+	'instantmessage-citationista': 'instant-message',
+	'interview-citationista': 'interview',
+	'journalarticle-citationista': 'journal-article',
+	'letter-citationista': 'letter',
+	'magazinearticle-citationista': 'magazine-article',
+	'manuscript-citationista': 'manuscript',
+	'map-citationista': 'map',
+	'newspaperarticle-citationista': 'newspaper-article',
+	'note-citationista': 'note',
+	'patent-citationista': 'patent',
+	'podcast-citationista': 'podcast',
+	'preprint-citationista': 'preprint',
+	'presentation-citationista': 'presentation',
+	'radiobroadcast-citationista': 'radio-broadcast',
+	'report-citationista': 'report',
+	'standard-citationista': 'standard',
+	'statute-citationista': 'statute',
+	'thesis-citationista': 'thesis',
+	'tvbroadcast-citationista': 'tv-broadcast',
+	'videorecording-citationista': 'video-recording',
+	'webpage-citationista': 'webpage',
 };
 
-/**
- * Base URL for the flat icon set (no trailing slash).
- */
-const ICON_BASE_URL =
-	'https://raw.githubusercontent.com/coldenate/citationista/main/public/icons/flat-icons';
+function generateCSS(): string {
+	const baseURL =
+		'https://raw.githubusercontent.com/coldenate/citationista/refs/heads/main/public/icons/flat-icons';
+	let css = '/* Citationista icon overrides */\n';
+	for (const [tag, base] of Object.entries(iconTagMap)) {
+		const dark = `${baseURL}/${base}-dark.svg`;
+		const light = `${baseURL}/${base}-light.svg`;
 
-/**
- * Build the dark / light CSS rules for one tag.
- */
-function buildRule(tag: string, base: string): string {
-	const dark = `${ICON_BASE_URL}/${base}-dark.svg`;
-	const light = `${ICON_BASE_URL}/${base}-light.svg`;
+		// Hide the default SVG circle and replace with our custom icon
+		css += `[data-rem-tags~="${tag}"] .rem-bullet__core {\n`;
+		css += `  display: none;\n`;
+		css += `}\n`;
+		// Add our custom icon as a background on the bullet container
+		css += `[data-rem-tags~="${tag}"] .perfect-circle__inner {\n`;
+		css += `  background-image: url("${dark}");\n`;
+		css += `  background-size: contain;\n`;
+		css += `  background-repeat: no-repeat;\n`;
+		css += `  background-position: center;\n`;
+		css += `}\n`;
 
-	return `
-/* ${tag} */
-[data-rem-tags~="${tag}"] .rem-bullet__core { display: none; }
+		css += `@media (prefers-color-scheme: light) {\n`;
+		css += `  [data-rem-tags~="${tag}"] .perfect-circle__inner {\n`;
+		css += `    background-image: url("${light}");\n`;
+		css += `    background-size: contain;\n`;
+		css += `    background-repeat: no-repeat;\n`;
+		css += `    background-position: center;\n`;
+		css += `  }\n`;
+		css += `}\n`;
+	}
 
-[data-rem-tags~="${tag}"] .rem-bullet {
-  background-color: rgba(128, 128, 128, 0.15);
-  border-radius: 50%;
+	return css;
 }
 
-[data-rem-tags~="${tag}"] .perfect-circle__inner {
-  background-image: url('${dark}');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  filter: contrast(1.2) brightness(1.1);
-}
-
-@media (prefers-color-scheme: light) {
-  [data-rem-tags~="${tag}"] .rem-bullet {
-    background-color: rgba(0, 0, 0, 0.08);
-  }
-
-  [data-rem-tags~="${tag}"] .perfect-circle__inner {
-    background-image: url('${light}');
-    filter: contrast(1.1) brightness(0.95);
-  }
-}`;
-}
-
-/**
- * Generate the full stylesheet.
- */
-export function generateIconCSS(): string {
-	return [
-		'/* Citationista icon overrides */',
-		...Object.entries(iconTagMap).map(([tag, base]) => buildRule(tag, base)),
-	].join('\n');
-}
-
-/**
- * Register the generated CSS with RemNote.
- */
 export async function registerIconCSS(plugin: RNPlugin) {
-	const css = generateIconCSS();
-	console.debug('Registering Citationista icon CSS (length %d)', css.length);
+	const css = generateCSS();
+	console.log('Registering icon CSS:', css);
+
 	await plugin.app.registerCSS('citationista-icons', css);
 }
