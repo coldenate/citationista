@@ -86,40 +86,59 @@ export class TreeBuilder {
 			LogType.Info
 		);
 
-		// Populate nodeCache for collections.
-		for (const rem of collectionRems) {
-			const zoteroId = await rem.getPowerupProperty(powerupCodes.COLLECTION, 'key');
-			if (!zoteroId) {
-				console.warn('Collection Rem missing key property:', rem._id);
-				continue;
-			}
-			const parentZoteroId = await rem.getPowerupProperty(
-				powerupCodes.COLLECTION,
-				'parentCollection'
-			);
-			this.nodeCache.set(zoteroId, {
-				remId: rem._id,
-				zoteroId,
-				zoteroParentId: parentZoteroId || null,
-				rem,
-			});
-		}
+                // Populate nodeCache for collections.
+                const collectionEntries = await Promise.all(
+                        collectionRems.map(async (rem) => {
+                                const zoteroId = await rem.getPowerupProperty(
+                                        powerupCodes.COLLECTION,
+                                        'key'
+                                );
+                                if (!zoteroId) {
+                                        console.warn('Collection Rem missing key property:', rem._id);
+                                        return null;
+                                }
+                                const parentZoteroId = await rem.getPowerupProperty(
+                                        powerupCodes.COLLECTION,
+                                        'parentCollection'
+                                );
+                                return [
+                                        zoteroId,
+                                        {
+                                                remId: rem._id,
+                                                zoteroId,
+                                                zoteroParentId: parentZoteroId || null,
+                                                rem,
+                                        },
+                                ] as const;
+                        })
+                );
+                for (const entry of collectionEntries) {
+                        if (entry) this.nodeCache.set(entry[0], entry[1]);
+                }
 
-		// Populate nodeCache for items.
-		for (const rem of itemRems) {
-			const zoteroId = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
-			if (!zoteroId) {
-				logMessage(this.plugin, `Item Rem missing key property: ${rem._id}`, LogType.Info);
-				continue;
-			}
-			const parentZoteroId = await rem.getPowerupProperty(powerupCodes.ZITEM, 'collection');
-			this.nodeCache.set(zoteroId, {
-				remId: rem._id,
-				zoteroId,
-				zoteroParentId: parentZoteroId || null,
-				rem,
-			});
-		}
+                // Populate nodeCache for items.
+                const itemEntries = await Promise.all(
+                        itemRems.map(async (rem) => {
+                                const zoteroId = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
+                                if (!zoteroId) {
+                                        logMessage(this.plugin, `Item Rem missing key property: ${rem._id}`, LogType.Info);
+                                        return null;
+                                }
+                                const parentZoteroId = await rem.getPowerupProperty(powerupCodes.ZITEM, 'collection');
+                                return [
+                                        zoteroId,
+                                        {
+                                                remId: rem._id,
+                                                zoteroId,
+                                                zoteroParentId: parentZoteroId || null,
+                                                rem,
+                                        },
+                                ] as const;
+                        })
+                );
+                for (const entry of itemEntries) {
+                        if (entry) this.nodeCache.set(entry[0], entry[1]);
+                }
 
 		logMessage(
 			this.plugin,
