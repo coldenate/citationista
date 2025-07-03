@@ -7,12 +7,12 @@ import {
 } from '@remnote/plugin-sdk';
 import { citationFormats, powerupCodes } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
+import { autoSync } from './services/autoSync';
 import { registerIconCSS } from './services/iconCSS';
 import { markForceStopRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
-import { autoSync } from './services/autoSync';
 
 let autoSyncInterval: NodeJS.Timeout | undefined;
 
@@ -55,18 +55,18 @@ async function registerSettings(plugin: RNPlugin) {
 			{ key: 'reference', label: 'Reference', value: 'reference' },
 		],
 	});
-        await plugin.settings.registerBooleanSetting({
-                id: 'debug-mode',
-                title: 'Debug Mode (Citationista)',
-                description: 'Enables certain testing commands. Non-destructive.',
-                defaultValue: false,
-        });
-        await plugin.settings.registerBooleanSetting({
-                id: 'disable-auto-sync',
-                title: 'Disable Auto Sync',
-                description: 'Prevent Citationista from syncing every 5 minutes.',
-                defaultValue: false,
-        });
+	await plugin.settings.registerBooleanSetting({
+		id: 'debug-mode',
+		title: 'Debug Mode (Citationista)',
+		description: 'Enables certain testing commands. Non-destructive.',
+		defaultValue: false,
+	});
+	await plugin.settings.registerBooleanSetting({
+		id: 'disable-auto-sync',
+		title: 'Disable Auto Sync',
+		description: 'Prevent Citationista from syncing every 5 minutes.',
+		defaultValue: false,
+	});
 }
 
 async function registerPowerups(plugin: RNPlugin) {
@@ -275,14 +275,14 @@ async function registerPowerups(plugin: RNPlugin) {
 }
 
 async function _deleteTaggedRems(plugin: RNPlugin, powerupCodes: string[]): Promise<void> {
-        for (const code of powerupCodes) {
-                const powerup = await plugin.powerup.getPowerupByCode(code);
-                const taggedRems = await powerup?.taggedRem();
-                if (taggedRems) {
-                        const removalPromises = taggedRems.map((rem) => rem?.remove());
-                        await Promise.all(removalPromises);
-                }
-        }
+	for (const code of powerupCodes) {
+		const powerup = await plugin.powerup.getPowerupByCode(code);
+		const taggedRems = await powerup?.taggedRem();
+		if (taggedRems) {
+			const removalPromises = taggedRems.map((rem) => rem?.remove());
+			await Promise.all(removalPromises);
+		}
+	}
 }
 
 async function registerDebugCommands(plugin: RNPlugin) {
@@ -385,17 +385,17 @@ async function registerDebugCommands(plugin: RNPlugin) {
 				const unfiledItemsPowerup = await plugin.powerup.getPowerupByCode(
 					powerupCodes.ZOTERO_UNFILED_ITEMS
 				);
-                                const taggedRems = await Promise.all([
-                                        zoteroItemPowerup?.taggedRem(),
-                                        zoteroCollectionPowerup?.taggedRem(),
-                                        zoteroLibraryPowerup?.taggedRem(),
-                                        citationistaPowerup?.taggedRem(),
-                                        unfiledItemsPowerup?.taggedRem(),
-                                ]).then((results) => results.flat());
-                                if (taggedRems) {
-                                        const removalPromises = taggedRems.map((rem) => rem?.remove());
-                                        await Promise.all(removalPromises);
-                                }
+				const taggedRems = await Promise.all([
+					zoteroItemPowerup?.taggedRem(),
+					zoteroCollectionPowerup?.taggedRem(),
+					zoteroLibraryPowerup?.taggedRem(),
+					citationistaPowerup?.taggedRem(),
+					unfiledItemsPowerup?.taggedRem(),
+				]).then((results) => results.flat());
+				if (taggedRems) {
+					const removalPromises = taggedRems.map((rem) => rem?.remove());
+					await Promise.all(removalPromises);
+				}
 			}
 		},
 	});
@@ -440,17 +440,16 @@ async function onActivate(plugin: RNPlugin) {
 		});
 	});
 
-        await plugin.app.waitForInitialSync();
-        if (!isNewDebugMode) {
-                // await syncLibrary(plugin);
-        }
-
-        setTimeout(() => {
-                autoSyncInterval = setInterval(async () => {
-                        await plugin.app.waitForInitialSync();
-                        await autoSync(plugin);
-                }, 300000);
-        }, 25);
+	await plugin.app.waitForInitialSync();
+	if (!isNewDebugMode) {
+		// await syncLibrary(plugin);
+		setTimeout(() => {
+			autoSyncInterval = setInterval(async () => {
+				await plugin.app.waitForInitialSync();
+				await autoSync(plugin);
+			}, 300000);
+		}, 25);
+	}
 }
 
 export async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {
@@ -458,9 +457,9 @@ export async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {
 }
 
 async function onDeactivate(_: RNPlugin) {
-        if (autoSyncInterval) {
-                clearInterval(autoSyncInterval);
-        }
+	if (autoSyncInterval) {
+		clearInterval(autoSyncInterval);
+	}
 }
 
 declareIndexPlugin(onActivate, onDeactivate);
