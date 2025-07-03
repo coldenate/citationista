@@ -1,7 +1,7 @@
 import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
-import { checkForceStopFlag } from '../services/pluginIO';
+import { checkAbortSignal } from '../services/pluginIO';
 import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
 
@@ -114,45 +114,26 @@ export class TreeBuilder {
 		);
 	}
 
-	async applyChanges(changes: ChangeSet): Promise<void> {
-		// Check for force stop before applying any changes
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+	async applyChanges(changes: ChangeSet, signal?: AbortSignal): Promise<void> {
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
-		await this.handleCollections(changes);
-		
-		// Check for force stop between collections and items
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+		await this.handleCollections(changes, signal);
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
-		await this.handleItems(changes);
+		await this.handleItems(changes, signal);
 	}
 
-	private async handleCollections(changes: ChangeSet): Promise<void> {
-		// Check for force stop before collection operations
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+	private async handleCollections(changes: ChangeSet, signal?: AbortSignal): Promise<void> {
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
 		await this.createCollections(changes.newCollections);
-		
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
 		await this.updateCollections(changes.updatedCollections);
-		
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
 		await this.deleteCollections(changes.deletedCollections);
-		
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
 		await this.moveCollections([
 			...changes.newCollections,
@@ -161,29 +142,17 @@ export class TreeBuilder {
 		]);
 	}
 
-	private async handleItems(changes: ChangeSet): Promise<void> {
-		// Check for force stop before item operations
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+	private async handleItems(changes: ChangeSet, signal?: AbortSignal): Promise<void> {
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
 		await this.createItems(changes.newItems);
-		
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
 		await this.updateItems(changes.updatedItems);
-		
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
 		await this.deleteItems(changes.deletedItems);
-		
-		if (await checkForceStopFlag(this.plugin)) {
-			return;
-		}
+		await checkAbortSignal(this.plugin, signal || new AbortController().signal);
 
 		await this.moveItems([...changes.newItems, ...changes.movedItems, ...changes.updatedItems]);
 	}
