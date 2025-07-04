@@ -81,7 +81,7 @@ function iconCSS(tag: string, base: string, url: string): string {
 	const light = `${url}/${base}-light.svg`;
 
 	// Elements we touch ------------------------------------------------------
-	const coreRing = both(tag, '.rem-bullet__core') + ', ' + both(tag, '.rem-bullet__ring');
+	const coreRing = `${both(tag, '.rem-bullet__core')}, ${both(tag, '.rem-bullet__ring')}`;
 	const inner = both(tag, '.perfect-circle__inner');
 	const bullet = both(tag, '.rn-rem-bullet');
 

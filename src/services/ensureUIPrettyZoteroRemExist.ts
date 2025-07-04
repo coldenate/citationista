@@ -14,6 +14,7 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 		LogType.Info,
 		false
 	);
+
        const zoteroLibraryRemId = await plugin.storage.getSynced('zoteroLibraryRemId');
        if (zoteroLibraryRemId !== undefined) {
                const doesRemExist = await plugin.rem.findOne(zoteroLibraryRemId as string);
@@ -33,10 +34,12 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 
 	await plugin.storage.setSynced('zoteroLibraryRemId', rem._id);
 
+
        await rem.setText(['Zotero Connector Home Page']);
        await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
        await rem.setPowerupProperty(powerupCodes.ZOTERO_SYNCED_LIBRARY, 'progress', ['0']);
        await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
+
 	await rem.setIsDocument(true); // TODO: we want this to be a folder rem! https://linear.app/remnoteio/issue/ENG-25553/add-a-remsetisfolder-to-the-plugin-system
 
 	// const helpInfoRem = await plugin.rem.createRem();
@@ -56,6 +59,7 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 }
 
 export async function ensureSpecificLibraryRemExists(
+
        plugin: RNPlugin,
        library: { id: string; type: 'user' | 'group'; name: string }
 ): Promise<Rem | null> {
@@ -101,6 +105,7 @@ export async function ensureUnfiledItemsRemExists(
                }
        }
 
+
 	// Create the "Unfiled Items" Rem
 	const unfiledRem = await plugin.rem.createRem();
 	if (!unfiledRem) {
@@ -108,11 +113,13 @@ export async function ensureUnfiledItemsRemExists(
 		return;
 	}
 
+
         await unfiledRem.setText(['Unfiled Items']);
         await unfiledRem.addPowerup(powerupCodes.ZOTERO_UNFILED_ITEMS);
         const zoteroRem = await getZoteroLibraryRem(plugin, libraryKey);
         if (zoteroRem) {
                 await unfiledRem.setParent(zoteroRem);
+
 	} else {
 		await logMessage(
 			plugin,
@@ -122,6 +129,7 @@ export async function ensureUnfiledItemsRemExists(
 		);
 		return;
 	}
+
 
         await plugin.storage.setSynced('unfiledRemMap', {
                 ...(map || {}),
@@ -180,4 +188,5 @@ export async function getUnfiledItemsRem(
        }
        const firstUnfiledZoteroItem = (await unfiledZoteroItemsPowerup.taggedRem())[0];
        return firstUnfiledZoteroItem || null;
+
 }

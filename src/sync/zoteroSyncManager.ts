@@ -1,5 +1,6 @@
 // Rename summary: PropertyHydrator -> ZoteroPropertyHydrator; ensureZoteroRemExists -> ensureZoteroLibraryRemExists; getAllData -> fetchLibraryData
 import type { RNPlugin } from '@remnote/plugin-sdk';
+
 import { ZoteroAPI, fetchLibraries, type ZoteroLibraryInfo } from '../api/zotero';
 import { powerupCodes } from '../constants/constants';
 import {
@@ -7,6 +8,7 @@ import {
        ensureZoteroLibraryRemExists,
        ensureSpecificLibraryRemExists,
        getZoteroLibraryRem,
+
 } from '../services/ensureUIPrettyZoteroRemExist';
 import type { ChangeSet, Collection, Item } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
@@ -87,6 +89,7 @@ export class ZoteroSyncManager {
                const key = `${library.type}:${library.id}`;
                await this.plugin.storage.setSynced('syncedLibraryId', key);
 
+
                await ensureZoteroLibraryRemExists(this.plugin);
                await ensureSpecificLibraryRemExists(this.plugin, library);
                await ensureUnfiledItemsRemExists(this.plugin, key);
@@ -125,6 +128,8 @@ export class ZoteroSyncManager {
                await this.updateProgress(key, 0.2);
                await this.treeBuilder.initializeNodeCache();
 
+
+
 		// 5. Detect changes by comparing prevData and currentData.
                const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
                // 6. For each updated item, merge local modifications with remote data,
@@ -138,6 +143,8 @@ export class ZoteroSyncManager {
 
                await this.updateProgress(key, 0.4);
 
+		await this.updateProgress(key, 0.4);
+
 		// 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.)
 		console.log('Changes detected:', changes);
                await this.treeBuilder.applyChanges(changes);
@@ -148,6 +155,8 @@ export class ZoteroSyncManager {
                }
 
                await this.updateProgress(key, 0.7);
+
+		await this.updateProgress(key, 0.7);
 
 		// 9. Save the current data as the new shadow copy for future syncs.
 		const serializableData = {
@@ -160,6 +169,7 @@ export class ZoteroSyncManager {
 				return rest;
 			}),
 		};
+
                const updatedMap = {
                        ...(dataMap || {}),
                        [key]: serializableData,
@@ -167,6 +177,7 @@ export class ZoteroSyncManager {
                await this.plugin.storage.setSynced('zoteroDataMap', updatedMap);
 
                await this.updateProgress(key, 1);
+
 
                logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
 	}

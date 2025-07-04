@@ -5,6 +5,7 @@ import {
 	PropertyType,
 	type RNPlugin,
 } from '@remnote/plugin-sdk';
+import { fetchLibraries } from './api/zotero';
 import { citationFormats, powerupCodes } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
@@ -32,6 +33,7 @@ async function registerSettings(plugin: RNPlugin) {
 			'Find this at https://www.zotero.org/settings/keys. Make sure to enable all read/write for all features to work. But feel free to disable any you do not need.',
 	});
 
+
        const libraries = await fetchLibraries(plugin);
        const libraryOptions =
                libraries.length > 0
@@ -57,6 +59,7 @@ async function registerSettings(plugin: RNPlugin) {
                        'If enabled, Citationista will sync all accessible Zotero libraries instead of only the selected one.',
                defaultValue: false,
        });
+
 	await plugin.settings.registerBooleanSetting({
 		id: 'simple-mode',
 		title: 'Simple Syncing Mode',
@@ -88,12 +91,14 @@ async function registerSettings(plugin: RNPlugin) {
 		description: 'Enables certain testing commands. Non-destructive.',
 		defaultValue: false,
 	});
+
         await plugin.settings.registerBooleanSetting({
                 id: 'disable-auto-sync',
                 title: 'Disable Auto Sync',
                 description: 'Prevent Citationista from syncing every 5 minutes.',
                 defaultValue: true,
         });
+
 }
 
 async function registerPowerups(plugin: RNPlugin) {
@@ -171,6 +176,7 @@ async function registerPowerups(plugin: RNPlugin) {
 			properties: [],
 		},
 	});
+
         await plugin.app.registerPowerup({
                 name: 'Zotero Library Sync Powerup',
                 code: powerupCodes.ZOTERO_SYNCED_LIBRARY,
@@ -196,6 +202,7 @@ async function registerPowerups(plugin: RNPlugin) {
                         ],
                 },
         });
+
 	await plugin.app.registerPowerup({
 		name: 'Zotero Item',
 		code: powerupCodes.ZITEM,
@@ -385,6 +392,71 @@ async function restoreLibraryNames(plugin: RNPlugin) {
        }
 }
 
+async function handleLibrarySwitch(plugin: RNPlugin) {
+	const multi = (await plugin.settings.getSetting('sync-multiple-libraries')) as
+		| boolean
+		| undefined;
+	if (multi) {
+		return;
+	}
+	const selected = (await plugin.settings.getSetting('zotero-library-id')) as string | undefined;
+	if (!selected) return;
+	const stored = (await plugin.storage.getSynced('syncedLibraryId')) as string | undefined;
+	if (stored && stored !== selected) {
+		await _deleteTaggedRems(plugin, [
+			powerupCodes.ZITEM,
+			powerupCodes.COLLECTION,
+			powerupCodes.ZOTERO_SYNCED_LIBRARY,
+			powerupCodes.CITATION_POOL,
+			powerupCodes.ZOTERO_UNFILED_ITEMS,
+		]);
+		await plugin.storage.setSynced('libraryRemMap', undefined);
+		await plugin.storage.setSynced('unfiledRemMap', undefined);
+		await plugin.storage.setSynced('zoteroLibraryRemId', undefined);
+	}
+	await plugin.storage.setSynced('syncedLibraryId', selected);
+}
+
+async function markOutOfSyncLibraries(plugin: RNPlugin, selected?: string) {
+	const map = (await plugin.storage.getSynced('libraryRemMap')) as
+		| Record<string, string>
+		| undefined;
+	if (!map) return;
+	for (const [key, id] of Object.entries(map)) {
+		const rem = await plugin.rem.findOne(id);
+		if (!rem) continue;
+		const textArr = await rem.text;
+		const name = Array.isArray(textArr) ? textArr.join('') : String(textArr);
+		if (key === selected) {
+			const updated = name.replace(/\s*\(Out of Sync\)$/i, '');
+			if (updated !== name) {
+				await rem.setText([updated]);
+			}
+		} else {
+			if (!/(Out of Sync)$/i.test(name)) {
+				await rem.setText([`${name} (Out of Sync)`]);
+			}
+		}
+	}
+}
+
+async function restoreLibraryNames(plugin: RNPlugin) {
+	const map = (await plugin.storage.getSynced('libraryRemMap')) as
+		| Record<string, string>
+		| undefined;
+	if (!map) return;
+	for (const id of Object.values(map)) {
+		const rem = await plugin.rem.findOne(id);
+		if (!rem) continue;
+		const textArr = await rem.text;
+		const name = Array.isArray(textArr) ? textArr.join('') : String(textArr);
+		const updated = name.replace(/\s*\(Out of Sync\)$/i, '');
+		if (updated !== name) {
+			await rem.setText([updated]);
+		}
+	}
+}
+
 async function registerDebugCommands(plugin: RNPlugin) {
 	await plugin.app.registerCommand({
 		name: 'Citationista Force Syncing of Zotero Library',
@@ -465,6 +537,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 		name: 'Reset Synced Zotero Data',
 		description: 'Reset Synced Zotero Data and delete all Citationista generated Rems',
 		quickCode: 'rszd',
+
                 action: async () => {
                         if (
                                 window.confirm(
@@ -485,6 +558,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
                         }
                 },
         });
+
 	await plugin.app.registerCommand({
 		id: 'log-rem-contents',
 		name: 'Log Rem Contents',
@@ -511,9 +585,11 @@ async function registerDebugCommands(plugin: RNPlugin) {
 }
 
 async function onActivate(plugin: RNPlugin) {
+
         await registerSettings(plugin);
        await registerPowerups(plugin);
       await handleLibrarySwitch(plugin);
+
 
        const multiInit = (await plugin.settings.getSetting('sync-multiple-libraries')) as boolean | undefined;
        if (multiInit) {
@@ -522,6 +598,7 @@ async function onActivate(plugin: RNPlugin) {
                const libraryIdInit = (await plugin.settings.getSetting('zotero-library-id')) as string | undefined;
                await markOutOfSyncLibraries(plugin, libraryIdInit);
        }
+
 
         const isNewDebugMode = await isDebugMode(plugin);
 
@@ -616,6 +693,7 @@ async function onActivate(plugin: RNPlugin) {
                        }, 25);
                }
        }
+
 }
 
 export async function isDebugMode(reactivePlugin: RNPlugin): Promise<boolean> {
