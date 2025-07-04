@@ -13,6 +13,7 @@ import { markForceStopRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
+import { fetchLibraries } from './api/zotero';
 
 let autoSyncInterval: NodeJS.Timeout | undefined;
 
@@ -29,6 +30,19 @@ async function registerSettings(plugin: RNPlugin) {
 		title: 'Zotero API Key',
 		description:
 			'Find this at https://www.zotero.org/settings/keys. Make sure to enable all read/write for all features to work. But feel free to disable any you do not need.',
+	});
+
+	const libraries = await fetchLibraries(plugin);
+	await plugin.settings.registerDropdownSetting({
+		id: 'zotero-library-id',
+		title: 'Zotero Library',
+		description: 'Select which Zotero library to sync with.',
+		options: libraries.map((lib) => ({
+			key: `${lib.type}:${lib.id}`,
+			label: lib.type === 'group' ? `Group: ${lib.name}` : 'My Library',
+			value: `${lib.type}:${lib.id}`,
+		})),
+		defaultValue: libraries.length > 0 ? `${libraries[0].type}:${libraries[0].id}` : undefined,
 	});
 	await plugin.settings.registerBooleanSetting({
 		id: 'simple-mode',
