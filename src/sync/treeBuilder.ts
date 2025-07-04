@@ -9,17 +9,17 @@ export class TreeBuilder {
 	getNodeCache(): Map<string, RemNode> {
 		return this.nodeCache;
 	}
-        private plugin: RNPlugin;
-        private nodeCache: Map<string, RemNode> = new Map();
-        private libraryKey: string | null = null;
+	private plugin: RNPlugin;
+	private nodeCache: Map<string, RemNode> = new Map();
+	private libraryKey: string | null = null;
 
-        constructor(plugin: RNPlugin) {
-                this.plugin = plugin;
-        }
+	constructor(plugin: RNPlugin) {
+		this.plugin = plugin;
+	}
 
-        setLibraryKey(key: string) {
-                this.libraryKey = key;
-        }
+	setLibraryKey(key: string) {
+		this.libraryKey = key;
+	}
 
 	/**
 	 * Initializes the node cache by fetching all Rems tagged with specific power-ups
@@ -202,10 +202,10 @@ export class TreeBuilder {
 					await remNode.rem.setParent(parentNode.rem);
 				} else {
 					// Fallback: assign to the Zotero Library Rem.
-                                        const zoteroLibraryRem = await getZoteroLibraryRem(
-                                                this.plugin,
-                                                this.libraryKey ?? undefined
-                                        );
+					const zoteroLibraryRem = await getZoteroLibraryRem(
+						this.plugin,
+						this.libraryKey ?? undefined
+					);
 					if (zoteroLibraryRem) {
 						await remNode.rem.setParent(zoteroLibraryRem);
 					}
@@ -285,10 +285,10 @@ export class TreeBuilder {
 	}
 
 	private async moveItems(items: Item[]): Promise<void> {
-                const unfiledZoteroItemsRem = await getUnfiledItemsRem(
-                        this.plugin,
-                        this.libraryKey ?? undefined
-                );
+		const unfiledZoteroItemsRem = await getUnfiledItemsRem(
+			this.plugin,
+			this.libraryKey ?? undefined
+		);
 		const multipleCollectionsBehavior = (await this.plugin.settings.getSetting(
 			'multiple-colections-behavior'
 		)) as 'portal' | 'reference';

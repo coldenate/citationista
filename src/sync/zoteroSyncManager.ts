@@ -1,12 +1,12 @@
 // Rename summary: PropertyHydrator -> ZoteroPropertyHydrator; ensureZoteroRemExists -> ensureZoteroLibraryRemExists; getAllData -> fetchLibraryData
 import type { RNPlugin } from '@remnote/plugin-sdk';
-import { ZoteroAPI, fetchLibraries, type ZoteroLibraryInfo } from '../api/zotero';
+import { fetchLibraries, ZoteroAPI, type ZoteroLibraryInfo } from '../api/zotero';
 import { powerupCodes } from '../constants/constants';
 import {
-       ensureUnfiledItemsRemExists,
-       ensureZoteroLibraryRemExists,
-       ensureSpecificLibraryRemExists,
-       getZoteroLibraryRem,
+	ensureSpecificLibraryRemExists,
+	ensureUnfiledItemsRemExists,
+	ensureZoteroLibraryRemExists,
+	getZoteroLibraryRem,
 } from '../services/ensureUIPrettyZoteroRemExist';
 import type { ChangeSet, Collection, Item } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
@@ -20,120 +20,118 @@ export class ZoteroSyncManager {
 	private api: ZoteroAPI;
 	private treeBuilder: TreeBuilder;
 	private changeDetector: ChangeDetector;
-        private propertyHydrator: ZoteroPropertyHydrator;
+	private propertyHydrator: ZoteroPropertyHydrator;
 
-        constructor(plugin: RNPlugin) {
-                this.plugin = plugin;
-                this.api = new ZoteroAPI(plugin);
-                this.treeBuilder = new TreeBuilder(plugin);
-                this.changeDetector = new ChangeDetector();
-                this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
-        }
+	constructor(plugin: RNPlugin) {
+		this.plugin = plugin;
+		this.api = new ZoteroAPI(plugin);
+		this.treeBuilder = new TreeBuilder(plugin);
+		this.changeDetector = new ChangeDetector();
+		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
+	}
 
-       private async updateProgress(key: string, value: number) {
-               const rem = await getZoteroLibraryRem(this.plugin, key);
-               if (rem) {
-                       await rem.setPowerupProperty(
-                               powerupCodes.ZOTERO_SYNCED_LIBRARY,
-                               'progress',
-                               [String(value)]
-                       );
-               }
-       }
+	private async updateProgress(key: string, value: number) {
+		const rem = await getZoteroLibraryRem(this.plugin, key);
+		if (rem) {
+			await rem.setPowerupProperty(powerupCodes.ZOTERO_SYNCED_LIBRARY, 'progress', [
+				String(value),
+			]);
+		}
+	}
 
-       async sync(): Promise<void> {
-               const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
-               if (multi) {
-                       const libs = await fetchLibraries(this.plugin);
-                       for (const lib of libs) {
-                               await this.syncLibrary(lib);
-                       }
-                       return;
-               }
+	async sync(): Promise<void> {
+		const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
+		if (multi) {
+			const libs = await fetchLibraries(this.plugin);
+			for (const lib of libs) {
+				await this.syncLibrary(lib);
+			}
+			return;
+		}
 
-               const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as
-                       | string
-                       | undefined;
-               let library: ZoteroLibraryInfo | null = null;
-               if (selected) {
-                       const libs = await fetchLibraries(this.plugin);
-                       library = libs.find((l) => `${l.type}:${l.id}` === selected) || null;
-               } else {
-                       const libs = await fetchLibraries(this.plugin);
-                       if (libs.length > 0) {
-                               library = libs[0];
-                       }
-               }
-               if (!library) return;
+		const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as
+			| string
+			| undefined;
+		let library: ZoteroLibraryInfo | null = null;
+		if (selected) {
+			const libs = await fetchLibraries(this.plugin);
+			library = libs.find((l) => `${l.type}:${l.id}` === selected) || null;
+		} else {
+			const libs = await fetchLibraries(this.plugin);
+			if (libs.length > 0) {
+				library = libs[0];
+			}
+		}
+		if (!library) return;
 
-               await this.syncLibrary(library);
-       }
+		await this.syncLibrary(library);
+	}
 
-       private async syncLibrary(library: ZoteroLibraryInfo): Promise<void> {
-               const key = `${library.type}:${library.id}`;
-               await this.plugin.storage.setSynced('syncedLibraryId', key);
+	private async syncLibrary(library: ZoteroLibraryInfo): Promise<void> {
+		const key = `${library.type}:${library.id}`;
+		await this.plugin.storage.setSynced('syncedLibraryId', key);
 
-               await ensureZoteroLibraryRemExists(this.plugin);
-               await ensureSpecificLibraryRemExists(this.plugin, library);
-               await ensureUnfiledItemsRemExists(this.plugin, key);
+		await ensureZoteroLibraryRemExists(this.plugin);
+		await ensureSpecificLibraryRemExists(this.plugin, library);
+		await ensureUnfiledItemsRemExists(this.plugin, key);
 
-               await this.updateProgress(key, 0);
+		await this.updateProgress(key, 0);
 
-               await this.updateProgress(key, 0.1);
+		await this.updateProgress(key, 0.1);
 
-               // 2. Fetch current data from Zotero.
-               const currentData = await this.api.fetchLibraryData(library.type, library.id);
+		// 2. Fetch current data from Zotero.
+		const currentData = await this.api.fetchLibraryData(library.type, library.id);
 
 		// 3. Retrieve previous sync data (shadow copy) from storage.
-               const dataMap = (await this.plugin.storage.getSynced('zoteroDataMap')) as
-                       | Record<
-                                string,
-                                {
-                                        items?: Partial<Item>[];
-                                        collections?: Partial<Collection>[];
-                                }
-                        >
-                       | undefined;
-               const prevDataRaw = dataMap?.[key];
-               const prevData = {
-                       items: (prevDataRaw?.items || []).map((i) => ({
-                               rem: null,
-                               ...i,
-                       })) as Item[],
-                       collections: (prevDataRaw?.collections || []).map((c) => ({
-                               rem: null,
-                               ...c,
-                       })) as Collection[],
-               };
+		const dataMap = (await this.plugin.storage.getSynced('zoteroDataMap')) as
+			| Record<
+					string,
+					{
+						items?: Partial<Item>[];
+						collections?: Partial<Collection>[];
+					}
+			  >
+			| undefined;
+		const prevDataRaw = dataMap?.[key];
+		const prevData = {
+			items: (prevDataRaw?.items || []).map((i) => ({
+				rem: null,
+				...i,
+			})) as Item[],
+			collections: (prevDataRaw?.collections || []).map((c) => ({
+				rem: null,
+				...c,
+			})) as Collection[],
+		};
 
 		// 4. Initialize node cache for the current Rem tree.
-               this.treeBuilder.setLibraryKey(key);
-               await this.updateProgress(key, 0.2);
-               await this.treeBuilder.initializeNodeCache();
+		this.treeBuilder.setLibraryKey(key);
+		await this.updateProgress(key, 0.2);
+		await this.treeBuilder.initializeNodeCache();
 
 		// 5. Detect changes by comparing prevData and currentData.
-               const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
-               // 6. For each updated item, merge local modifications with remote data,
-               //    using the previous sync (shadow) data as the base.
-               await mergeUpdatedItems(
-                        this.plugin,
-                        changes,
-                        prevData.items,
-                        this.treeBuilder.getNodeCache()
-               );
+		const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
+		// 6. For each updated item, merge local modifications with remote data,
+		//    using the previous sync (shadow) data as the base.
+		await mergeUpdatedItems(
+			this.plugin,
+			changes,
+			prevData.items,
+			this.treeBuilder.getNodeCache()
+		);
 
-               await this.updateProgress(key, 0.4);
+		await this.updateProgress(key, 0.4);
 
 		// 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.)
 		console.log('Changes detected:', changes);
-               await this.treeBuilder.applyChanges(changes);
-               // 8. Populate detailed properties (build fields) on each Rem.
-               const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
-               if (!isSimpleSync) {
-                       await this.propertyHydrator.hydrateItemAndCollectionProperties(changes);
-               }
+		await this.treeBuilder.applyChanges(changes);
+		// 8. Populate detailed properties (build fields) on each Rem.
+		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
+		if (!isSimpleSync) {
+			await this.propertyHydrator.hydrateItemAndCollectionProperties(changes);
+		}
 
-               await this.updateProgress(key, 0.7);
+		await this.updateProgress(key, 0.7);
 
 		// 9. Save the current data as the new shadow copy for future syncs.
 		const serializableData = {
@@ -146,14 +144,14 @@ export class ZoteroSyncManager {
 				return rest;
 			}),
 		};
-               const updatedMap = {
-                       ...(dataMap || {}),
-                       [key]: serializableData,
-               };
-               await this.plugin.storage.setSynced('zoteroDataMap', updatedMap);
+		const updatedMap = {
+			...(dataMap || {}),
+			[key]: serializableData,
+		};
+		await this.plugin.storage.setSynced('zoteroDataMap', updatedMap);
 
-               await this.updateProgress(key, 1);
+		await this.updateProgress(key, 1);
 
-               logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
+		logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
 	}
 }
