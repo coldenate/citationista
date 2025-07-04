@@ -56,12 +56,12 @@ export class ZoteroSyncManager {
                        | undefined;
                let library: ZoteroLibraryInfo | null = null;
                if (selected) {
-                       const [type, id] = selected.split(':');
-                       library = { id, type: type as 'user' | 'group', name: '' };
+                       const libs = await fetchLibraries(this.plugin);
+                       library = libs.find((l) => `${l.type}:${l.id}` === selected) || null;
                } else {
-                       const userId = await this.plugin.settings.getSetting('zotero-user-id');
-                       if (userId) {
-                               library = { id: String(userId), type: 'user', name: 'My Library' };
+                       const libs = await fetchLibraries(this.plugin);
+                       if (libs.length > 0) {
+                               library = libs[0];
                        }
                }
                if (!library) return;
