@@ -32,18 +32,22 @@ async function registerSettings(plugin: RNPlugin) {
 			'Find this at https://www.zotero.org/settings/keys. Make sure to enable all read/write for all features to work. But feel free to disable any you do not need.',
 	});
 
-	const libraries = await fetchLibraries(plugin);
-	await plugin.settings.registerDropdownSetting({
-		id: 'zotero-library-id',
-		title: 'Zotero Library',
-		description: 'Select which Zotero library to sync with.',
-		options: libraries.map((lib) => ({
-			key: `${lib.type}:${lib.id}`,
-			label: lib.type === 'group' ? `Group: ${lib.name}` : 'My Library',
-			value: `${lib.type}:${lib.id}`,
-		})),
-		defaultValue: libraries.length > 0 ? `${libraries[0].type}:${libraries[0].id}` : undefined,
-	});
+        const libraries = await fetchLibraries(plugin);
+        await plugin.settings.registerDropdownSetting({
+                id: 'zotero-library-id',
+                title: 'Zotero Library',
+                description: 'Select which Zotero library to sync with.',
+                options:
+                        libraries.length > 0
+                                ? libraries.map((lib) => ({
+                                          key: `${lib.type}:${lib.id}`,
+                                          label: lib.type === 'group' ? `Group: ${lib.name}` : 'My Library',
+                                          value: `${lib.type}:${lib.id}`,
+                                  }))
+                                : [{ key: 'none', label: 'None', value: 'none' }],
+                defaultValue:
+                        libraries.length > 0 ? `${libraries[0].type}:${libraries[0].id}` : 'none',
+        });
 	await plugin.settings.registerBooleanSetting({
 		id: 'simple-mode',
 		title: 'Simple Syncing Mode',
@@ -51,16 +55,22 @@ async function registerSettings(plugin: RNPlugin) {
 			'(not recommended) Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
 		defaultValue: false,
 	});
-	await plugin.settings.registerDropdownSetting({
-		id: 'export-citations-format',
-		title: 'Export Citations Format',
-		description: 'The format used when exporting citations.',
-		defaultValue: 'BibTeX',
-		options: citationFormats,
-	});
-	await plugin.settings.registerDropdownSetting({
-		id: 'multiple-colections-behavior',
-		title: 'Items in Multiple Collections Display Behavior',
+        await plugin.settings.registerDropdownSetting({
+                id: 'export-citations-format',
+                title: 'Export Citations Format',
+                description: 'The format used when exporting citations.',
+                defaultValue: 'BibTeX',
+                options: citationFormats,
+        });
+        await plugin.settings.registerBooleanSetting({
+                id: 'sync-multiple-libraries',
+                title: 'Sync All Libraries',
+                description: 'Sync user library and all group libraries.',
+                defaultValue: false,
+        });
+        await plugin.settings.registerDropdownSetting({
+                id: 'multiple-colections-behavior',
+                title: 'Items in Multiple Collections Display Behavior',
 		description:
 			'Decide how items should behave when they appear in more than one collection. Portal: Links all instances of the item to a SINGLE shared version (changes apply everywhere). References: Creates SEPARATE versions of the item for each collection (changes apply only in that collection).',
 		defaultValue: 'portal',
@@ -75,12 +85,12 @@ async function registerSettings(plugin: RNPlugin) {
 		description: 'Enables certain testing commands. Non-destructive.',
 		defaultValue: false,
 	});
-	await plugin.settings.registerBooleanSetting({
-		id: 'disable-auto-sync',
-		title: 'Disable Auto Sync',
-		description: 'Prevent Citationista from syncing every 5 minutes.',
-		defaultValue: false,
-	});
+        await plugin.settings.registerBooleanSetting({
+                id: 'disable-auto-sync',
+                title: 'Disable Auto Sync',
+                description: 'Prevent Citationista from syncing every 5 minutes.',
+                defaultValue: true,
+        });
 }
 
 async function registerPowerups(plugin: RNPlugin) {
@@ -164,14 +174,22 @@ async function registerPowerups(plugin: RNPlugin) {
 		description: 'Your Zotero library, synced with RemNote. :D',
 		options: {
 			properties: [
-				{
-					code: 'syncing',
-					name: 'Syncing',
-					onlyProgrammaticModifying: true,
-					hidden: false,
-					propertyType: PropertyType.CHECKBOX,
-					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-				},
+                                {
+                                        code: 'syncing',
+                                        name: 'Syncing',
+                                        onlyProgrammaticModifying: true,
+                                        hidden: false,
+                                        propertyType: PropertyType.CHECKBOX,
+                                        propertyLocation: PropertyLocation.ONLY_DOCUMENT,
+                                },
+                                {
+                                        code: 'progress',
+                                        name: 'Progress',
+                                        onlyProgrammaticModifying: true,
+                                        hidden: false,
+                                        propertyType: PropertyType.TEXT,
+                                        propertyLocation: PropertyLocation.ONLY_DOCUMENT,
+                                },
 			],
 		},
 	});
@@ -300,15 +318,14 @@ async function _deleteTaggedRems(plugin: RNPlugin, powerupCodes: string[]): Prom
 }
 
 async function handleLibrarySwitch(plugin: RNPlugin) {
-       const selected = (await plugin.settings.getSetting('zotero-library-id')) as
-               | string
-               | undefined;
+       const selected = (await plugin.settings.getSetting('zotero-library-id')) as string | undefined;
        if (!selected) return;
-       const stored = (await plugin.storage.getSynced('syncedLibraryId')) as
-               | string
-               | undefined;
+       const stored = (await plugin.storage.getSynced('syncedLibraryId')) as string | undefined;
        if (stored && stored !== selected) {
-               await plugin.storage.setSynced('zoteroData', undefined);
+               const currentData = await plugin.storage.getSynced('zoteroData');
+               if (currentData) {
+                       await plugin.storage.setSynced(`zoteroData_${stored}`, currentData);
+               }
                await _deleteTaggedRems(plugin, [
                        powerupCodes.ZITEM,
                        powerupCodes.COLLECTION,
@@ -316,8 +333,40 @@ async function handleLibrarySwitch(plugin: RNPlugin) {
                        powerupCodes.CITATION_POOL,
                        powerupCodes.ZOTERO_UNFILED_ITEMS,
                ]);
+               const newData = await plugin.storage.getSynced(`zoteroData_${selected}`);
+               if (newData) {
+                       await plugin.storage.setSynced('zoteroData', newData);
+               } else {
+                       await plugin.storage.setSynced('zoteroData', undefined);
+               }
+       }
+       if (!stored) {
+               const existing = await plugin.storage.getSynced(`zoteroData_${selected}`);
+               if (existing) {
+                       await plugin.storage.setSynced('zoteroData', existing);
+               }
        }
        await plugin.storage.setSynced('syncedLibraryId', selected);
+}
+
+function watchSyncSettings(plugin: RNPlugin) {
+       let previousKey: string | undefined;
+       plugin.track(async (reactive) => {
+               const userId = await reactive.settings.getSetting('zotero-user-id');
+               const apiKey = await reactive.settings.getSetting('zotero-api-key');
+               const libraryId = await reactive.settings.getSetting('zotero-library-id');
+               const currentKey = `${userId ?? ''}:${apiKey ?? ''}:${libraryId ?? ''}`;
+               if (currentKey === previousKey) {
+                       return;
+               }
+               previousKey = currentKey;
+
+               if (userId && apiKey && libraryId) {
+                       await handleLibrarySwitch(plugin);
+                       const manager = new ZoteroSyncManager(plugin);
+                       await manager.sync();
+               }
+       });
 }
 
 async function registerDebugCommands(plugin: RNPlugin) {
@@ -446,6 +495,7 @@ async function onActivate(plugin: RNPlugin) {
         await registerSettings(plugin);
         await registerPowerups(plugin);
        await handleLibrarySwitch(plugin);
+       watchSyncSettings(plugin);
 
         const isNewDebugMode = await isDebugMode(plugin);
 

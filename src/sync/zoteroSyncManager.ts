@@ -2,9 +2,11 @@
 import type { RNPlugin } from '@remnote/plugin-sdk';
 import { ZoteroAPI } from '../api/zotero';
 import {
-	ensureUnfiledItemsRemExists,
-	ensureZoteroLibraryRemExists,
+       ensureUnfiledItemsRemExists,
+       ensureZoteroLibraryRemExists,
+       getZoteroLibraryRem,
 } from '../services/ensureUIPrettyZoteroRemExist';
+import { powerupCodes } from '../constants/constants';
 import type { ChangeSet, Collection, Item } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
 import { ChangeDetector } from './changeDetector';
@@ -19,28 +21,52 @@ export class ZoteroSyncManager {
 	private changeDetector: ChangeDetector;
 	private propertyHydrator: ZoteroPropertyHydrator;
 
-	constructor(plugin: RNPlugin) {
+        constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
 		this.api = new ZoteroAPI(plugin);
 		this.treeBuilder = new TreeBuilder(plugin);
 		this.changeDetector = new ChangeDetector();
 		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
-	}
+        }
+
+       private async updateProgress(text: string) {
+               const zoteroLibraryRem = await getZoteroLibraryRem(this.plugin);
+               if (zoteroLibraryRem) {
+                       await zoteroLibraryRem.setPowerupProperty(
+                               powerupCodes.ZOTERO_SYNCED_LIBRARY,
+                               'progress',
+                               [text]
+                       );
+               }
+       }
+
+       private async setSyncing(value: boolean) {
+               const zoteroLibraryRem = await getZoteroLibraryRem(this.plugin);
+               if (zoteroLibraryRem) {
+                       await zoteroLibraryRem.setPowerupProperty(
+                               powerupCodes.ZOTERO_SYNCED_LIBRARY,
+                               'syncing',
+                               [value ? 'true' : 'false']
+                       );
+               }
+       }
 
         async sync(): Promise<void> {
-               const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as
-                       | string
-                       | undefined;
+               const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as string | undefined;
                if (selected) {
                        await this.plugin.storage.setSynced('syncedLibraryId', selected);
                }
+               await this.setSyncing(true);
+               await this.updateProgress('Initializing');
 
                 // 1. Ensure essential Rems exist (e.g., Zotero Library Rem, Unfiled Items Rem).
                 await ensureZoteroLibraryRemExists(this.plugin);
                 await ensureUnfiledItemsRemExists(this.plugin);
+                await this.updateProgress('Fetching');
 
 		// 2. Fetch current data from Zotero.
-		const currentData = await this.api.fetchLibraryData();
+                const currentData = await this.api.fetchLibraryData();
+                await this.updateProgress('Processing');
 
 		// 3. Retrieve previous sync data (shadow copy) from storage.
 		const prevDataRaw = (await this.plugin.storage.getSynced('zoteroData')) as
@@ -95,7 +121,12 @@ export class ZoteroSyncManager {
 				return rest;
 			}),
 		};
-		await this.plugin.storage.setSynced('zoteroData', serializableData);
+               await this.plugin.storage.setSynced('zoteroData', serializableData);
+               if (selected) {
+                       await this.plugin.storage.setSynced(`zoteroData_${selected}`, serializableData);
+               }
+               await this.updateProgress('Complete');
+               await this.setSyncing(false);
 
 		logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
 	}

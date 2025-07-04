@@ -142,9 +142,9 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
 	const apiKey = await plugin.settings.getSetting('zotero-api-key');
 	const userId = await plugin.settings.getSetting('zotero-user-id');
 
-	if (!apiKey || !userId) {
-		return [];
-	}
+       if (!apiKey || !userId) {
+               return [{ id: '', name: 'None', type: 'user' }];
+       }
 
 	const headers = { 'Zotero-API-Key': String(apiKey) };
 	try {
