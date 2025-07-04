@@ -32,9 +32,10 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 
 	await plugin.storage.setSynced('zoteroLibraryRemId', rem._id);
 
-	await rem.setText(['Zotero Library']);
-	await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
-	await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
+       await rem.setText(['Zotero Library']);
+       await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
+       await rem.setPowerupProperty(powerupCodes.ZOTERO_SYNCED_LIBRARY, 'progress', ['0']);
+       await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
 	await rem.setIsDocument(true); // TODO: we want this to be a folder rem! https://linear.app/remnoteio/issue/ENG-25553/add-a-remsetisfolder-to-the-plugin-system
 
 	// const helpInfoRem = await plugin.rem.createRem();
