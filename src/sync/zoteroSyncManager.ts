@@ -5,6 +5,7 @@ import { powerupCodes } from '../constants/constants';
 import {
        ensureUnfiledItemsRemExists,
        ensureZoteroLibraryRemExists,
+       ensureSpecificLibraryRemExists,
        getZoteroLibraryRem,
 } from '../services/ensureUIPrettyZoteroRemExist';
 import type { ChangeSet, Collection, Item } from '../types/types';
@@ -29,8 +30,8 @@ export class ZoteroSyncManager {
                 this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
         }
 
-       private async updateProgress(value: number) {
-               const rem = await getZoteroLibraryRem(this.plugin);
+       private async updateProgress(key: string, value: number) {
+               const rem = await getZoteroLibraryRem(this.plugin, key);
                if (rem) {
                        await rem.setPowerupProperty(
                                powerupCodes.ZOTERO_SYNCED_LIBRARY,
@@ -69,15 +70,16 @@ export class ZoteroSyncManager {
        }
 
        private async syncLibrary(library: ZoteroLibraryInfo): Promise<void> {
-               await this.plugin.storage.setSynced('syncedLibraryId', `${library.type}:${library.id}`);
+               const key = `${library.type}:${library.id}`;
+               await this.plugin.storage.setSynced('syncedLibraryId', key);
 
-               await this.updateProgress(0);
-
-               // 1. Ensure essential Rems exist (e.g., Zotero Library Rem, Unfiled Items Rem).
                await ensureZoteroLibraryRemExists(this.plugin);
-               await ensureUnfiledItemsRemExists(this.plugin);
+               await ensureSpecificLibraryRemExists(this.plugin, library);
+               await ensureUnfiledItemsRemExists(this.plugin, key);
 
-               await this.updateProgress(0.1);
+               await this.updateProgress(key, 0);
+
+               await this.updateProgress(key, 0.1);
 
                // 2. Fetch current data from Zotero.
                const currentData = await this.api.fetchLibraryData(library.type, library.id);
@@ -102,7 +104,8 @@ export class ZoteroSyncManager {
 		};
 
 		// 4. Initialize node cache for the current Rem tree.
-               await this.updateProgress(0.2);
+               this.treeBuilder.setLibraryKey(key);
+               await this.updateProgress(key, 0.2);
                await this.treeBuilder.initializeNodeCache();
 
 		// 5. Detect changes by comparing prevData and currentData.
@@ -116,7 +119,7 @@ export class ZoteroSyncManager {
                         this.treeBuilder.getNodeCache()
                );
 
-               await this.updateProgress(0.4);
+               await this.updateProgress(key, 0.4);
 
 		// 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.)
 		console.log('Changes detected:', changes);
@@ -127,7 +130,7 @@ export class ZoteroSyncManager {
                        await this.propertyHydrator.hydrateItemAndCollectionProperties(changes);
                }
 
-               await this.updateProgress(0.7);
+               await this.updateProgress(key, 0.7);
 
 		// 9. Save the current data as the new shadow copy for future syncs.
 		const serializableData = {
@@ -142,7 +145,7 @@ export class ZoteroSyncManager {
 		};
                await this.plugin.storage.setSynced('zoteroData', serializableData);
 
-               await this.updateProgress(1);
+               await this.updateProgress(key, 1);
 
                logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
 	}

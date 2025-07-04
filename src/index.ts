@@ -337,6 +337,9 @@ async function handleLibrarySwitch(plugin: RNPlugin) {
                        powerupCodes.CITATION_POOL,
                        powerupCodes.ZOTERO_UNFILED_ITEMS,
                ]);
+               await plugin.storage.setSynced('libraryRemMap', undefined);
+               await plugin.storage.setSynced('unfiledRemMap', undefined);
+               await plugin.storage.setSynced('zoteroLibraryRemId', undefined);
        }
        await plugin.storage.setSynced('syncedLibraryId', selected);
 }
@@ -435,6 +438,9 @@ async function registerDebugCommands(plugin: RNPlugin) {
                                         powerupCodes.CITATION_POOL,
                                         powerupCodes.ZOTERO_UNFILED_ITEMS,
                                 ]);
+                                await plugin.storage.setSynced('libraryRemMap', undefined);
+                                await plugin.storage.setSynced('unfiledRemMap', undefined);
+                                await plugin.storage.setSynced('zoteroLibraryRemId', undefined);
                         }
                 },
         });
