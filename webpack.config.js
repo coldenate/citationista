@@ -122,8 +122,8 @@ if (isProd) {
 			'/zotero': {
 				target: 'https://api.zotero.org',
 				changeOrigin: true,
-				secure: false,
-				pathRewrite: { '^/goodreads': '' },
+				secure: true,
+				pathRewrite: { '^/zotero': '' },
 				onProxyReq: (proxyReq) => {
 					proxyReq.setHeader('origin', 'https://api.zotero.org');
 				},

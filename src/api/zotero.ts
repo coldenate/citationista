@@ -158,15 +158,23 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
 	}
 
 	const headers = { 'Zotero-API-Key': String(apiKey) };
+
+
+	// Use proxy in development mode to avoid CORS issues
+	const baseUrl = process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
+
 	try {
-		const resUser = await fetch(`https://api.zotero.org/users/${userId}`, { headers });
+		const resUser = await fetch(`${baseUrl}/users/${userId}`, { headers });
+
 		let userName = 'My Library';
 		if (resUser.ok) {
 			const userData = (await resUser.json()) as any;
 			userName = userData?.data?.profileName || userData?.data?.username || userName;
 		}
 
-		const res = await fetch(`https://api.zotero.org/users/${userId}/groups`, { headers });
+
+		const res = await fetch(`${baseUrl}/users/${userId}/groups`, { headers });
+
 		if (!res.ok) {
 			throw new Error(`HTTP ${res.status}`);
 		}
@@ -179,6 +187,10 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
 		return [{ id: String(userId), name: userName, type: 'user' as const }, ...groups];
 	} catch (err) {
 		console.error('Failed to fetch group libraries', err);
+
+		await plugin.app.toast(
+			'Failed to fetch group libraries. Your browser may be blocking the request.'
+		);
 		return [{ id: String(userId), name: 'My Library', type: 'user' }];
 	}
 }
