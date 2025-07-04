@@ -27,10 +27,17 @@ export class ZoteroSyncManager {
 		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
 	}
 
-	async sync(): Promise<void> {
-		// 1. Ensure essential Rems exist (e.g., Zotero Library Rem, Unfiled Items Rem).
-		await ensureZoteroLibraryRemExists(this.plugin);
-		await ensureUnfiledItemsRemExists(this.plugin);
+        async sync(): Promise<void> {
+               const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as
+                       | string
+                       | undefined;
+               if (selected) {
+                       await this.plugin.storage.setSynced('syncedLibraryId', selected);
+               }
+
+                // 1. Ensure essential Rems exist (e.g., Zotero Library Rem, Unfiled Items Rem).
+                await ensureZoteroLibraryRemExists(this.plugin);
+                await ensureUnfiledItemsRemExists(this.plugin);
 
 		// 2. Fetch current data from Zotero.
 		const currentData = await this.api.fetchLibraryData();
