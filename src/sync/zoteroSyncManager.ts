@@ -32,8 +32,29 @@ export class ZoteroSyncManager {
 		await ensureZoteroLibraryRemExists(this.plugin);
 		await ensureUnfiledItemsRemExists(this.plugin);
 
-		// 2. Fetch current data from Zotero.
-		const currentData = await this.api.fetchLibraryData();
+		// 2. Fetch current data from Zotero using selected library.
+		const librarySetting = (await this.plugin.settings.getSetting('zotero-library-id')) as
+			| string
+			| undefined;
+
+		let libraryType: 'user' | 'group' = 'user';
+		let libraryId = (await this.plugin.settings.getSetting('zotero-user-id')) as
+			| string
+			| undefined;
+
+		if (librarySetting && librarySetting.includes(':')) {
+			const [type, id] = librarySetting.split(':');
+			if (type === 'user' || type === 'group') {
+				libraryType = type;
+				libraryId = id;
+			}
+		}
+
+		if (!libraryId) {
+			throw new Error('Zotero Library ID not set');
+		}
+
+		const currentData = await this.api.fetchLibraryData(libraryType, libraryId);
 
 		// 3. Retrieve previous sync data (shadow copy) from storage.
 		const prevDataRaw = (await this.plugin.storage.getSynced('zoteroData')) as

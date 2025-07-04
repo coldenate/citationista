@@ -2,7 +2,12 @@
 import type { RNPlugin } from '@remnote/plugin-sdk';
 // @ts-ignore
 import createZoteroClient from 'zotero-api-client';
-import type { Collection, Item, ZoteroCollectionResponse, ZoteroItemResponse } from '../types/types';
+import type {
+	Collection,
+	Item,
+	ZoteroCollectionResponse,
+	ZoteroItemResponse,
+} from '../types/types';
 import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters';
 
 /**
@@ -28,41 +33,68 @@ import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters'
  * ```
  */
 export class ZoteroAPI {
-        private plugin: RNPlugin;
-        // biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
-        private zoteroConnection: any | null = null;
+	private plugin: RNPlugin;
+	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
+	private zoteroConnection: any | null = null;
 
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
-        private async getOrCreateConnection(): Promise<any> {
-                if (this.zoteroConnection) return this.zoteroConnection;
-
+	async fetchGroupLibraries(): Promise<{ id: string; name: string }[]> {
 		const apiKey = await this.plugin.settings.getSetting('zotero-api-key');
 		const userId = await this.plugin.settings.getSetting('zotero-user-id');
+
+		if (!apiKey || !userId) {
+			throw new Error('Zotero credentials not set');
+		}
+
+		try {
+			const response = await createZoteroClient(apiKey)
+				.library('user', userId)
+				.groups()
+				.get();
+			const groups = response.getData() as any[];
+			return groups.map((g) => ({
+				id: String(g.id ?? g.data?.id ?? g.groupID ?? g.data?.groupID ?? ''),
+				name: String(g.name ?? g.data?.name ?? ''),
+			}));
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			await this.plugin.app.toast(`Failed to fetch Zotero groups: ${errorMessage}`);
+			return [];
+		}
+	}
+
+	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
+	private async getOrCreateConnection(
+		libraryType: 'user' | 'group',
+		libraryId: string
+	): Promise<any> {
+		if (this.zoteroConnection) return this.zoteroConnection;
+
+		const apiKey = await this.plugin.settings.getSetting('zotero-api-key');
 
 		if (!apiKey) {
 			throw new Error('Zotero API key not set');
 		}
-		if (!userId) {
-			throw new Error('Zotero User ID not set');
+		if (!libraryId) {
+			throw new Error('Zotero Library ID not set');
 		}
 
-                this.zoteroConnection = await createZoteroClient(apiKey).library('user', userId);
-                return this.zoteroConnection;
+		this.zoteroConnection = await createZoteroClient(apiKey).library(libraryType, libraryId);
+		return this.zoteroConnection;
 	}
 
-        private async fetchItems(): Promise<Item[]> {
+	private async fetchItems(libraryType: 'user' | 'group', libraryId: string): Promise<Item[]> {
 		try {
-                        const apiConnection = await this.getOrCreateConnection();
+			const apiConnection = await this.getOrCreateConnection(libraryType, libraryId);
 			const items: Item[] = [];
 			let start = 0;
 			const limit = 100; // Maximize limit to reduce number of requests
 
 			while (true) {
-                                const response = await apiConnection.items().get({ start, limit });
+				const response = await apiConnection.items().get({ start, limit });
 				const rawItems = response.raw as ZoteroItemResponse[];
 				for (const raw of rawItems) {
 					items.push(fromZoteroItem(raw));
@@ -84,10 +116,13 @@ export class ZoteroAPI {
 		}
 	}
 
-        private async fetchCollections(): Promise<Collection[]> {
+	private async fetchCollections(
+		libraryType: 'user' | 'group',
+		libraryId: string
+	): Promise<Collection[]> {
 		try {
-                        const apiConnection = await this.getOrCreateConnection();
-                        const response = await apiConnection.collections().get();
+			const apiConnection = await this.getOrCreateConnection(libraryType, libraryId);
+			const response = await apiConnection.collections().get();
 			const rawCollections = response.getData() as ZoteroCollectionResponse[];
 			return rawCollections.map(fromZoteroCollection);
 		} catch (error) {
@@ -97,8 +132,14 @@ export class ZoteroAPI {
 		}
 	}
 
-        async fetchLibraryData(): Promise<{ items: Item[]; collections: Collection[] }> {
-                const [items, collections] = await Promise.all([this.fetchItems(), this.fetchCollections()]);
+	async fetchLibraryData(
+		libraryType: 'user' | 'group',
+		libraryId: string
+	): Promise<{ items: Item[]; collections: Collection[] }> {
+		const [items, collections] = await Promise.all([
+			this.fetchItems(libraryType, libraryId),
+			this.fetchCollections(libraryType, libraryId),
+		]);
 		console.log(
 			`Fetched ${items.length} items and ${collections.length} collections from Zotero.`,
 			items,
