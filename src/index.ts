@@ -530,15 +530,34 @@ async function onActivate(plugin: RNPlugin) {
        let lastLibrary: string | undefined;
        let lastDisable: boolean | undefined;
        let lastMulti: boolean | undefined;
+       let debugRegistered = false;
+       let syncTimeout: NodeJS.Timeout | undefined;
+
+       function scheduleSync(p: RNPlugin) {
+               if (syncTimeout) {
+                       clearTimeout(syncTimeout);
+               }
+               syncTimeout = setTimeout(async () => {
+                       const manager = new ZoteroSyncManager(p);
+                       await manager.sync();
+               }, 500);
+       }
 
        plugin.track(async (reactivePlugin) => {
                await registerIconCSS(plugin);
-               await isDebugMode(reactivePlugin).then(async (debugMode) => {
-                       if (debugMode) {
-                               plugin.app.toast('Debug Mode Enabled; Registering Debug Tools for Citationista...');
-                               await registerDebugCommands(plugin);
+               const debugMode = await isDebugMode(reactivePlugin);
+               if (debugMode && !debugRegistered) {
+                       plugin.app.toast('Debug Mode Enabled; Registering Debug Tools for Citationista...');
+                       await registerDebugCommands(plugin);
+                       debugRegistered = true;
+               }
+               if (debugMode) {
+                       if (autoSyncInterval) {
+                               clearInterval(autoSyncInterval);
+                               autoSyncInterval = undefined;
                        }
-               });
+                       return;
+               }
 
                const apiKey = (await reactivePlugin.settings.getSetting('zotero-api-key')) as string | undefined;
                const userId = (await reactivePlugin.settings.getSetting('zotero-user-id')) as string | undefined;
@@ -561,8 +580,7 @@ async function onActivate(plugin: RNPlugin) {
 
                const hasLibrary = multi ? true : Boolean(libraryId);
                if (apiKey && userId && hasLibrary && (apiKey !== lastApiKey || userId !== lastUserId || multiChanged)) {
-                       const manager = new ZoteroSyncManager(reactivePlugin);
-                       await manager.sync();
+                       scheduleSync(reactivePlugin);
                        lastApiKey = apiKey;
                        lastUserId = userId;
                        lastMulti = multi;

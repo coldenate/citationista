@@ -147,28 +147,38 @@ export class ZoteroAPI {
 }
 
 export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInfo[]> {
-	const apiKey = await plugin.settings.getSetting('zotero-api-key');
-	const userId = await plugin.settings.getSetting('zotero-user-id');
+        const apiKey = await plugin.settings.getSetting('zotero-api-key');
+        const userId = await plugin.settings.getSetting('zotero-user-id');
 
-	if (!apiKey || !userId) {
-		return [];
-	}
+        if (!apiKey || !userId) {
+                return [];
+        }
 
-	const headers = { 'Zotero-API-Key': String(apiKey) };
-	try {
-		const res = await fetch(`https://api.zotero.org/users/${userId}/groups`, { headers });
-		if (!res.ok) {
-			throw new Error(`HTTP ${res.status}`);
-		}
-		const data = (await res.json()) as any[];
-		const groups = data.map((g) => ({
-			id: String(g.id ?? g.data?.id),
-			name: g.data?.name ?? g.name ?? '',
-			type: 'group' as const,
-		}));
-		return [{ id: String(userId), name: 'My Library', type: 'user' as const }, ...groups];
-	} catch (err) {
-		console.error('Failed to fetch group libraries', err);
-		return [{ id: String(userId), name: 'My Library', type: 'user' }];
-	}
+        const headers = { 'Zotero-API-Key': String(apiKey) };
+        try {
+                const resUser = await fetch(`https://api.zotero.org/users/${userId}`, { headers });
+                let userName = 'My Library';
+                if (resUser.ok) {
+                        const userData = (await resUser.json()) as any;
+                        userName =
+                                userData?.data?.profileName ||
+                                userData?.data?.username ||
+                                userName;
+                }
+
+                const res = await fetch(`https://api.zotero.org/users/${userId}/groups`, { headers });
+                if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}`);
+                }
+                const data = (await res.json()) as any[];
+                const groups = data.map((g) => ({
+                        id: String(g.id ?? g.data?.id),
+                        name: g.data?.name ?? g.name ?? '',
+                        type: 'group' as const,
+                }));
+                return [{ id: String(userId), name: userName, type: 'user' as const }, ...groups];
+        } catch (err) {
+                console.error('Failed to fetch group libraries', err);
+                return [{ id: String(userId), name: 'My Library', type: 'user' }];
+        }
 }
