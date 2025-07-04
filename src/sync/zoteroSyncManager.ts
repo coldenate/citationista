@@ -85,23 +85,26 @@ export class ZoteroSyncManager {
                const currentData = await this.api.fetchLibraryData(library.type, library.id);
 
 		// 3. Retrieve previous sync data (shadow copy) from storage.
-               const prevDataRaw = (await this.plugin.storage.getSynced('zoteroData')) as
-                        | {
+               const dataMap = (await this.plugin.storage.getSynced('zoteroDataMap')) as
+                       | Record<
+                                string,
+                                {
                                         items?: Partial<Item>[];
                                         collections?: Partial<Collection>[];
-                          }
-                        | undefined;
-		const prevData = {
-			items: (prevDataRaw?.items || []).map((i) => ({
-				rem: null,
-				// spread to capture stored fields
-				...i,
-			})) as Item[],
-			collections: (prevDataRaw?.collections || []).map((c) => ({
-				rem: null,
-				...c,
-			})) as Collection[],
-		};
+                                }
+                        >
+                       | undefined;
+               const prevDataRaw = dataMap?.[key];
+               const prevData = {
+                       items: (prevDataRaw?.items || []).map((i) => ({
+                               rem: null,
+                               ...i,
+                       })) as Item[],
+                       collections: (prevDataRaw?.collections || []).map((c) => ({
+                               rem: null,
+                               ...c,
+                       })) as Collection[],
+               };
 
 		// 4. Initialize node cache for the current Rem tree.
                this.treeBuilder.setLibraryKey(key);
@@ -143,7 +146,11 @@ export class ZoteroSyncManager {
 				return rest;
 			}),
 		};
-               await this.plugin.storage.setSynced('zoteroData', serializableData);
+               const updatedMap = {
+                       ...(dataMap || {}),
+                       [key]: serializableData,
+               };
+               await this.plugin.storage.setSynced('zoteroDataMap', updatedMap);
 
                await this.updateProgress(key, 1);
 
