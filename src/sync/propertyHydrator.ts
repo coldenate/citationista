@@ -140,7 +140,10 @@ export class ZoteroPropertyHydrator {
 					}
 
 					if (isTitleLikeField(matchingKey)) {
-						await rem.setText([propertyValue]);
+						const safeTitle = await this.plugin.richText.parseFromMarkdown(
+							propertyValue
+						);
+						await rem.setText(safeTitle);
 						continue;
 					}
 

@@ -267,7 +267,10 @@ export class TreeBuilder {
 		for (const item of items) {
 			const remNode = this.nodeCache.get(item.key);
 			if (remNode) {
-				await remNode.rem.setText([item.data.title ?? '']);
+				const safeTitle = await this.plugin.richText.parseFromMarkdown(
+				item.data.title ?? ''
+					);
+				await remNode.rem.setText(safeTitle);
 				item.rem = remNode.rem;
 				const newParentId = item.data.parentItem || item.data.collections?.[0] || null;
 				if (remNode.zoteroParentId !== newParentId) {
