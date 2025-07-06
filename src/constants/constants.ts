@@ -41,12 +41,13 @@ export const WIKIPEDIA_API_HEADERS = new Headers({
 // in case they need to contact me, they can find us by the name of the plugin or my username
 
 export const powerupCodes = {
-	ZOTERO_SYNCED_LIBRARY: 'zotero-synced-library',
-	ZITEM: 'zitem',
-	COLLECTION: 'collection',
-	ZOTERO_TAG: 'zotero-tag',
-	ZOTERO_NOTE: 'zotero-note',
-	ZITEM_ATTACHMENT: 'zitem-attachment',
-	CITATION_POOL: 'coolPool',
-	ZOTERO_UNFILED_ITEMS: 'zotero-unfiled-items',
+        ZOTERO_SYNCED_LIBRARY: 'zotero-synced-library',
+        ZITEM: 'zitem',
+        COLLECTION: 'collection',
+        ZOTERO_TAG: 'zotero-tag',
+        ZOTERO_NOTE: 'zotero-note',
+        ZITEM_ATTACHMENT: 'zitem-attachment',
+        CITATION_POOL: 'coolPool',
+        ZOTERO_UNFILED_ITEMS: 'zotero-unfiled-items',
+        ZOTERO_CONNECTOR_HOME: 'zotero-connector-home',
 };
