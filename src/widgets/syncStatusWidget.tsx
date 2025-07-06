@@ -1,6 +1,6 @@
 import { type Rem, renderWidget, usePlugin } from '@remnote/plugin-sdk';
 import { useCallback, useEffect, useState } from 'react';
-import { markForceStopRequested } from '../services/pluginIO';
+import { markAbortRequested } from '../services/pluginIO';
 import { ZoteroSyncManager } from '../sync/zoteroSyncManager';
 
 interface SyncStatus {
@@ -102,7 +102,7 @@ function SyncStatusWidget() {
 	// Handle abort sync
 	const handleAbortSync = async () => {
 		try {
-			await markForceStopRequested(plugin);
+                       await markAbortRequested(plugin);
 			await plugin.app.toast('Sync abort requested');
 			await updateSyncStatus();
 		} catch (error) {

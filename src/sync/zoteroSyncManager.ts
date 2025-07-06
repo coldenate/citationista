@@ -15,7 +15,7 @@ import { mergeUpdatedItems } from './mergeUpdatedItems';
 import { ZoteroPropertyHydrator } from './propertyHydrator';
 import { TreeBuilder } from './treeBuilder';
 import { tryAcquire, release } from './syncLock';
-import { checkForceStopFlag } from '../services/pluginIO';
+import { checkAbortFlag } from '../services/pluginIO';
 
 export class ZoteroSyncManager {
 	private plugin: RNPlugin;
@@ -41,7 +41,7 @@ export class ZoteroSyncManager {
        }
 
        private async checkAbort(): Promise<boolean> {
-               const stop = await checkForceStopFlag(this.plugin);
+               const stop = await checkAbortFlag(this.plugin);
                if (stop) {
                        await this.setSyncingStatus(false);
                        await this.updateProgress(0);
