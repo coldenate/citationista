@@ -4,6 +4,7 @@ import {
 	PropertyLocation,
 	PropertyType,
 	type RNPlugin,
+	WidgetLocation,
 } from '@remnote/plugin-sdk';
 import { fetchLibraries } from './api/zotero';
 import { citationFormats, powerupCodes } from './constants/constants';
@@ -515,9 +516,17 @@ async function registerDebugCommands(plugin: RNPlugin) {
 	});
 }
 
+async function registerWidgets(plugin: RNPlugin) {
+	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
+		dimensions: { height: 'auto', width: 300 },
+		powerupFilter: powerupCodes.ZOTERO_SYNCED_LIBRARY,
+	});
+}
+
 async function onActivate(plugin: RNPlugin) {
 	await registerSettings(plugin);
 	await registerPowerups(plugin);
+	await registerWidgets(plugin);
 	await handleLibrarySwitch(plugin);
 
 	const multiInit = (await plugin.settings.getSetting('sync-multiple-libraries')) as
