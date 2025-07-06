@@ -159,7 +159,6 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
 
 	const headers = { 'Zotero-API-Key': String(apiKey) };
 
-
 	// Use proxy in development mode to avoid CORS issues
 	const baseUrl = process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
 
@@ -171,7 +170,6 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
 			const userData = (await resUser.json()) as any;
 			userName = userData?.data?.profileName || userData?.data?.username || userName;
 		}
-
 
 		const res = await fetch(`${baseUrl}/users/${userId}/groups`, { headers });
 
