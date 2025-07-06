@@ -139,10 +139,13 @@ export class ZoteroPropertyHydrator {
 						continue;
 					}
 
-					if (isTitleLikeField(matchingKey)) {
-						await rem.setText([propertyValue]);
-						continue;
-					}
+                                        if (isTitleLikeField(matchingKey)) {
+                                                const safeTitle = await this.plugin.richText.parseFromMarkdown(
+                                                        String(propertyValue)
+                                                );
+                                                await rem.setText(safeTitle);
+                                                continue;
+                                        }
 
 					if (propertyType === PropertyType.URL) {
 						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);

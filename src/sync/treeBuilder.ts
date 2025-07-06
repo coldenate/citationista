@@ -261,9 +261,12 @@ export class TreeBuilder {
 	private async updateItems(items: Item[]): Promise<void> {
 		for (const item of items) {
 			const remNode = this.nodeCache.get(item.key);
-			if (remNode) {
-				await remNode.rem.setText([item.data.title ?? '']);
-				item.rem = remNode.rem;
+                        if (remNode) {
+                                const safeTitle = await this.plugin.richText.parseFromMarkdown(
+                                        item.data.title ?? ''
+                                );
+                                await remNode.rem.setText(safeTitle);
+                                item.rem = remNode.rem;
 				const newParentId = item.data.parentItem || item.data.collections?.[0] || null;
 				if (remNode.zoteroParentId !== newParentId) {
 					remNode.zoteroParentId = newParentId;
