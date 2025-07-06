@@ -4,23 +4,23 @@ import { markAbortRequested } from '../services/pluginIO';
 import { ZoteroSyncManager } from '../sync/zoteroSyncManager';
 
 interface SyncStatus {
-        isActive: boolean;
-        progress: number;
-        lastSyncTime?: Date;
-        libraryName?: string;
-        timeRemaining?: number;
+	isActive: boolean;
+	progress: number;
+	lastSyncTime?: Date;
+	libraryName?: string;
+	timeRemaining?: number;
 }
 
 function SyncStatusWidget() {
 	const plugin = usePlugin();
-        const [syncStatus, setSyncStatus] = useState<SyncStatus>({
-                isActive: false,
-                progress: 0,
-                timeRemaining: undefined,
-        });
+	const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+		isActive: false,
+		progress: 0,
+		timeRemaining: undefined,
+	});
 	const [isProcessing, setIsProcessing] = useState(false);
 
-        // Get current Zotero library Rem
+	// Get current Zotero library Rem
 	const getCurrentLibraryRem = useCallback(async (): Promise<Rem | null> => {
 		const syncedLibraryId = await plugin.storage.getSynced('syncedLibraryId');
 		if (!syncedLibraryId) return null;
@@ -38,45 +38,47 @@ function SyncStatusWidget() {
 		return null;
 	}, [plugin.storage, plugin.rem]);
 
-        // Update sync status from storage
-        const updateSyncStatus = useCallback(async () => {
-                try {
-                        const libraryRem = await getCurrentLibraryRem();
-                        if (!libraryRem) {
-                                setSyncStatus({ isActive: false, progress: 0, timeRemaining: undefined });
-                                return;
-                        }
+	// Update sync status from storage
+	const updateSyncStatus = useCallback(async () => {
+		try {
+			const libraryRem = await getCurrentLibraryRem();
+			if (!libraryRem) {
+				setSyncStatus({ isActive: false, progress: 0, timeRemaining: undefined });
+				return;
+			}
 
-                        const progress = ((await plugin.storage.getSession('syncProgress')) as number) || 0;
-                        const isActive = ((await plugin.storage.getSession('syncing')) as boolean) || false;
-                        const startTime = (await plugin.storage.getSession('syncStartTime')) as string | undefined;
-                        let timeRemaining: number | undefined = undefined;
-                        if (startTime && progress > 0 && progress < 1) {
-                                const start = new Date(startTime).getTime();
-                                const elapsed = Date.now() - start;
-                                const total = elapsed / progress;
-                                timeRemaining = Math.max(total - elapsed, 0);
-                        }
+			const progress = ((await plugin.storage.getSession('syncProgress')) as number) || 0;
+			const isActive = ((await plugin.storage.getSession('syncing')) as boolean) || false;
+			const startTime = (await plugin.storage.getSession('syncStartTime')) as
+				| string
+				| undefined;
+			let timeRemaining: number | undefined = undefined;
+			if (startTime && progress > 0 && progress < 1) {
+				const start = new Date(startTime).getTime();
+				const elapsed = Date.now() - start;
+				const total = elapsed / progress;
+				timeRemaining = Math.max(total - elapsed, 0);
+			}
 
-                        // Get library name from rem text
-                        const libraryText = libraryRem.text;
-                        const libraryName = (libraryText?.[0] as string) || 'Zotero Library';
+			// Get library name from rem text
+			const libraryText = libraryRem.text;
+			const libraryName = (libraryText?.[0] as string) || 'Zotero Library';
 
-                        // Get last sync time from storage
-                        const lastSyncString = await plugin.storage.getSynced('lastSyncTime');
-                        const lastSyncTime = lastSyncString ? new Date(lastSyncString as string) : undefined;
+			// Get last sync time from storage
+			const lastSyncString = await plugin.storage.getSynced('lastSyncTime');
+			const lastSyncTime = lastSyncString ? new Date(lastSyncString as string) : undefined;
 
-                        setSyncStatus({
-                                isActive,
-                                progress,
-                                lastSyncTime,
-                                libraryName,
-                                timeRemaining,
-                        });
-                } catch (error) {
-                        console.error('Error updating sync status:', error);
-                }
-        }, [getCurrentLibraryRem, plugin.storage]);
+			setSyncStatus({
+				isActive,
+				progress,
+				lastSyncTime,
+				libraryName,
+				timeRemaining,
+			});
+		} catch (error) {
+			console.error('Error updating sync status:', error);
+		}
+	}, [getCurrentLibraryRem, plugin.storage]);
 
 	// Handle sync now button
 	const handleSyncNow = async () => {
@@ -102,7 +104,7 @@ function SyncStatusWidget() {
 	// Handle abort sync
 	const handleAbortSync = async () => {
 		try {
-                       await markAbortRequested(plugin);
+			await markAbortRequested(plugin);
 			await plugin.app.toast('Sync abort requested');
 			await updateSyncStatus();
 		} catch (error) {
@@ -139,64 +141,64 @@ function SyncStatusWidget() {
 
 	const progressPercentage = Math.min(100, Math.max(0, syncStatus.progress * 100));
 
-        return (
-<div className="fixed left-1/2 -translate-x-1/2 bottom-8 z-50 pointer-events-none">
-<div
-className="pointer-events-auto rounded-xl shadow-md p-4 flex items-center gap-4 border"
-style={{
-backgroundColor: 'var(--background-primary)',
-borderColor: 'var(--border-primary)',
-color: 'var(--text-primary)',
-}}
->
-                                <button
-                                        type="button"
-                                        onClick={syncStatus.isActive ? handleAbortSync : handleSyncNow}
-className={`w-12 h-12 rounded-full text-white flex items-center justify-center transition-colors ${
-syncStatus.isActive
-? 'bg-red-600 hover:bg-red-700'
-: 'bg-[var(--accent-color)] hover:opacity-80'
-}`}
-                                        disabled={isProcessing}
-                                >
-                                        {syncStatus.isActive ? '⏹' : '▶'}
-                                </button>
-                                <div className="flex-1">
-                                       <div
-                                               className="w-full rounded-full h-2 overflow-hidden"
-                                               style={{ backgroundColor: 'var(--background-secondary)' }}
-                                       >
-                                                <div
-                                                        className="h-2 rounded-full transition-all"
-                                                        style={{
-                                                                width: `${progressPercentage}%`,
-                                                                backgroundColor: 'var(--accent-color)',
-                                                        }}
-                                                />
-                                        </div>
-                                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex justify-between">
-                                                <span>{syncStatus.isActive ? 'Syncing...' : 'Ready'}</span>
-                                                <span>{Math.round(progressPercentage)}%</span>
-                                        </div>
-                                        {syncStatus.isActive && syncStatus.timeRemaining !== undefined && (
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                        ~{Math.ceil(syncStatus.timeRemaining / 1000)}s remaining
-                                                </p>
-                                        )}
-                                        {syncStatus.lastSyncTime && (
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                        Last synced: {formatLastSync(syncStatus.lastSyncTime)}
-                                                </p>
-                                        )}
-                                        {syncStatus.libraryName && (
-                                                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 font-medium">
-                                                        {syncStatus.libraryName}
-                                                </p>
-                                        )}
-                                </div>
-                        </div>
-                </div>
-        );
+	return (
+		<div className="fixed left-1/2 -translate-x-1/2 bottom-8 z-50 pointer-events-none">
+			<div
+				className="pointer-events-auto rounded-xl shadow-md p-4 flex items-center gap-4 border"
+				style={{
+					backgroundColor: 'var(--background-primary)',
+					borderColor: 'var(--border-primary)',
+					color: 'var(--text-primary)',
+				}}
+			>
+				<button
+					type="button"
+					onClick={syncStatus.isActive ? handleAbortSync : handleSyncNow}
+					className={`w-12 h-12 rounded-full text-white flex items-center justify-center transition-colors ${
+						syncStatus.isActive
+							? 'bg-red-600 hover:bg-red-700'
+							: 'bg-[var(--accent-color)] hover:opacity-80'
+					}`}
+					disabled={isProcessing}
+				>
+					{syncStatus.isActive ? '⏹' : '▶'}
+				</button>
+				<div className="flex-1">
+					<div
+						className="w-full rounded-full h-2 overflow-hidden"
+						style={{ backgroundColor: 'var(--background-secondary)' }}
+					>
+						<div
+							className="h-2 rounded-full transition-all"
+							style={{
+								width: `${progressPercentage}%`,
+								backgroundColor: 'var(--accent-color)',
+							}}
+						/>
+					</div>
+					<div className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex justify-between">
+						<span>{syncStatus.isActive ? 'Syncing...' : 'Ready'}</span>
+						<span>{Math.round(progressPercentage)}%</span>
+					</div>
+					{syncStatus.isActive && syncStatus.timeRemaining !== undefined && (
+						<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+							~{Math.ceil(syncStatus.timeRemaining / 1000)}s remaining
+						</p>
+					)}
+					{syncStatus.lastSyncTime && (
+						<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+							Last synced: {formatLastSync(syncStatus.lastSyncTime)}
+						</p>
+					)}
+					{syncStatus.libraryName && (
+						<p className="text-xs text-blue-700 dark:text-blue-300 mt-1 font-medium">
+							{syncStatus.libraryName}
+						</p>
+					)}
+				</div>
+			</div>
+		</div>
+	);
 }
 
 renderWidget(SyncStatusWidget);

@@ -1,3 +1,6 @@
 {
-	"conventionalCommits.scopes": ["syncing"]
+	"conventionalCommits.scopes": ["syncing"],
+	"editor.tabSize": 2,
+	"editor.detectIndentation": false,
+	"editor.insertSpaces": true
 }
