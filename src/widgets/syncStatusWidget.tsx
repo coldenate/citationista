@@ -146,9 +146,9 @@ function SyncStatusWidget() {
 			<div
 				className="pointer-events-auto rounded-xl shadow-md p-4 flex items-center gap-4 border"
 				style={{
-					backgroundColor: 'var(--background-primary)',
-					borderColor: 'var(--border-primary)',
-					color: 'var(--text-primary)',
+					backgroundColor: '#232136', // Moody dark purple (no transparency)
+					borderColor: '#393552', // Slightly lighter purple for border
+					color: '#ECEFF4', // Cream white
 				}}
 			>
 				<button
@@ -165,8 +165,8 @@ function SyncStatusWidget() {
 				</button>
 				<div className="flex-1">
 					<div
-						className="w-full rounded-full h-2 overflow-hidden"
-						style={{ backgroundColor: 'var(--background-secondary)' }}
+						className="w-full rounded-full h-2 overflow-hidden mb-2"
+						style={{ backgroundColor: '#393552' }} // Divider color
 					>
 						<div
 							className="h-2 rounded-full transition-all"
@@ -176,24 +176,34 @@ function SyncStatusWidget() {
 							}}
 						/>
 					</div>
-					<div className="text-xs text-gray-600 dark:text-gray-400 mt-1 flex justify-between">
+					<hr style={{ borderColor: '#393552', margin: '6px 0' }} />
+					<div className="text-xs mt-1 flex justify-between" style={{ color: '#A6ADC8' }}>
 						<span>{syncStatus.isActive ? 'Syncing...' : 'Ready'}</span>
 						<span>{Math.round(progressPercentage)}%</span>
 					</div>
 					{syncStatus.isActive && syncStatus.timeRemaining !== undefined && (
-						<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-							~{Math.ceil(syncStatus.timeRemaining / 1000)}s remaining
-						</p>
+						<>
+							<hr style={{ borderColor: '#393552', margin: '6px 0' }} />
+							<p className="text-xs mt-1" style={{ color: '#A6ADC8' }}>
+								~{Math.ceil(syncStatus.timeRemaining / 1000)}s remaining
+							</p>
+						</>
 					)}
 					{syncStatus.lastSyncTime && (
-						<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-							Last synced: {formatLastSync(syncStatus.lastSyncTime)}
-						</p>
+						<>
+							<hr style={{ borderColor: '#393552', margin: '6px 0' }} />
+							<p className="text-xs mt-1" style={{ color: '#A6ADC8' }}>
+								Last synced: {formatLastSync(syncStatus.lastSyncTime)}
+							</p>
+						</>
 					)}
 					{syncStatus.libraryName && (
-						<p className="text-xs text-blue-700 dark:text-blue-300 mt-1 font-medium">
-							{syncStatus.libraryName}
-						</p>
+						<>
+							<hr style={{ borderColor: '#393552', margin: '6px 0' }} />
+							<p className="text-xs mt-1 font-medium" style={{ color: '#C4A7E7' }}>
+								{syncStatus.libraryName}
+							</p>
+						</>
 					)}
 				</div>
 			</div>

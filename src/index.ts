@@ -158,39 +158,39 @@ async function registerPowerups(plugin: RNPlugin) {
 			],
 		},
 	});
-        await plugin.app.registerPowerup({
-                name: 'Citationista Pool',
-                code: powerupCodes.CITATION_POOL,
-                description: 'A pool of citationista rems.',
-                options: {
-                        properties: [],
-                },
-        });
-        await plugin.app.registerPowerup({
-                name: 'Zotero Connector Home Page',
-                code: powerupCodes.ZOTERO_CONNECTOR_HOME,
-                description: 'Home page for the Zotero Connector.',
-                options: {
-                        properties: [],
-                },
-        });
-        await plugin.app.registerPowerup({
-                name: 'Zotero Unfiled Items',
-                code: powerupCodes.ZOTERO_UNFILED_ITEMS,
-                description: 'Unfiled Items from Zotero.',
-                options: {
+	await plugin.app.registerPowerup({
+		name: 'Citationista Pool',
+		code: powerupCodes.CITATION_POOL,
+		description: 'A pool of citationista rems.',
+		options: {
+			properties: [],
+		},
+	});
+	await plugin.app.registerPowerup({
+		name: 'Zotero Connector Home Page',
+		code: powerupCodes.ZOTERO_CONNECTOR_HOME,
+		description: 'Home page for the Zotero Connector.',
+		options: {
+			properties: [],
+		},
+	});
+	await plugin.app.registerPowerup({
+		name: 'Zotero Unfiled Items',
+		code: powerupCodes.ZOTERO_UNFILED_ITEMS,
+		description: 'Unfiled Items from Zotero.',
+		options: {
 			properties: [],
 		},
 	});
 
-        await plugin.app.registerPowerup({
-                name: 'Zotero Library Sync Powerup',
-                code: powerupCodes.ZOTERO_SYNCED_LIBRARY,
-                description: 'Your Zotero library, synced with RemNote. :D',
-                options: {
-                        properties: [],
-                },
-        });
+	await plugin.app.registerPowerup({
+		name: 'Zotero Library Sync Powerup',
+		code: powerupCodes.ZOTERO_SYNCED_LIBRARY,
+		description: 'Your Zotero library, synced with RemNote. :D',
+		options: {
+			properties: [],
+		},
+	});
 
 	await plugin.app.registerPowerup({
 		name: 'Zotero Item',
@@ -327,14 +327,14 @@ async function handleLibrarySwitch(plugin: RNPlugin) {
 	if (!selected) return;
 	const stored = (await plugin.storage.getSynced('syncedLibraryId')) as string | undefined;
 	if (stored && stored !== selected) {
-               await _deleteTaggedRems(plugin, [
-                       powerupCodes.ZITEM,
-                       powerupCodes.COLLECTION,
-                       powerupCodes.ZOTERO_SYNCED_LIBRARY,
-                       powerupCodes.CITATION_POOL,
-                       powerupCodes.ZOTERO_UNFILED_ITEMS,
-                       powerupCodes.ZOTERO_CONNECTOR_HOME,
-               ]);
+		await _deleteTaggedRems(plugin, [
+			powerupCodes.ZITEM,
+			powerupCodes.COLLECTION,
+			powerupCodes.ZOTERO_SYNCED_LIBRARY,
+			powerupCodes.CITATION_POOL,
+			powerupCodes.ZOTERO_UNFILED_ITEMS,
+			powerupCodes.ZOTERO_CONNECTOR_HOME,
+		]);
 		await plugin.storage.setSynced('libraryRemMap', undefined);
 		await plugin.storage.setSynced('unfiledRemMap', undefined);
 		await plugin.storage.setSynced('zoteroLibraryRemId', undefined);
@@ -395,16 +395,16 @@ async function registerDebugCommands(plugin: RNPlugin) {
 			await zoteroSyncManager.sync();
 		},
 	});
-        await plugin.app.registerCommand({
-                name: 'Abort Citationista Sync',
-                description: 'Abort the current Zotero sync job.',
-                id: 'abort-sync-job',
-                icon: '🛑',
-                keywords: 'zotero, stop, sync',
-                action: async () => {
-                       await markAbortRequested(plugin);
-                },
-        });
+	await plugin.app.registerCommand({
+		name: 'Abort Citationista Sync',
+		description: 'Abort the current Zotero sync job.',
+		id: 'abort-sync-job',
+		icon: '🛑',
+		keywords: 'zotero, stop, sync',
+		action: async () => {
+			await markAbortRequested(plugin);
+		},
+	});
 	await plugin.app.registerCommand({
 		id: 'log-values',
 		name: 'citationista log values',
@@ -470,14 +470,14 @@ async function registerDebugCommands(plugin: RNPlugin) {
 				)
 			) {
 				await plugin.storage.setSynced('zoteroDataMap', undefined);
-                               await _deleteTaggedRems(plugin, [
-                                       powerupCodes.ZITEM,
-                                       powerupCodes.COLLECTION,
-                                       powerupCodes.ZOTERO_SYNCED_LIBRARY,
-                                       powerupCodes.CITATION_POOL,
-                                       powerupCodes.ZOTERO_UNFILED_ITEMS,
-                                       powerupCodes.ZOTERO_CONNECTOR_HOME,
-                               ]);
+				await _deleteTaggedRems(plugin, [
+					powerupCodes.ZITEM,
+					powerupCodes.COLLECTION,
+					powerupCodes.ZOTERO_SYNCED_LIBRARY,
+					powerupCodes.CITATION_POOL,
+					powerupCodes.ZOTERO_UNFILED_ITEMS,
+					powerupCodes.ZOTERO_CONNECTOR_HOME,
+				]);
 				await plugin.storage.setSynced('libraryRemMap', undefined);
 				await plugin.storage.setSynced('unfiledRemMap', undefined);
 				await plugin.storage.setSynced('zoteroLibraryRemId', undefined);
@@ -511,25 +511,25 @@ async function registerDebugCommands(plugin: RNPlugin) {
 }
 
 async function registerWidgets(plugin: RNPlugin) {
-await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
-dimensions: { height: 300, width: 300 },
-powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
-});
+	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
+		dimensions: { height: 300, width: 300 },
+		powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
+	});
 }
 
 async function onActivate(plugin: RNPlugin) {
-        await registerSettings(plugin);
-        await registerPowerups(plugin);
-        const homePage = await ensureZoteroLibraryRemExists(plugin);
-        if (homePage) {
-                try {
-                        await plugin.window.openRem(homePage);
-                } catch (err) {
-                        console.error('Failed to open Zotero home page:', err);
-                }
-        }
-        await registerWidgets(plugin);
-        await handleLibrarySwitch(plugin);
+	await registerSettings(plugin);
+	await registerPowerups(plugin);
+	const homePage = await ensureZoteroLibraryRemExists(plugin);
+	if (homePage) {
+		try {
+			await plugin.window.openRem(homePage);
+		} catch (err) {
+			console.error('Failed to open Zotero home page:', err);
+		}
+	}
+	await registerWidgets(plugin);
+	await handleLibrarySwitch(plugin);
 
 	const multiInit = (await plugin.settings.getSetting('sync-multiple-libraries')) as
 		| boolean
