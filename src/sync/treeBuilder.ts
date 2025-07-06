@@ -19,13 +19,9 @@ export class TreeBuilder {
                 this.plugin = plugin;
         }
 
-        setLibraryKey(key: string) {
-                this.libraryKey = key;
-        }
-
-	setLibraryKey(key: string) {
-		this.libraryKey = key;
-	}
+       setLibraryKey(key: string) {
+               this.libraryKey = key;
+       }
 
 	/**
 	 * Initializes the node cache by fetching all Rems tagged with specific power-ups
