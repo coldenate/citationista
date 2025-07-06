@@ -157,48 +157,39 @@ async function registerPowerups(plugin: RNPlugin) {
 			],
 		},
 	});
-	await plugin.app.registerPowerup({
-		name: 'Citationista Pool',
-		code: powerupCodes.CITATION_POOL,
-		description: 'A pool of citationista rems.',
-		options: {
-			properties: [],
-		},
-	});
-	await plugin.app.registerPowerup({
-		name: 'Zotero Unfiled Items',
-		code: powerupCodes.ZOTERO_UNFILED_ITEMS,
-		description: 'Unfiled Items from Zotero.',
-		options: {
+        await plugin.app.registerPowerup({
+                name: 'Citationista Pool',
+                code: powerupCodes.CITATION_POOL,
+                description: 'A pool of citationista rems.',
+                options: {
+                        properties: [],
+                },
+        });
+        await plugin.app.registerPowerup({
+                name: 'Zotero Connector Home Page',
+                code: powerupCodes.ZOTERO_CONNECTOR_HOME,
+                description: 'Home page for the Zotero Connector.',
+                options: {
+                        properties: [],
+                },
+        });
+        await plugin.app.registerPowerup({
+                name: 'Zotero Unfiled Items',
+                code: powerupCodes.ZOTERO_UNFILED_ITEMS,
+                description: 'Unfiled Items from Zotero.',
+                options: {
 			properties: [],
 		},
 	});
 
-	await plugin.app.registerPowerup({
-		name: 'Zotero Library Sync Powerup',
-		code: powerupCodes.ZOTERO_SYNCED_LIBRARY,
-		description: 'Your Zotero library, synced with RemNote. :D',
-		options: {
-			properties: [
-				{
-					code: 'syncing',
-					name: 'Syncing',
-					onlyProgrammaticModifying: true,
-					hidden: false,
-					propertyType: PropertyType.CHECKBOX,
-					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-				},
-				{
-					code: 'progress',
-					name: 'Progress',
-					onlyProgrammaticModifying: true,
-					hidden: false,
-					propertyType: PropertyType.NUMBER,
-					propertyLocation: PropertyLocation.ONLY_DOCUMENT,
-				},
-			],
-		},
-	});
+        await plugin.app.registerPowerup({
+                name: 'Zotero Library Sync Powerup',
+                code: powerupCodes.ZOTERO_SYNCED_LIBRARY,
+                description: 'Your Zotero library, synced with RemNote. :D',
+                options: {
+                        properties: [],
+                },
+        });
 
 	await plugin.app.registerPowerup({
 		name: 'Zotero Item',
@@ -517,10 +508,10 @@ async function registerDebugCommands(plugin: RNPlugin) {
 }
 
 async function registerWidgets(plugin: RNPlugin) {
-	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
-		dimensions: { height: 'auto', width: 300 },
-		powerupFilter: powerupCodes.ZOTERO_SYNCED_LIBRARY,
-	});
+        await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
+                dimensions: { height: 'auto', width: 300 },
+                powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
+        });
 }
 
 async function onActivate(plugin: RNPlugin) {

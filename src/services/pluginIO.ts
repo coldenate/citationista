@@ -6,15 +6,16 @@ export async function markForceStopRequested(plugin: RNPlugin) {
 }
 
 export async function checkForceStopFlag(plugin: RNPlugin) {
-	const isBeingStopped = await plugin.storage.getSession('isBeingStopped');
-	switch (isBeingStopped) {
-		case undefined:
-		case false:
-			return false;
-		case true:
-			console.warn('Force stop detected. Stopping sync.');
-			await plugin.app.toast('Force stop detected. Stopping sync.');
-			await plugin.storage.setSession('isBeingStopped', false);
-			return true;
-	}
+        const isBeingStopped = await plugin.storage.getSession('isBeingStopped');
+        switch (isBeingStopped) {
+                case undefined:
+                case false:
+                        return false;
+                case true:
+                        console.warn('Force stop detected. Stopping sync.');
+                        await plugin.app.toast('Force stop detected. Stopping sync.');
+                        await plugin.storage.setSession('isBeingStopped', false);
+                        return true;
+        }
+        return false;
 }

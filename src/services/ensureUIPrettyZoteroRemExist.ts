@@ -34,10 +34,10 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 
 	await plugin.storage.setSynced('zoteroLibraryRemId', rem._id);
 
-	await rem.setText(['Zotero Connector Home Page']);
-	await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
-	await rem.setPowerupProperty(powerupCodes.ZOTERO_SYNCED_LIBRARY, 'progress', ['0']);
-	await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
+        await rem.setText(['Zotero Connector Home Page']);
+        await rem.addPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
+        await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
+        await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
 
 	await rem.setIsDocument(true); // TODO: we want this to be a folder rem! https://linear.app/remnoteio/issue/ENG-25553/add-a-remsetisfolder-to-the-plugin-system
 
@@ -77,12 +77,11 @@ export async function ensureSpecificLibraryRemExists(
 		await logMessage(plugin, 'Failed to create Library Rem', LogType.Error, false);
 		return null;
 	}
-	await rem.setText([library.name || key]);
-	await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
-	await rem.setPowerupProperty(powerupCodes.ZOTERO_SYNCED_LIBRARY, 'progress', ['0']);
-	if (root) {
-		await rem.setParent(root);
-	}
+        await rem.setText([library.name || key]);
+        await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
+        if (root) {
+                await rem.setParent(root);
+        }
 	await plugin.storage.setSynced('libraryRemMap', { ...(map || {}), [key]: rem._id });
 	return rem;
 }
@@ -147,13 +146,13 @@ export async function getZoteroLibraryRem(
 		}
 		return null;
 	}
-	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode(
-		powerupCodes.ZOTERO_SYNCED_LIBRARY
-	);
-	if (!zoteroLibraryPowerUpRem) {
-		console.error('Zotero Library Power-Up not found!');
-		return null;
-	}
+        const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode(
+                powerupCodes.ZOTERO_CONNECTOR_HOME
+        );
+        if (!zoteroLibraryPowerUpRem) {
+                console.error('Zotero Library Power-Up not found!');
+                return null;
+        }
 	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem.taggedRem())[0];
 	return zoteroLibraryRem || null;
 }
