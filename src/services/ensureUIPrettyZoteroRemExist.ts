@@ -15,15 +15,21 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 		false
 	);
 
-	const zoteroLibraryRemId = await plugin.storage.getSynced('zoteroLibraryRemId');
-	if (zoteroLibraryRemId !== undefined) {
-		const doesRemExist = await plugin.rem.findOne(zoteroLibraryRemId as string);
-		if (doesRemExist !== undefined) {
-			await doesRemExist.setText(['Zotero Connector Home Page']);
-			logMessage(plugin, 'Zotero Connector Home Page already exists', LogType.Info, false);
-			return doesRemExist;
-		}
-	}
+        const zoteroLibraryRemId = await plugin.storage.getSynced('zoteroLibraryRemId');
+        if (zoteroLibraryRemId !== undefined) {
+                const doesRemExist = await plugin.rem.findOne(zoteroLibraryRemId as string);
+                if (doesRemExist !== undefined) {
+                        await doesRemExist.setText(['Zotero Connector Home Page']);
+                        if (!(await doesRemExist.hasPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME))) {
+                                await doesRemExist.addPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
+                        }
+                        if (await doesRemExist.hasPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY)) {
+                                await doesRemExist.removePowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
+                        }
+                        logMessage(plugin, 'Zotero Connector Home Page already exists', LogType.Info, false);
+                        return doesRemExist;
+                }
+        }
 	await logMessage(plugin, 'Zotero Connector Home Page Ensured', LogType.Info, false);
 
 	const rem: Rem | undefined = await plugin.rem.createRem();
@@ -36,7 +42,6 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 
         await rem.setText(['Zotero Connector Home Page']);
         await rem.addPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
-        await rem.addPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
         await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
 
 	await rem.setIsDocument(true); // TODO: we want this to be a folder rem! https://linear.app/remnoteio/issue/ENG-25553/add-a-remsetisfolder-to-the-plugin-system

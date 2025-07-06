@@ -12,6 +12,7 @@ import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
 import { registerIconCSS } from './services/iconCSS';
 import { markForceStopRequested } from './services/pluginIO';
+import { ensureZoteroLibraryRemExists } from './services/ensureUIPrettyZoteroRemExist';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
@@ -393,16 +394,16 @@ async function registerDebugCommands(plugin: RNPlugin) {
 			await zoteroSyncManager.sync();
 		},
 	});
-	await plugin.app.registerCommand({
-		name: 'Citationista Force Quit Syncing',
-		description: 'Force stop syncing with Zotero.',
-		id: 'force-stop-syncing',
-		icon: '🛑',
-		keywords: 'zotero, stop, sync',
-		action: async () => {
-			await markForceStopRequested(plugin);
-		},
-	});
+        await plugin.app.registerCommand({
+                name: 'Abort Citationista Sync',
+                description: 'Abort the current Zotero sync job.',
+                id: 'abort-sync-job',
+                icon: '🛑',
+                keywords: 'zotero, stop, sync',
+                action: async () => {
+                        await markForceStopRequested(plugin);
+                },
+        });
 	await plugin.app.registerCommand({
 		id: 'log-values',
 		name: 'citationista log values',
@@ -515,10 +516,11 @@ async function registerWidgets(plugin: RNPlugin) {
 }
 
 async function onActivate(plugin: RNPlugin) {
-	await registerSettings(plugin);
-	await registerPowerups(plugin);
-	await registerWidgets(plugin);
-	await handleLibrarySwitch(plugin);
+        await registerSettings(plugin);
+        await registerPowerups(plugin);
+        await ensureZoteroLibraryRemExists(plugin);
+        await registerWidgets(plugin);
+        await handleLibrarySwitch(plugin);
 
 	const multiInit = (await plugin.settings.getSetting('sync-multiple-libraries')) as
 		| boolean

@@ -45,6 +45,7 @@ export class ZoteroSyncManager {
                if (stop) {
                        await this.setSyncingStatus(false);
                        await this.updateProgress(0);
+                       await this.plugin.storage.setSession('syncStartTime', undefined);
                        await logMessage(this.plugin, 'Sync aborted', LogType.Info, false);
                }
                return stop;
@@ -101,6 +102,7 @@ export class ZoteroSyncManager {
                await ensureUnfiledItemsRemExists(this.plugin, key);
 
                await this.setSyncingStatus(true);
+               await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
                await this.updateProgress(0);
                if (await this.checkAbort()) return;
 
@@ -186,6 +188,7 @@ export class ZoteroSyncManager {
 
                await this.updateProgress(1);
                await this.setSyncingStatus(false);
+               await this.plugin.storage.setSession('syncStartTime', undefined);
                logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
-        }
+       }
 }

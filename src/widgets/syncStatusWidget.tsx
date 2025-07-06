@@ -4,18 +4,20 @@ import { markForceStopRequested } from '../services/pluginIO';
 import { ZoteroSyncManager } from '../sync/zoteroSyncManager';
 
 interface SyncStatus {
-	isActive: boolean;
-	progress: number;
-	lastSyncTime?: Date;
-	libraryName?: string;
+        isActive: boolean;
+        progress: number;
+        lastSyncTime?: Date;
+        libraryName?: string;
+        timeRemaining?: number;
 }
 
 function SyncStatusWidget() {
 	const plugin = usePlugin();
-	const [syncStatus, setSyncStatus] = useState<SyncStatus>({
-		isActive: false,
-		progress: 0,
-	});
+        const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+                isActive: false,
+                progress: 0,
+                timeRemaining: undefined,
+        });
 	const [isProcessing, setIsProcessing] = useState(false);
 
         // Get current Zotero library Rem
@@ -41,12 +43,20 @@ function SyncStatusWidget() {
                 try {
                         const libraryRem = await getCurrentLibraryRem();
                         if (!libraryRem) {
-                                setSyncStatus({ isActive: false, progress: 0 });
+                                setSyncStatus({ isActive: false, progress: 0, timeRemaining: undefined });
                                 return;
                         }
 
                         const progress = ((await plugin.storage.getSession('syncProgress')) as number) || 0;
                         const isActive = ((await plugin.storage.getSession('syncing')) as boolean) || false;
+                        const startTime = (await plugin.storage.getSession('syncStartTime')) as string | undefined;
+                        let timeRemaining: number | undefined = undefined;
+                        if (startTime && progress > 0 && progress < 1) {
+                                const start = new Date(startTime).getTime();
+                                const elapsed = Date.now() - start;
+                                const total = elapsed / progress;
+                                timeRemaining = Math.max(total - elapsed, 0);
+                        }
 
                         // Get library name from rem text
                         const libraryText = libraryRem.text;
@@ -61,6 +71,7 @@ function SyncStatusWidget() {
                                 progress,
                                 lastSyncTime,
                                 libraryName,
+                                timeRemaining,
                         });
                 } catch (error) {
                         console.error('Error updating sync status:', error);
@@ -154,6 +165,11 @@ function SyncStatusWidget() {
                                                 <span>{syncStatus.isActive ? 'Syncing...' : 'Ready'}</span>
                                                 <span>{Math.round(progressPercentage)}%</span>
                                         </div>
+                                        {syncStatus.isActive && syncStatus.timeRemaining !== undefined && (
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        ~{Math.ceil(syncStatus.timeRemaining / 1000)}s remaining
+                                                </p>
+                                        )}
                                         {syncStatus.lastSyncTime && (
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                         Last synced: {formatLastSync(syncStatus.lastSyncTime)}
