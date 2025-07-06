@@ -64,11 +64,12 @@ export class ZoteroSyncManager {
                try {
                        const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
                        if (multi) {
-                               const libs = await fetchLibraries(this.plugin);
-                               for (const lib of libs) {
-                                       await this.syncLibrary(lib);
-                               }
-                               return;
+                       const libs = await fetchLibraries(this.plugin);
+                       for (const lib of libs) {
+                               await this.syncLibrary(lib);
+                       }
+                       await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
+                       return;
                        }
 
                const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as
@@ -87,6 +88,7 @@ export class ZoteroSyncManager {
                if (!library) return;
 
                await this.syncLibrary(library);
+               await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
                } finally {
                        release();
                }
@@ -189,6 +191,6 @@ export class ZoteroSyncManager {
                await this.updateProgress(1);
                await this.setSyncingStatus(false);
                await this.plugin.storage.setSession('syncStartTime', undefined);
-               logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
+               await logMessage(this.plugin, 'Library sync complete', LogType.Info, false);
        }
 }

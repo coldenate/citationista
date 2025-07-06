@@ -26,6 +26,15 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
                         if (await doesRemExist.hasPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY)) {
                                 await doesRemExist.removePowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
                         }
+                        const powerRem = await plugin.powerup.getPowerupByCode(powerupCodes.ZOTERO_CONNECTOR_HOME);
+                        const tagged = powerRem ? await powerRem.taggedRem() : [];
+                        if (tagged.length > 1) {
+                                for (const extra of tagged) {
+                                        if (extra._id !== doesRemExist._id) {
+                                                await extra.removePowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
+                                        }
+                                }
+                        }
                         logMessage(plugin, 'Zotero Connector Home Page already exists', LogType.Info, false);
                         return doesRemExist;
                 }
