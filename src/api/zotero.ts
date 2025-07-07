@@ -3,11 +3,12 @@ import type { RNPlugin } from '@remnote/plugin-sdk';
 // @ts-ignore
 import createZoteroClient from 'zotero-api-client';
 import type {
-	Collection,
-	Item,
-	ZoteroCollectionResponse,
-	ZoteroItemResponse,
+        Collection,
+        Item,
+        ZoteroCollectionResponse,
+        ZoteroItemResponse,
 } from '../types/types';
+import { logMessage, LogType } from '../utils/logging';
 import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters';
 
 /**
@@ -136,16 +137,17 @@ export class ZoteroAPI {
 		libraryType?: 'user' | 'group',
 		libraryId?: string
 	): Promise<{ items: Item[]; collections: Collection[] }> {
-		const [items, collections] = await Promise.all([
-			this.fetchItems(libraryType, libraryId),
-			this.fetchCollections(libraryType, libraryId),
-		]);
-		console.log(
-			`Fetched ${items.length} items and ${collections.length} collections from Zotero.`,
-			items,
-			collections
-		);
-		return { items, collections };
+                const [items, collections] = await Promise.all([
+                        this.fetchItems(libraryType, libraryId),
+                        this.fetchCollections(libraryType, libraryId),
+                ]);
+                await logMessage(
+                        this.plugin,
+                        `Fetched ${items.length} items and ${collections.length} collections from Zotero.`,
+                        LogType.Debug,
+                        false
+                );
+                return { items, collections };
 	}
 }
 
@@ -183,12 +185,18 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
 			type: 'group' as const,
 		}));
 		return [{ id: String(userId), name: userName, type: 'user' as const }, ...groups];
-	} catch (err) {
-		console.error('Failed to fetch group libraries', err);
+        } catch (err) {
+                await logMessage(
+                        plugin,
+                        'Failed to fetch group libraries',
+                        LogType.Error,
+                        false,
+                        String(err)
+                );
 
-		await plugin.app.toast(
-			'Failed to fetch group libraries. Your browser may be blocking the request.'
-		);
-		return [{ id: String(userId), name: 'My Library', type: 'user' }];
-	}
+                await plugin.app.toast(
+                        'Failed to fetch group libraries. Your browser may be blocking the request.'
+                );
+                return [{ id: String(userId), name: 'My Library', type: 'user' }];
+        }
 }

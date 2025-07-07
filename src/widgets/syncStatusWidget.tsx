@@ -2,6 +2,7 @@ import { type Rem, renderWidget, usePlugin } from '@remnote/plugin-sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { markAbortRequested } from '../services/pluginIO';
 import { ZoteroSyncManager } from '../sync/zoteroSyncManager';
+import { logMessage, LogType } from '../utils/logging';
 
 interface SyncStatus {
 	isActive: boolean;
@@ -75,9 +76,9 @@ function SyncStatusWidget() {
 				libraryName,
 				timeRemaining,
 			});
-		} catch (error) {
-			console.error('Error updating sync status:', error);
-		}
+                } catch (error) {
+                        await logMessage(plugin, 'Error updating sync status', LogType.Error, false, String(error));
+                }
 	}, [getCurrentLibraryRem, plugin.storage]);
 
 	// Handle sync now button
@@ -92,11 +93,11 @@ function SyncStatusWidget() {
 			// Update last sync time
 			await plugin.storage.setSynced('lastSyncTime', new Date().toISOString());
 			await updateSyncStatus();
-		} catch (error) {
-			console.error('Sync failed:', error);
-			const message = error instanceof Error ? error.message : 'Unknown error';
-			await plugin.app.toast('Sync failed: ' + message);
-		} finally {
+                } catch (error) {
+                        await logMessage(plugin, 'Sync failed', LogType.Error, false, String(error));
+                        const message = error instanceof Error ? error.message : 'Unknown error';
+                        await plugin.app.toast('Sync failed: ' + message);
+                } finally {
 			setIsProcessing(false);
 		}
 	};
@@ -107,9 +108,9 @@ function SyncStatusWidget() {
 			await markAbortRequested(plugin);
 			await plugin.app.toast('Sync abort requested');
 			await updateSyncStatus();
-		} catch (error) {
-			console.error('Error aborting sync:', error);
-		}
+                } catch (error) {
+                        await logMessage(plugin, 'Error aborting sync', LogType.Error, false, String(error));
+                }
 	};
 
 	// Format last sync time
