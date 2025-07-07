@@ -4,6 +4,7 @@ import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPre
 import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
 import { generatePowerupCode } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
+import { checkAbortFlag } from '../services/pluginIO';
 
 export class TreeBuilder {
 	getNodeCache(): Map<string, RemNode> {
@@ -77,12 +78,18 @@ export class TreeBuilder {
 		);
 
 		// Populate nodeCache for collections.
-		for (const rem of collectionRems) {
-			const zoteroId = await rem.getPowerupProperty(powerupCodes.COLLECTION, 'key');
-			if (!zoteroId) {
-				console.warn('Collection Rem missing key property:', rem._id);
-				continue;
-			}
+                for (const rem of collectionRems) {
+                        if (await checkAbortFlag(this.plugin)) return;
+                        const zoteroId = await rem.getPowerupProperty(powerupCodes.COLLECTION, 'key');
+                        if (!zoteroId) {
+                                await logMessage(
+                                        this.plugin,
+                                        `Collection Rem missing key property: ${rem._id}`,
+                                        LogType.Warning,
+                                        false
+                                );
+                                continue;
+                        }
 			const parentZoteroId = await rem.getPowerupProperty(
 				powerupCodes.COLLECTION,
 				'parentCollection'
@@ -219,10 +226,11 @@ export class TreeBuilder {
 	}
 
 	// Item methods.
-	private async createItems(items: Item[]): Promise<void> {
-		for (const item of items) {
-			const itemTypeCode = generatePowerupCode(item.data.itemType);
-			const itemTypePowerup = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
+        private async createItems(items: Item[]): Promise<void> {
+                for (const item of items) {
+                        if (await checkAbortFlag(this.plugin)) return;
+                        const itemTypeCode = generatePowerupCode(item.data.itemType);
+                        const itemTypePowerup = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
 
 			if (!itemTypePowerup) {
 				logMessage(
@@ -234,20 +242,20 @@ export class TreeBuilder {
 			}
 
 			const rem = await this.plugin.rem.createRem();
-			if (!rem) {
-				console.error('Failed to create Rem for item:', item.key);
-				continue;
-			}
+                        if (!rem) {
+                                await logMessage(this.plugin, `Failed to create Rem for item: ${item.key}`, LogType.Error);
+                                continue;
+                        }
 			await rem.addPowerup(powerupCodes.ZITEM);
 			if (itemTypePowerup) {
 				await rem.addPowerup(itemTypeCode);
 			}
 			await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]);
 			const remKey = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
-			if (!remKey) {
-				console.error('Key not set for item:', item.key);
-				continue;
-			}
+                        if (!remKey) {
+                                await logMessage(this.plugin, `Key not set for item: ${item.key}`, LogType.Error);
+                                continue;
+                        }
 			item.rem = rem;
 			this.nodeCache.set(item.key, {
 				remId: rem._id,
@@ -258,9 +266,10 @@ export class TreeBuilder {
 		}
 	}
 
-	private async updateItems(items: Item[]): Promise<void> {
-		for (const item of items) {
-			const remNode = this.nodeCache.get(item.key);
+        private async updateItems(items: Item[]): Promise<void> {
+                for (const item of items) {
+                        if (await checkAbortFlag(this.plugin)) return;
+                        const remNode = this.nodeCache.get(item.key);
                         if (remNode) {
                                 const safeTitle = await this.plugin.richText.parseFromMarkdown(
                                         item.data.title ?? ''
@@ -271,21 +280,22 @@ export class TreeBuilder {
 				if (remNode.zoteroParentId !== newParentId) {
 					remNode.zoteroParentId = newParentId;
 				}
-			} else {
-				logMessage(this.plugin, `Item ${item.key} not found, creating it`, LogType.Info);
-				await this.createItems([item]);
-			}
-		}
-	}
+                        } else {
+                                await logMessage(this.plugin, `Item ${item.key} not found, creating it`, LogType.Info);
+                                await this.createItems([item]);
+                        }
+                }
+        }
 
-	private async deleteItems(items: Item[]): Promise<void> {
-		const deletionPromises: Promise<void>[] = [];
-		for (const item of items) {
-			const remNode = this.nodeCache.get(item.key);
-			if (remNode) {
-				deletionPromises.push(remNode.rem.remove());
-				this.nodeCache.delete(item.key);
-			}
+        private async deleteItems(items: Item[]): Promise<void> {
+                const deletionPromises: Promise<void>[] = [];
+                for (const item of items) {
+                        if (await checkAbortFlag(this.plugin)) return;
+                        const remNode = this.nodeCache.get(item.key);
+                        if (remNode) {
+                                deletionPromises.push(remNode.rem.remove());
+                                this.nodeCache.delete(item.key);
+                        }
 		}
 		await Promise.all(deletionPromises);
 	}
@@ -296,14 +306,20 @@ export class TreeBuilder {
 			this.libraryKey ?? undefined
 		);
 
-		const multipleCollectionsBehavior = (await this.plugin.settings.getSetting(
-			'multiple-colections-behavior'
-		)) as 'portal' | 'reference';
-		console.log('Multiple Collections Behavior:', multipleCollectionsBehavior);
-		const listOfUnfiledItems = [];
-		for (const item of items) {
-			const remNode = this.nodeCache.get(item.key);
-			if (remNode) {
+                const multipleCollectionsBehavior = (await this.plugin.settings.getSetting(
+                        'multiple-colections-behavior'
+                )) as 'portal' | 'reference';
+                await logMessage(
+                        this.plugin,
+                        `Multiple Collections Behavior: ${multipleCollectionsBehavior}`,
+                        LogType.Debug,
+                        false
+                );
+                const listOfUnfiledItems = [];
+                for (const item of items) {
+                        if (await checkAbortFlag(this.plugin)) return;
+                        const remNode = this.nodeCache.get(item.key);
+                        if (remNode) {
 				const parentNodes: RemNode[] = [];
 				// Include parentItem if available.
 				if (item.data.parentItem) {
@@ -314,15 +330,18 @@ export class TreeBuilder {
 				if (item.data.collections && item.data.collections.length > 0) {
 					for (const collectionId of item.data.collections) {
 						const collectionNode = this.nodeCache.get(collectionId);
-						if (collectionNode) {
-							parentNodes.push(collectionNode);
-						} else {
-							console.warn(
-								`Collection ${collectionId} not found for item ${item.key}`
-							);
-						}
-					}
-				}
+                                                if (collectionNode) {
+                                                        parentNodes.push(collectionNode);
+                                                } else {
+                                                        await logMessage(
+                                                                this.plugin,
+                                                                `Collection ${collectionId} not found for item ${item.key}`,
+                                                                LogType.Warning,
+                                                                false
+                                                        );
+                                                }
+                                        }
+                                }
 
 				if (parentNodes.length === 0) {
 					listOfUnfiledItems.push(item);
@@ -336,28 +355,38 @@ export class TreeBuilder {
 					const primaryParent = parentNodes[0];
 					await remNode.rem.setParent(primaryParent.rem);
 					if (multipleCollectionsBehavior === 'portal') {
-						for (let i = 1; i < parentNodes.length; i++) {
-							console.log('Adding portal to parent:', parentNodes[i].remId);
-							const additionalParent = parentNodes[i];
-							const portal = await this.plugin.rem.createPortal();
-							if (portal) {
+                                                for (let i = 1; i < parentNodes.length; i++) {
+                                                        await logMessage(
+                                                                this.plugin,
+                                                                `Adding portal to parent: ${parentNodes[i].remId}`,
+                                                                LogType.Debug,
+                                                                false
+                                                        );
+                                                        const additionalParent = parentNodes[i];
+                                                        const portal = await this.plugin.rem.createPortal();
+                                                        if (portal) {
 								portal.setParent(additionalParent.rem);
 								remNode.rem.addToPortal(portal);
 							}
 						}
 					} else if (multipleCollectionsBehavior === 'reference') {
-						for (let i = 1; i < parentNodes.length; i++) {
-							console.log('Creating reference for parent:', parentNodes[i].remId);
-							const additionalParent = parentNodes[i];
-							const emptyRem = await this.plugin.rem.createRem();
-							emptyRem?.setParent(additionalParent.rem);
-							emptyRem?.setText([{ i: 'q', _id: remNode.rem._id }]); // a workaround behavior
-						}
+                                                for (let i = 1; i < parentNodes.length; i++) {
+                                                        await logMessage(
+                                                                this.plugin,
+                                                                `Creating reference for parent: ${parentNodes[i].remId}`,
+                                                                LogType.Debug,
+                                                                false
+                                                        );
+                                                        const additionalParent = parentNodes[i];
+                                                        const emptyRem = await this.plugin.rem.createRem();
+                                                        emptyRem?.setParent(additionalParent.rem);
+                                                        emptyRem?.setText([{ i: 'q', _id: remNode.rem._id }]); // a workaround behavior
+                                                }
 					}
 					remNode.zoteroParentId = primaryParent.zoteroId;
 				}
 			}
 		}
-		console.log('Unfiled Items:', listOfUnfiledItems);
-	}
+                await logMessage(this.plugin, `Unfiled Items: ${listOfUnfiledItems.length}`, LogType.Debug, false);
+        }
 }

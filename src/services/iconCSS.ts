@@ -1,4 +1,5 @@
 import type { RNPlugin } from '@remnote/plugin-sdk';
+import { logMessage, LogType } from '../utils/logging';
 
 /**
  * Maps RemNote tag identifiers → icon basenames (no theme suffix).
@@ -130,7 +131,12 @@ function buildCSS(): string {
 /* RemNote plugin entry                                                    */
 /*───────────────────────────────────────────────────────────────────────────*/
 export async function registerIconCSS(plugin: RNPlugin): Promise<void> {
-	const css = buildCSS();
-	console.debug('[Citationista‑Icons] injecting', css.length, 'chars');
-	await plugin.app.registerCSS('citationista-icons', css);
+        const css = buildCSS();
+        await logMessage(
+                plugin,
+                `[Citationista‑Icons] injecting ${css.length} chars`,
+                LogType.Debug,
+                false
+        );
+        await plugin.app.registerCSS('citationista-icons', css);
 }

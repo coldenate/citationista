@@ -165,10 +165,10 @@ export async function getZoteroLibraryRem(
 	const zoteroLibraryPowerUpRem = await plugin.powerup.getPowerupByCode(
 		powerupCodes.ZOTERO_CONNECTOR_HOME
 	);
-	if (!zoteroLibraryPowerUpRem) {
-		console.error('Zotero Library Power-Up not found!');
-		return null;
-	}
+        if (!zoteroLibraryPowerUpRem) {
+                await logMessage(plugin, 'Zotero Library Power-Up not found!', LogType.Error, false);
+                return null;
+        }
 	const zoteroLibraryRem = (await zoteroLibraryPowerUpRem.taggedRem())[0];
 	return zoteroLibraryRem || null;
 }
@@ -191,10 +191,10 @@ export async function getUnfiledItemsRem(
 	const unfiledZoteroItemsPowerup = await plugin.powerup.getPowerupByCode(
 		powerupCodes.ZOTERO_UNFILED_ITEMS
 	);
-	if (!unfiledZoteroItemsPowerup) {
-		console.error('Unfiled Power-Up not found!');
-		return null;
-	}
+        if (!unfiledZoteroItemsPowerup) {
+                await logMessage(plugin, 'Unfiled Power-Up not found!', LogType.Error, false);
+                return null;
+        }
 	const firstUnfiledZoteroItem = (await unfiledZoteroItemsPowerup.taggedRem())[0];
 	return firstUnfiledZoteroItem || null;
 }

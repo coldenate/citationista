@@ -3,6 +3,7 @@ import type { RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import type { ChangeSet, Item, RemNode, ZoteroItemData } from '../types/types';
 import { threeWayMerge } from './threeWayMerge';
+import { logMessage, LogType } from '../utils/logging';
 
 /**
  * For each updated item in the ChangeSet, merge the local data, remote data, and the previous shadow copy.
@@ -30,12 +31,18 @@ export async function mergeUpdatedItems(
 				'fullData'
 			);
 			if (localDataStr?.[0]) {
-				try {
-					localData = JSON.parse(localDataStr[0]);
-				} catch (e) {
-					console.error(`Failed to parse local data for item ${updatedItem.key}`, e);
-					localData = {};
-				}
+                                try {
+                                        localData = JSON.parse(localDataStr[0]);
+                                } catch (e) {
+                                        await logMessage(
+                                                _plugin,
+                                                `Failed to parse local data for item ${updatedItem.key}`,
+                                                LogType.Warning,
+                                                false,
+                                                String(e)
+                                        );
+                                        localData = {};
+                                }
 			}
 			// attach rem to updatedItem for downstream steps
 			updatedItem.rem = remNode.rem;
