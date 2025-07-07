@@ -1,0 +1,40 @@
+/* syncStatusWidget.css */
+
+#sync-status-root {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+.sync-status-card {
+	background-color: #232136;
+	border-color: #393552;
+	color: #eceff4;
+	margin-bottom: 0;
+}
+
+.sync-status-divider {
+	border-color: #393552;
+	margin: 6px 0;
+}
+
+.sync-status-progress-bg {
+	background-color: #393552;
+}
+
+.sync-status-progress-bar {
+	height: 0.5rem;
+	border-radius: 9999px;
+	transition: all 0.2s;
+	background-color: var(--accent-color);
+	/* Add width as a CSS variable for dynamic updates */
+	width: var(--progress-width, 0%);
+}
+
+.sync-status-info {
+	color: #a6adc8;
+}
+
+.sync-status-library {
+	color: #c4a7e7;
+}

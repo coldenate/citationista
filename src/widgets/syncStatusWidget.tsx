@@ -1,8 +1,9 @@
+import './syncStatusWidget.css';
 import { type Rem, renderWidget, usePlugin } from '@remnote/plugin-sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { markAbortRequested } from '../services/pluginIO';
 import { ZoteroSyncManager } from '../sync/zoteroSyncManager';
-import { logMessage, LogType } from '../utils/logging';
+import { LogType, logMessage } from '../utils/logging';
 
 interface SyncStatus {
 	isActive: boolean;
@@ -21,6 +22,24 @@ function SyncStatusWidget() {
 	});
 	const [isProcessing, setIsProcessing] = useState(false);
 
+	// 1) INJECT A GLOBAL CSS RESET
+	useEffect(() => {
+		const style = document.createElement('style');
+		style.innerHTML = `
+			html, body {
+				margin: 0 !important;
+				padding: 0 !important;
+				width: 100% !important;
+				height: 100% !important;
+				overflow: hidden !important;
+			}
+		`;
+		document.head.appendChild(style);
+		return () => {
+			document.head.removeChild(style);
+		};
+	}, []);
+
 	// Get current Zotero library Rem
 	const getCurrentLibraryRem = useCallback(async (): Promise<Rem | null> => {
 		const syncedLibraryId = await plugin.storage.getSynced('syncedLibraryId');
@@ -37,7 +56,7 @@ function SyncStatusWidget() {
 		}
 
 		return null;
-	}, [plugin.storage, plugin.rem]);
+	}, [plugin]);
 
 	// Update sync status from storage
 	const updateSyncStatus = useCallback(async () => {
@@ -76,10 +95,16 @@ function SyncStatusWidget() {
 				libraryName,
 				timeRemaining,
 			});
-                } catch (error) {
-                        await logMessage(plugin, 'Error updating sync status', LogType.Error, false, String(error));
-                }
-	}, [getCurrentLibraryRem, plugin.storage]);
+		} catch (error) {
+			await logMessage(
+				plugin,
+				'Error updating sync status',
+				LogType.Error,
+				false,
+				String(error)
+			);
+		}
+	}, [getCurrentLibraryRem, plugin]);
 
 	// Handle sync now button
 	const handleSyncNow = async () => {
@@ -93,11 +118,11 @@ function SyncStatusWidget() {
 			// Update last sync time
 			await plugin.storage.setSynced('lastSyncTime', new Date().toISOString());
 			await updateSyncStatus();
-                } catch (error) {
-                        await logMessage(plugin, 'Sync failed', LogType.Error, false, String(error));
-                        const message = error instanceof Error ? error.message : 'Unknown error';
-                        await plugin.app.toast('Sync failed: ' + message);
-                } finally {
+		} catch (error) {
+			await logMessage(plugin, 'Sync failed', LogType.Error, false, String(error));
+			const message = error instanceof Error ? error.message : 'Unknown error';
+			await plugin.app.toast('Sync failed: ' + message);
+		} finally {
 			setIsProcessing(false);
 		}
 	};
@@ -108,9 +133,9 @@ function SyncStatusWidget() {
 			await markAbortRequested(plugin);
 			await plugin.app.toast('Sync abort requested');
 			await updateSyncStatus();
-                } catch (error) {
-                        await logMessage(plugin, 'Error aborting sync', LogType.Error, false, String(error));
-                }
+		} catch (error) {
+			await logMessage(plugin, 'Error aborting sync', LogType.Error, false, String(error));
+		}
 	};
 
 	// Format last sync time
@@ -142,70 +167,64 @@ function SyncStatusWidget() {
 
 	const progressPercentage = Math.min(100, Math.max(0, syncStatus.progress * 100));
 
+	// 2) USE A FULL‐BLEED WRAPPER AND BOTTOM-0
 	return (
-		<div className="fixed left-1/2 -translate-x-1/2 bottom-8 z-50 pointer-events-none">
-			<div
-				className="pointer-events-auto rounded-xl shadow-md p-4 flex items-center gap-4 border"
-				style={{
-					backgroundColor: '#232136', // Moody dark purple (no transparency)
-					borderColor: '#393552', // Slightly lighter purple for border
-					color: '#ECEFF4', // Cream white
-				}}
-			>
-				<button
-					type="button"
-					onClick={syncStatus.isActive ? handleAbortSync : handleSyncNow}
-					className={`w-12 h-12 rounded-full text-white flex items-center justify-center transition-colors ${
-						syncStatus.isActive
-							? 'bg-red-600 hover:bg-red-700'
-							: 'bg-[var(--accent-color)] hover:opacity-80'
-					}`}
-					disabled={isProcessing}
-				>
-					{syncStatus.isActive ? '⏹' : '▶'}
-				</button>
-				<div className="flex-1">
-					<div
-						className="w-full rounded-full h-2 overflow-hidden mb-2"
-						style={{ backgroundColor: '#393552' }} // Divider color
+		<div id="sync-status-root">
+			<div className="fixed inset-x-0 bottom-0 z-50 pointer-events-none flex justify-center">
+				<div className="pointer-events-auto rounded-xl shadow-md p-4 flex items-center gap-4 border sync-status-card">
+					<button
+						type="button"
+						onClick={syncStatus.isActive ? handleAbortSync : handleSyncNow}
+						disabled={isProcessing}
+						className={`w-12 h-12 rounded-full text-white flex items-center justify-center transition-colors ${
+							syncStatus.isActive
+								? 'bg-red-600 hover:bg-red-700'
+								: 'bg-[var(--accent-color)] hover:opacity-80'
+						}`}
 					>
-						<div
-							className="h-2 rounded-full transition-all"
-							style={{
-								width: `${progressPercentage}%`,
-								backgroundColor: 'var(--accent-color)',
-							}}
-						/>
+						{syncStatus.isActive ? '⏹' : '▶'}
+					</button>
+					<div className="flex-1">
+						<div className="w-full rounded-full h-2 overflow-hidden mb-2 sync-status-progress-bg">
+							<div
+								className="sync-status-progress-bar"
+								style={
+									{
+										'--progress-width': `${progressPercentage}%`,
+									} as React.CSSProperties
+								}
+							/>
+						</div>
+						<hr className="sync-status-divider" />
+						<div className="text-xs mt-1 flex justify-between sync-status-info">
+							<span>{syncStatus.isActive ? 'Syncing...' : 'Ready'}</span>
+							<span>{Math.round(progressPercentage)}%</span>
+						</div>
+						{syncStatus.isActive && syncStatus.timeRemaining !== undefined && (
+							<>
+								<hr className="sync-status-divider" />
+								<p className="text-xs mt-1 sync-status-info">
+									~{Math.ceil(syncStatus.timeRemaining / 1000)}s remaining
+								</p>
+							</>
+						)}
+						{syncStatus.lastSyncTime && (
+							<>
+								<hr className="sync-status-divider" />
+								<p className="text-xs mt-1 sync-status-info">
+									Last synced: {formatLastSync(syncStatus.lastSyncTime)}
+								</p>
+							</>
+						)}
+						{syncStatus.libraryName && (
+							<>
+								<hr className="sync-status-divider" />
+								<p className="text-xs mt-1 font-medium sync-status-library">
+									{syncStatus.libraryName}
+								</p>
+							</>
+						)}
 					</div>
-					<hr style={{ borderColor: '#393552', margin: '6px 0' }} />
-					<div className="text-xs mt-1 flex justify-between" style={{ color: '#A6ADC8' }}>
-						<span>{syncStatus.isActive ? 'Syncing...' : 'Ready'}</span>
-						<span>{Math.round(progressPercentage)}%</span>
-					</div>
-					{syncStatus.isActive && syncStatus.timeRemaining !== undefined && (
-						<>
-							<hr style={{ borderColor: '#393552', margin: '6px 0' }} />
-							<p className="text-xs mt-1" style={{ color: '#A6ADC8' }}>
-								~{Math.ceil(syncStatus.timeRemaining / 1000)}s remaining
-							</p>
-						</>
-					)}
-					{syncStatus.lastSyncTime && (
-						<>
-							<hr style={{ borderColor: '#393552', margin: '6px 0' }} />
-							<p className="text-xs mt-1" style={{ color: '#A6ADC8' }}>
-								Last synced: {formatLastSync(syncStatus.lastSyncTime)}
-							</p>
-						</>
-					)}
-					{syncStatus.libraryName && (
-						<>
-							<hr style={{ borderColor: '#393552', margin: '6px 0' }} />
-							<p className="text-xs mt-1 font-medium" style={{ color: '#C4A7E7' }}>
-								{syncStatus.libraryName}
-							</p>
-						</>
-					)}
 				</div>
 			</div>
 		</div>
