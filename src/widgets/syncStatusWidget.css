@@ -23,12 +23,11 @@
 }
 
 .sync-status-progress-bar {
-	height: 0.5rem;
-	border-radius: 9999px;
-	transition: all 0.2s;
-	background-color: var(--accent-color);
-	/* Add width as a CSS variable for dynamic updates */
-	width: var(--progress-width, 0%);
+        height: 0.5rem;
+        border-radius: 9999px;
+        transition: all 0.2s;
+        background-color: var(--accent-color);
+        width: 0;
 }
 
 .sync-status-info {
@@ -49,4 +48,5 @@
         display: flex;
         justify-content: space-between;
         color: #c4a7e7;
+        font-size: 0.75rem;
 }
