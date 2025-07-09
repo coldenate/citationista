@@ -5,21 +5,28 @@ import { markAbortRequested } from '../services/pluginIO';
 import { ZoteroSyncManager } from '../sync/zoteroSyncManager';
 import { LogType, logMessage } from '../utils/logging';
 
+interface LibraryStatus {
+        name: string;
+        progress: number;
+}
+
 interface SyncStatus {
-	isActive: boolean;
-	progress: number;
-	lastSyncTime?: Date;
-	libraryName?: string;
-	timeRemaining?: number;
+        isActive: boolean;
+        progress: number;
+        lastSyncTime?: Date;
+        libraryName?: string;
+        libraries?: LibraryStatus[];
+        timeRemaining?: number;
 }
 
 function SyncStatusWidget() {
 	const plugin = usePlugin();
-	const [syncStatus, setSyncStatus] = useState<SyncStatus>({
-		isActive: false,
-		progress: 0,
-		timeRemaining: undefined,
-	});
+        const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+                isActive: false,
+                progress: 0,
+                timeRemaining: undefined,
+                libraries: undefined,
+        });
 	const [isProcessing, setIsProcessing] = useState(false);
 
 	// 1) INJECT A GLOBAL CSS RESET
@@ -59,52 +66,77 @@ function SyncStatusWidget() {
 	}, [plugin]);
 
 	// Update sync status from storage
-	const updateSyncStatus = useCallback(async () => {
-		try {
-			const libraryRem = await getCurrentLibraryRem();
-			if (!libraryRem) {
-				setSyncStatus({ isActive: false, progress: 0, timeRemaining: undefined });
-				return;
-			}
+        const updateSyncStatus = useCallback(async () => {
+                try {
+                        const progress = ((await plugin.storage.getSession('syncProgress')) as number) || 0;
+                        const isActive = ((await plugin.storage.getSession('syncing')) as boolean) || false;
+                        const startTime = (await plugin.storage.getSession('syncStartTime')) as
+                                | string
+                                | undefined;
+                        let timeRemaining: number | undefined = undefined;
+                        if (startTime && progress > 0 && progress < 1) {
+                                const start = new Date(startTime).getTime();
+                                const elapsed = Date.now() - start;
+                                const total = elapsed / progress;
+                                timeRemaining = Math.max(total - elapsed, 0);
+                        }
 
-			const progress = ((await plugin.storage.getSession('syncProgress')) as number) || 0;
-			const isActive = ((await plugin.storage.getSession('syncing')) as boolean) || false;
-			const startTime = (await plugin.storage.getSession('syncStartTime')) as
-				| string
-				| undefined;
-			let timeRemaining: number | undefined = undefined;
-			if (startTime && progress > 0 && progress < 1) {
-				const start = new Date(startTime).getTime();
-				const elapsed = Date.now() - start;
-				const total = elapsed / progress;
-				timeRemaining = Math.max(total - elapsed, 0);
-			}
+                        const lastSyncString = await plugin.storage.getSynced('lastSyncTime');
+                        const lastSyncTime = lastSyncString ? new Date(lastSyncString as string) : undefined;
 
-			// Get library name from rem text
-			const libraryText = libraryRem.text;
-			const libraryName = (libraryText?.[0] as string) || 'Zotero Library';
+                        const multi = await plugin.settings.getSetting('sync-multiple-libraries');
+                        if (multi) {
+                                const libraryMap = (await plugin.storage.getSynced('libraryRemMap')) as
+                                        | Record<string, string>
+                                        | undefined;
+                                const progressMap = (await plugin.storage.getSession('multiLibraryProgress')) as
+                                        | Record<string, number>
+                                        | undefined;
+                                const libraries: LibraryStatus[] = [];
+                                if (libraryMap) {
+                                        for (const [key, id] of Object.entries(libraryMap)) {
+                                                const rem = await plugin.rem.findOne(id);
+                                                const textArr = await rem?.text;
+                                                const name = (textArr?.[0] as string) || key;
+                                                const p = progressMap?.[key] ?? (isActive ? 0 : 1);
+                                                libraries.push({ name, progress: p });
+                                        }
+                                }
+                                setSyncStatus({
+                                        isActive,
+                                        progress,
+                                        lastSyncTime,
+                                        libraries,
+                                        timeRemaining,
+                                });
+                                return;
+                        }
 
-			// Get last sync time from storage
-			const lastSyncString = await plugin.storage.getSynced('lastSyncTime');
-			const lastSyncTime = lastSyncString ? new Date(lastSyncString as string) : undefined;
+                        const libraryRem = await getCurrentLibraryRem();
+                        if (!libraryRem) {
+                                setSyncStatus({ isActive: false, progress: 0, timeRemaining: undefined });
+                                return;
+                        }
+                        const libraryText = libraryRem.text;
+                        const libraryName = (libraryText?.[0] as string) || 'Zotero Library';
 
-			setSyncStatus({
-				isActive,
-				progress,
-				lastSyncTime,
-				libraryName,
-				timeRemaining,
-			});
-		} catch (error) {
-			await logMessage(
-				plugin,
-				'Error updating sync status',
-				LogType.Error,
-				false,
-				String(error)
-			);
-		}
-	}, [getCurrentLibraryRem, plugin]);
+                        setSyncStatus({
+                                isActive,
+                                progress,
+                                lastSyncTime,
+                                libraryName,
+                                timeRemaining,
+                        });
+                } catch (error) {
+                        await logMessage(
+                                plugin,
+                                'Error updating sync status',
+                                LogType.Error,
+                                false,
+                                String(error)
+                        );
+                }
+        }, [getCurrentLibraryRem, plugin]);
 
 	// Handle sync now button
 	const handleSyncNow = async () => {
@@ -216,19 +248,36 @@ function SyncStatusWidget() {
 								</p>
 							</>
 						)}
-						{syncStatus.libraryName && (
-							<>
-								<hr className="sync-status-divider" />
-								<p className="text-xs mt-1 font-medium sync-status-library">
-									{syncStatus.libraryName}
-								</p>
-							</>
-						)}
-					</div>
-				</div>
-			</div>
-		</div>
-	);
+                                                {syncStatus.libraries && syncStatus.libraries.length > 0 ? (
+                                                        <>
+                                                                <hr className="sync-status-divider" />
+                                                                <ul className="text-xs mt-1 space-y-1">
+                                                                        {syncStatus.libraries.map((lib) => (
+                                                                                <li
+                                                                                        key={lib.name}
+                                                                                        className="flex justify-between sync-status-library"
+                                                                                >
+                                                                                        <span>{lib.name}</span>
+                                                                                        <span>{Math.round(lib.progress * 100)}%</span>
+                                                                                </li>
+                                                                        ))}
+                                                                </ul>
+                                                        </>
+                                                ) : (
+                                                        syncStatus.libraryName && (
+                                                                <>
+                                                                        <hr className="sync-status-divider" />
+                                                                        <p className="text-xs mt-1 font-medium sync-status-library">
+                                                                                {syncStatus.libraryName}
+                                                                        </p>
+                                                                </>
+                                                        )
+                                                )}
+                                        </div>
+                                </div>
+                        </div>
+                </div>
+        );
 }
 
 renderWidget(SyncStatusWidget);

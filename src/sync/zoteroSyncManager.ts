@@ -17,11 +17,13 @@ import { release, tryAcquire } from './syncLock';
 import { TreeBuilder } from './treeBuilder';
 
 export class ZoteroSyncManager {
-	private plugin: RNPlugin;
-	private api: ZoteroAPI;
-	private treeBuilder: TreeBuilder;
-	private changeDetector: ChangeDetector;
-	private propertyHydrator: ZoteroPropertyHydrator;
+        private plugin: RNPlugin;
+        private api: ZoteroAPI;
+        private treeBuilder: TreeBuilder;
+        private changeDetector: ChangeDetector;
+        private propertyHydrator: ZoteroPropertyHydrator;
+        private multiLibraryCount = 1;
+        private currentLibraryKey?: string;
 
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
@@ -31,9 +33,22 @@ export class ZoteroSyncManager {
 		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
 	}
 
-	private async updateProgress(value: number) {
-		await this.plugin.storage.setSession('syncProgress', value);
-	}
+        private async updateProgress(value: number) {
+                if (this.currentLibraryKey && this.multiLibraryCount > 1) {
+                        const map = (await this.plugin.storage.getSession('multiLibraryProgress')) as
+                                | Record<string, number>
+                                | undefined;
+                        const updated = { ...(map || {}), [this.currentLibraryKey]: value };
+                        await this.plugin.storage.setSession('multiLibraryProgress', updated);
+                        const total = Object.values(updated).reduce((a, b) => a + b, 0);
+                        await this.plugin.storage.setSession(
+                                'syncProgress',
+                                total / this.multiLibraryCount
+                        );
+                        return;
+                }
+                await this.plugin.storage.setSession('syncProgress', value);
+        }
 
 	private async setSyncingStatus(active: boolean) {
 		await this.plugin.storage.setSession('syncing', active);
@@ -70,16 +85,22 @@ export class ZoteroSyncManager {
 			);
 			return;
 		}
-		try {
-			const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
-			if (multi) {
-				const libs = await fetchLibraries(this.plugin);
-				for (const lib of libs) {
-					await this.syncLibrary(lib);
-				}
-				await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
-				return;
-			}
+                try {
+                        const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
+                        if (multi) {
+                                const libs = await fetchLibraries(this.plugin);
+                                this.multiLibraryCount = libs.length || 1;
+                                await this.plugin.storage.setSession('multiLibraryProgress', {});
+                                for (const lib of libs) {
+                                        this.currentLibraryKey = `${lib.type}:${lib.id}`;
+                                        await this.syncLibrary(lib);
+                                }
+                                await this.plugin.storage.setSession('multiLibraryProgress', undefined);
+                                this.currentLibraryKey = undefined;
+                                this.multiLibraryCount = 1;
+                                await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
+                                return;
+                        }
 
 			const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as
 				| string
@@ -105,6 +126,7 @@ export class ZoteroSyncManager {
 
         private async syncLibrary(library: ZoteroLibraryInfo): Promise<void> {
                 const key = `${library.type}:${library.id}`;
+                this.currentLibraryKey = key;
                 await this.plugin.storage.setSynced('syncedLibraryId', key);
 
                 await this.setSyncingStatus(true);
@@ -232,8 +254,25 @@ export class ZoteroSyncManager {
                         await logMessage(this.plugin, error as Error, LogType.Error, false);
                 } finally {
                         await this.setSyncingStatus(false);
-                        await this.updateProgress(0);
+                        if (this.multiLibraryCount === 1) {
+                                await this.updateProgress(0);
+                        }
                         await this.plugin.storage.setSession('syncStartTime', undefined);
+                        if (this.multiLibraryCount > 1) {
+                                const map = (await this.plugin.storage.getSession('multiLibraryProgress')) as
+                                        | Record<string, number>
+                                        | undefined;
+                                if (map && this.currentLibraryKey) {
+                                        map[this.currentLibraryKey] = 1;
+                                        await this.plugin.storage.setSession('multiLibraryProgress', map);
+                                        const total = Object.values(map).reduce((a, b) => a + b, 0);
+                                        await this.plugin.storage.setSession(
+                                                'syncProgress',
+                                                total / this.multiLibraryCount
+                                        );
+                                }
+                        }
+                        this.currentLibraryKey = undefined;
                 }
         }
 }
