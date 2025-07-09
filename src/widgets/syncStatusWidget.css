@@ -36,5 +36,17 @@
 }
 
 .sync-status-library {
-	color: #c4a7e7;
+        color: #c4a7e7;
+}
+
+.sync-status-library-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+}
+
+.sync-status-library-item {
+        display: flex;
+        justify-content: space-between;
+        color: #c4a7e7;
 }
