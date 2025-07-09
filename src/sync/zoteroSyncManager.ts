@@ -205,24 +205,24 @@ export class ZoteroSyncManager {
 			this.treeBuilder.setLibraryKey(key);
 			await this.updateProgress(0.2, key);
 			if (await this.checkAbort(isMulti)) return;
-                        await this.treeBuilder.initializeNodeCache();
+			await this.treeBuilder.initializeNodeCache();
 
-                        const nodeCache = this.treeBuilder.getNodeCache();
-                        const missingItems = currentData.items.filter((it) => !nodeCache.has(it.key));
-                        const missingCollections = currentData.collections.filter((c) => !nodeCache.has(c.key));
+			const nodeCache = this.treeBuilder.getNodeCache();
+			const missingItems = currentData.items.filter((it) => !nodeCache.has(it.key));
+			const missingCollections = currentData.collections.filter((c) => !nodeCache.has(c.key));
 
 			// 5. Detect changes by comparing prevData and currentData.
-                        const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
-                        for (const item of missingItems) {
-                                if (!changes.newItems.some((i) => i.key === item.key)) {
-                                        changes.newItems.push(item);
-                                }
-                        }
-                        for (const col of missingCollections) {
-                                if (!changes.newCollections.some((c) => c.key === col.key)) {
-                                        changes.newCollections.push(col);
-                                }
-                        }
+			const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
+			for (const item of missingItems) {
+				if (!changes.newItems.some((i) => i.key === item.key)) {
+					changes.newItems.push(item);
+				}
+			}
+			for (const col of missingCollections) {
+				if (!changes.newCollections.some((c) => c.key === col.key)) {
+					changes.newCollections.push(col);
+				}
+			}
 			// 6. For each updated item, merge local modifications with remote data,
 			//    using the previous sync (shadow) data as the base.
 			await mergeUpdatedItems(

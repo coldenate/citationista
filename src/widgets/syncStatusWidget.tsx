@@ -210,25 +210,34 @@ function SyncStatusWidget() {
 				}}
 			>
 				<div className="pointer-events-auto sync-status-card">
-					<div className="sync-status-btn-col">
-						<button
-							type="button"
-							onClick={handleSyncNow}
-							disabled={isProcessing || syncStatus.isActive}
-							className={`sync-action-btn${
-								isProcessing || syncStatus.isActive ? ' disabled' : ''
-							}`}
-						>
-							Sync Now
-						</button>
-						<button
-							type="button"
-							onClick={handleAbortSync}
-							disabled={!syncStatus.isActive}
-							className={`abort-action-btn${!syncStatus.isActive ? ' disabled' : ''}`}
-						>
-							Abort
-						</button>
+					<div>
+						<div className="sync-status-info-banner">
+							<span className="sync-status-info-icon">ℹ</span>
+							<span className="sync-status-info-text">
+								It is recommended to collapse all Rem in this file to make syncing
+								faster
+							</span>
+						</div>
+						<div className="sync-status-btn-col">
+							<button
+								type="button"
+								onClick={handleSyncNow}
+								disabled={isProcessing || syncStatus.isActive}
+								className={`sync-action-btn${
+									isProcessing || syncStatus.isActive ? ' disabled' : ''
+								}`}
+							>
+								Sync Now
+							</button>
+							<button
+								type="button"
+								onClick={handleAbortSync}
+								disabled={!syncStatus.isActive}
+								className={`abort-action-btn${!syncStatus.isActive ? ' disabled' : ''}`}
+							>
+								Abort
+							</button>
+						</div>
 					</div>
 					<div className="flex-1">
 						{progressPercentage > 0 && (
