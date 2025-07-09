@@ -42,24 +42,21 @@ type LogParams = Record<string, unknown> | unknown[] | string | number | boolean
  * @param params - Additional parameters to be logged.
  */
 export async function logMessage(
-        plugin: ReactRNPlugin | RNPlugin,
-        message: LogMessage,
-        type: LogType,
-        isToast: boolean = true,
-        params?: LogParams
+	plugin: ReactRNPlugin | RNPlugin,
+	message: LogMessage,
+	type: LogType,
+	isToast: boolean = true,
+	params?: LogParams
 ) {
-        const debugMode = await plugin.settings.getSetting('debug-mode');
-        const emergent =
-                type === LogType.Error ||
-                type === LogType.Fatal ||
-                type === LogType.Critical;
+	const debugMode = await plugin.settings.getSetting('debug-mode');
+	const emergent = type === LogType.Error || type === LogType.Fatal || type === LogType.Critical;
 
-        if (debugMode || emergent) {
-                const baseplateIdentifier = `${logTypeToEmoji[type].emoji}+📚`;
-                const consoleEmitType = type.toLowerCase() as 'warn' | 'info' | 'error' | 'log';
-                switch (consoleEmitType) {
-                        case 'warn':
-                                console.warn(baseplateIdentifier, message, params);
+	if (debugMode || emergent) {
+		const baseplateIdentifier = `${logTypeToEmoji[type].emoji}+📚`;
+		const consoleEmitType = type.toLowerCase() as 'warn' | 'info' | 'error' | 'log';
+		switch (consoleEmitType) {
+			case 'warn':
+				console.warn(baseplateIdentifier, message, params);
 				break;
 			case 'info':
 				console.info(baseplateIdentifier, message, params);
@@ -76,15 +73,15 @@ export async function logMessage(
 				console.log(baseplateIdentifier, message, params);
 				break;
 		}
-        }
-        if (isToast && (debugMode || emergent)) {
-                // Convert message to string for toast display
-                const toastMessage =
-                        message instanceof Error
-                                ? message.message
-                                : Array.isArray(message)
+	}
+	if (isToast && (debugMode || emergent)) {
+		// Convert message to string for toast display
+		const toastMessage =
+			message instanceof Error
+				? message.message
+				: Array.isArray(message)
 					? message.join(' ')
 					: String(message);
-                await plugin.app.toast(`${logTypeToEmoji[type].emoji} ${toastMessage}`);
-        }
+		await plugin.app.toast(`${logTypeToEmoji[type].emoji} ${toastMessage}`);
+	}
 }

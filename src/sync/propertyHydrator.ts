@@ -1,11 +1,11 @@
 // Rename summary: PropertyHydrator -> ZoteroPropertyHydrator; hydrateProperties -> hydrateItemAndCollectionProperties; addMultipleUrlSources -> addAllUrlSources
 import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
+import { checkAbortFlag } from '../services/pluginIO';
 import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
 import type { ChangeSet, ZoteroItemData } from '../types/types';
 import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
-import { checkAbortFlag } from '../services/pluginIO';
 
 export class ZoteroPropertyHydrator {
 	private plugin: RNPlugin;
@@ -38,26 +38,26 @@ export class ZoteroPropertyHydrator {
 	 * - Adds powerups and sets powerup properties.
 	 * - Sets the text and other properties for the collection.
 	 */
-       async hydrateItemAndCollectionProperties(
-               changes: ChangeSet,
-               onProgress?: () => Promise<void>
-       ): Promise<void> {
-               const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
-               const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];
-               // Hydrate properties for items
-               for (const item of itemsToHydrate) {
-                        if (await checkAbortFlag(this.plugin)) return;
-                        const rem = item.rem;
-                        if (rem) {
+	async hydrateItemAndCollectionProperties(
+		changes: ChangeSet,
+		onProgress?: () => Promise<void>
+	): Promise<void> {
+		const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
+		const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];
+		// Hydrate properties for items
+		for (const item of itemsToHydrate) {
+			if (await checkAbortFlag(this.plugin)) return;
+			const rem = item.rem;
+			if (rem) {
 				// Tag, Safety, and Hydrate item properties here
 				// For example, set custom properties or add content
 				// await rem.setCustomProperty('authors', item.data.creators);
 				const itemTypeCode = generatePowerupCode(item.data.itemType);
-                                const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
-                                if (!powerupItemType) {
-                                        await logMessage(this.plugin, 'Powerup not found!', LogType.Error);
-                                        return;
-                                }
+				const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
+				if (!powerupItemType) {
+					await logMessage(this.plugin, 'Powerup not found!', LogType.Error);
+					return;
+				}
 				await rem.addPowerup(itemTypeCode);
 
 				// Basic text for notes or annotations
@@ -134,76 +134,76 @@ export class ZoteroPropertyHydrator {
 					if (!propertyValue) continue;
 
 					const propertyType = await property.getPropertyType();
-                                        const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
-                                                itemTypeCode,
-                                                generatePowerupCode(matchingKey)
-                                        );
+					const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
+						itemTypeCode,
+						generatePowerupCode(matchingKey)
+					);
 
-                                        if (!slotCode) {
-                                                await logMessage(
-                                                        this.plugin,
-                                                        `Slot code not found for property: ${matchingKey}`,
-                                                        LogType.Error,
-                                                        false
-                                                );
-                                                continue;
-                                        }
+					if (!slotCode) {
+						await logMessage(
+							this.plugin,
+							`Slot code not found for property: ${matchingKey}`,
+							LogType.Error,
+							false
+						);
+						continue;
+					}
 
-                                        if (isTitleLikeField(matchingKey)) {
-                                                const safeTitle = await this.plugin.richText.parseFromMarkdown(
-                                                        String(propertyValue)
-                                                );
-                                                await rem.setText(safeTitle);
-                                                continue;
-                                        }
+					if (isTitleLikeField(matchingKey)) {
+						const safeTitle = await this.plugin.richText.parseFromMarkdown(
+							String(propertyValue)
+						);
+						await rem.setText(safeTitle);
+						continue;
+					}
 
-                                        if (propertyType === PropertyType.URL) {
-                                                const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
-                                                if (!linkID) {
-                                                        await logMessage(
-                                                                this.plugin,
-                                                                `Failed to create link rem for URL: ${propertyValue}`,
-                                                                LogType.Error,
-                                                                false
-                                                        );
-                                                        continue;
-                                                }
+					if (propertyType === PropertyType.URL) {
+						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
+						if (!linkID) {
+							await logMessage(
+								this.plugin,
+								`Failed to create link rem for URL: ${propertyValue}`,
+								LogType.Error,
+								false
+							);
+							continue;
+						}
 						await rem.setTagPropertyValue(
 							slotCode._id,
 							// @ts-ignore
 							this.plugin.richText.rem(linkID).richText
 						);
 						// Collect URL for adding as source
-                               urlSources.push(propertyValue);
-                       } else {
-                               await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
-                       }
-               }
+						urlSources.push(propertyValue);
+					} else {
+						await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
+					}
+				}
 
-               // Handle multiple URLs as sources
-               await this.addAllUrlSources(rem, item.data, urlSources);
-                       if (onProgress) await onProgress();
-               }
-       }
+				// Handle multiple URLs as sources
+				await this.addAllUrlSources(rem, item.data, urlSources);
+				if (onProgress) await onProgress();
+			}
+		}
 
-       // Hydrate properties for collections if needed
-       for (const collection of collectionsToHydrate) {
-               if (await checkAbortFlag(this.plugin)) return;
-               const rem = collection.rem;
-               if (rem) {
-                       // Tag, Safety, and Hydrate collection properties here
-                       await rem.addPowerup(powerupCodes.COLLECTION);
-                       await rem.setText([collection.name]);
-                       await rem.setPowerupProperty(powerupCodes.COLLECTION, 'key', [collection.key]);
-                       await rem.setPowerupProperty(powerupCodes.COLLECTION, 'version', [
-                               String(collection.version),
-                       ]);
+		// Hydrate properties for collections if needed
+		for (const collection of collectionsToHydrate) {
+			if (await checkAbortFlag(this.plugin)) return;
+			const rem = collection.rem;
+			if (rem) {
+				// Tag, Safety, and Hydrate collection properties here
+				await rem.addPowerup(powerupCodes.COLLECTION);
+				await rem.setText([collection.name]);
+				await rem.setPowerupProperty(powerupCodes.COLLECTION, 'key', [collection.key]);
+				await rem.setPowerupProperty(powerupCodes.COLLECTION, 'version', [
+					String(collection.version),
+				]);
 
-                       await rem.setPowerupProperty(powerupCodes.COLLECTION, 'name', [collection.name]);
-               }
-               if (onProgress) await onProgress();
-       }
-       }
+				await rem.setPowerupProperty(powerupCodes.COLLECTION, 'name', [collection.name]);
+			}
+			if (onProgress) await onProgress();
+		}
+	}
 
 	/**
 	 * Adds multiple URLs as sources to a Rem for RemNote Reader interoperability.
@@ -247,22 +247,22 @@ export class ZoteroPropertyHydrator {
 		}
 
 		// Add all valid URLs as sources
-                for (const url of urlsToAdd) {
-                        try {
-                                const linkID = await this.plugin.rem.createLinkRem(url, true);
-                                if (linkID) {
-                                        await rem.addSource(linkID);
-                                        // logMessage(this.plugin, `Added URL source: ${url}`, LogType.Info, false);
-                                }
-                        } catch (error) {
-                                await logMessage(
-                                        this.plugin,
-                                        `Failed to add URL source ${url}: ${String(error)}`,
-                                        LogType.Error,
-                                        false
-                                );
-                        }
-                }
+		for (const url of urlsToAdd) {
+			try {
+				const linkID = await this.plugin.rem.createLinkRem(url, true);
+				if (linkID) {
+					await rem.addSource(linkID);
+					// logMessage(this.plugin, `Added URL source: ${url}`, LogType.Info, false);
+				}
+			} catch (error) {
+				await logMessage(
+					this.plugin,
+					`Failed to add URL source ${url}: ${String(error)}`,
+					LogType.Error,
+					false
+				);
+			}
+		}
 	}
 
 	/**
