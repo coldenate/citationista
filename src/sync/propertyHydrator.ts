@@ -5,6 +5,7 @@ import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
 import type { ChangeSet, ZoteroItemData } from '../types/types';
 import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
+import { checkAbortFlag } from '../services/pluginIO';
 
 export class ZoteroPropertyHydrator {
 	private plugin: RNPlugin;
@@ -41,18 +42,19 @@ export class ZoteroPropertyHydrator {
 		const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
 		const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];
 		// Hydrate properties for items
-		for (const item of itemsToHydrate) {
-			const rem = item.rem;
-			if (rem) {
+                for (const item of itemsToHydrate) {
+                        if (await checkAbortFlag(this.plugin)) return;
+                        const rem = item.rem;
+                        if (rem) {
 				// Tag, Safety, and Hydrate item properties here
 				// For example, set custom properties or add content
 				// await rem.setCustomProperty('authors', item.data.creators);
 				const itemTypeCode = generatePowerupCode(item.data.itemType);
-				const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
-				if (!powerupItemType) {
-					console.error('Powerup not found!');
-					return;
-				}
+                                const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
+                                if (!powerupItemType) {
+                                        await logMessage(this.plugin, 'Powerup not found!', LogType.Error);
+                                        return;
+                                }
 				await rem.addPowerup(itemTypeCode);
 
 				// Basic text for notes or annotations
@@ -129,15 +131,20 @@ export class ZoteroPropertyHydrator {
 					if (!propertyValue) continue;
 
 					const propertyType = await property.getPropertyType();
-					const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
-						itemTypeCode,
-						generatePowerupCode(matchingKey)
-					);
+                                        const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
+                                                itemTypeCode,
+                                                generatePowerupCode(matchingKey)
+                                        );
 
-					if (!slotCode) {
-						console.error('Slot code not found for property:', matchingKey);
-						continue;
-					}
+                                        if (!slotCode) {
+                                                await logMessage(
+                                                        this.plugin,
+                                                        `Slot code not found for property: ${matchingKey}`,
+                                                        LogType.Error,
+                                                        false
+                                                );
+                                                continue;
+                                        }
 
                                         if (isTitleLikeField(matchingKey)) {
                                                 const safeTitle = await this.plugin.richText.parseFromMarkdown(
@@ -147,12 +154,17 @@ export class ZoteroPropertyHydrator {
                                                 continue;
                                         }
 
-					if (propertyType === PropertyType.URL) {
-						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
-						if (!linkID) {
-							console.error('Failed to create link rem for URL:', propertyValue);
-							continue;
-						}
+                                        if (propertyType === PropertyType.URL) {
+                                                const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
+                                                if (!linkID) {
+                                                        await logMessage(
+                                                                this.plugin,
+                                                                `Failed to create link rem for URL: ${propertyValue}`,
+                                                                LogType.Error,
+                                                                false
+                                                        );
+                                                        continue;
+                                                }
 						await rem.setTagPropertyValue(
 							slotCode._id,
 							// @ts-ignore
@@ -171,9 +183,10 @@ export class ZoteroPropertyHydrator {
 		}
 
 		// Hydrate properties for collections if needed
-		for (const collection of collectionsToHydrate) {
-			const rem = collection.rem;
-			if (rem) {
+                for (const collection of collectionsToHydrate) {
+                        if (await checkAbortFlag(this.plugin)) return;
+                        const rem = collection.rem;
+                        if (rem) {
 				// Tag, Safety, and Hydrate collection properties here
 				await rem.addPowerup(powerupCodes.COLLECTION);
 				await rem.setText([collection.name]);
@@ -229,18 +242,22 @@ export class ZoteroPropertyHydrator {
 		}
 
 		// Add all valid URLs as sources
-		for (const url of urlsToAdd) {
-			try {
-				const linkID = await this.plugin.rem.createLinkRem(url, true);
-				if (linkID) {
-					await rem.addSource(linkID);
-					// logMessage(this.plugin, `Added URL source: ${url}`, LogType.Info, false);
-				}
-			} catch (error) {
-				console.error(`Failed to add URL source ${url}:`, error);
-				logMessage(this.plugin, `Failed to add URL source: ${url}`, LogType.Error);
-			}
-		}
+                for (const url of urlsToAdd) {
+                        try {
+                                const linkID = await this.plugin.rem.createLinkRem(url, true);
+                                if (linkID) {
+                                        await rem.addSource(linkID);
+                                        // logMessage(this.plugin, `Added URL source: ${url}`, LogType.Info, false);
+                                }
+                        } catch (error) {
+                                await logMessage(
+                                        this.plugin,
+                                        `Failed to add URL source ${url}: ${String(error)}`,
+                                        LogType.Error,
+                                        false
+                                );
+                        }
+                }
 	}
 
 	/**

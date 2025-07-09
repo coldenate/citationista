@@ -50,12 +50,22 @@ export class ZoteroSyncManager {
 		return stop;
 	}
 
-	async sync(): Promise<void> {
-		if (!tryAcquire()) {
-			await logMessage(
-				this.plugin,
-				'Sync already running; skipping new request.',
-				LogType.Info,
+        async sync(): Promise<void> {
+                const existing = await this.plugin.storage.getSession('syncing');
+                if (existing) {
+                        await logMessage(
+                                this.plugin,
+                                'Incomplete previous sync detected. Cleaning up.',
+                                LogType.Warning,
+                                false
+                        );
+                        await this.setSyncingStatus(false);
+                }
+                if (!tryAcquire()) {
+                        await logMessage(
+                                this.plugin,
+                                'Sync already running; skipping new request.',
+                                LogType.Info,
 				false
 			);
 			return;
@@ -154,9 +164,10 @@ export class ZoteroSyncManager {
 		await this.updateProgress(0.4);
 		if (await this.checkAbort()) return;
 
-		// 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.)
-		console.log('Changes detected:', changes);
-		await this.treeBuilder.applyChanges(changes);
+                // 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.)
+                await logMessage(this.plugin, 'Applying tree changes', LogType.Debug, false);
+                await logMessage(this.plugin, JSON.stringify(changes), LogType.Debug, false);
+                await this.treeBuilder.applyChanges(changes);
 		// 8. Populate detailed properties (build fields) on each Rem.
 		const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
 		if (!isSimpleSync) {
