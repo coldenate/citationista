@@ -38,11 +38,14 @@ export class ZoteroPropertyHydrator {
 	 * - Adds powerups and sets powerup properties.
 	 * - Sets the text and other properties for the collection.
 	 */
-	async hydrateItemAndCollectionProperties(changes: ChangeSet): Promise<void> {
-		const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
-		const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];
-		// Hydrate properties for items
-                for (const item of itemsToHydrate) {
+       async hydrateItemAndCollectionProperties(
+               changes: ChangeSet,
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               const itemsToHydrate = [...changes.newItems, ...changes.updatedItems];
+               const collectionsToHydrate = [...changes.newCollections, ...changes.updatedCollections];
+               // Hydrate properties for items
+               for (const item of itemsToHydrate) {
                         if (await checkAbortFlag(this.plugin)) return;
                         const rem = item.rem;
                         if (rem) {
@@ -171,34 +174,36 @@ export class ZoteroPropertyHydrator {
 							this.plugin.richText.rem(linkID).richText
 						);
 						// Collect URL for adding as source
-						urlSources.push(propertyValue);
-					} else {
-						await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
-					}
-				}
+                               urlSources.push(propertyValue);
+                       } else {
+                               await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
+                       }
+               }
 
-				// Handle multiple URLs as sources
-				await this.addAllUrlSources(rem, item.data, urlSources);
-			}
-		}
+               // Handle multiple URLs as sources
+               await this.addAllUrlSources(rem, item.data, urlSources);
+                       if (onProgress) await onProgress();
+               }
+       }
 
-		// Hydrate properties for collections if needed
-                for (const collection of collectionsToHydrate) {
-                        if (await checkAbortFlag(this.plugin)) return;
-                        const rem = collection.rem;
-                        if (rem) {
-				// Tag, Safety, and Hydrate collection properties here
-				await rem.addPowerup(powerupCodes.COLLECTION);
-				await rem.setText([collection.name]);
-				await rem.setPowerupProperty(powerupCodes.COLLECTION, 'key', [collection.key]);
-				await rem.setPowerupProperty(powerupCodes.COLLECTION, 'version', [
-					String(collection.version),
-				]);
+       // Hydrate properties for collections if needed
+       for (const collection of collectionsToHydrate) {
+               if (await checkAbortFlag(this.plugin)) return;
+               const rem = collection.rem;
+               if (rem) {
+                       // Tag, Safety, and Hydrate collection properties here
+                       await rem.addPowerup(powerupCodes.COLLECTION);
+                       await rem.setText([collection.name]);
+                       await rem.setPowerupProperty(powerupCodes.COLLECTION, 'key', [collection.key]);
+                       await rem.setPowerupProperty(powerupCodes.COLLECTION, 'version', [
+                               String(collection.version),
+                       ]);
 
-				await rem.setPowerupProperty(powerupCodes.COLLECTION, 'name', [collection.name]);
-			}
-		}
-	}
+                       await rem.setPowerupProperty(powerupCodes.COLLECTION, 'name', [collection.name]);
+               }
+               if (onProgress) await onProgress();
+       }
+       }
 
 	/**
 	 * Adds multiple URLs as sources to a Rem for RemNote Reader interoperability.
