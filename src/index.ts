@@ -12,7 +12,7 @@ import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
 import { ensureZoteroLibraryRemExists } from './services/ensureUIPrettyZoteroRemExist';
 import { registerIconCSS } from './services/iconCSS';
-import { markAbortRequested, createRem } from './services/pluginIO';
+import { createRem, markAbortRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
@@ -518,7 +518,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 
 async function registerWidgets(plugin: RNPlugin) {
 	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
-		dimensions: { height: 300, width: 300 },
+		dimensions: { height: 300, width: 500 },
 		powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
 	});
 }

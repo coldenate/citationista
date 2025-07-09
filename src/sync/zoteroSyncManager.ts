@@ -17,18 +17,18 @@ import { release, tryAcquire } from './syncLock';
 import { TreeBuilder } from './treeBuilder';
 
 export class ZoteroSyncManager {
-        private plugin: RNPlugin;
-        private api: ZoteroAPI;
-        private treeBuilder: TreeBuilder;
-        private changeDetector: ChangeDetector;
-        private propertyHydrator: ZoteroPropertyHydrator;
-       /**
-        * Map tracking progress for each library during a multi-library sync.
-        * Each entry stores both the numeric progress (0-1) and a human readable
-        * library name so the widget can display meaningful labels before the
-        * corresponding Rems are created.
-        */
-       private multiLibraryProgress: Record<string, { progress: number; name: string }> | null = null;
+	private plugin: RNPlugin;
+	private api: ZoteroAPI;
+	private treeBuilder: TreeBuilder;
+	private changeDetector: ChangeDetector;
+	private propertyHydrator: ZoteroPropertyHydrator;
+	/**
+	 * Map tracking progress for each library during a multi-library sync.
+	 * Each entry stores both the numeric progress (0-1) and a human readable
+	 * library name so the widget can display meaningful labels before the
+	 * corresponding Rems are created.
+	 */
+	private multiLibraryProgress: Record<string, { progress: number; name: string }> | null = null;
 
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
@@ -38,100 +38,101 @@ export class ZoteroSyncManager {
 		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
 	}
 
-       private async updateProgress(value: number, libraryKey?: string) {
-               // When multi-library progress tracking is active, update the per-library
-               // progress entry and also store an aggregated overall progress value.
-               if (this.multiLibraryProgress && libraryKey) {
-                       const entry = this.multiLibraryProgress[libraryKey];
-                       const prev = entry?.progress ?? 0;
-                       // Prevent any progress regression for this library
-                       const next = value < prev ? prev : value;
-                       this.multiLibraryProgress[libraryKey] = {
-                               ...(entry || { name: libraryKey }),
-                               progress: next,
-                       };
-                       await this.plugin.storage.setSession(
-                               'multiLibraryProgress',
-                               { ...this.multiLibraryProgress }
-                       );
-                       const total = Object.values(this.multiLibraryProgress).reduce(
-                               (a, b) => a + b.progress,
-                               0
-                       );
-                       const avg = total / Object.keys(this.multiLibraryProgress).length;
-                       await this.plugin.storage.setSession('syncProgress', avg);
-                       return;
-               }
+	private async updateProgress(value: number, libraryKey?: string) {
+		// When multi-library progress tracking is active, update the per-library
+		// progress entry and also store an aggregated overall progress value.
+		if (this.multiLibraryProgress && libraryKey) {
+			const entry = this.multiLibraryProgress[libraryKey];
+			const prev = entry?.progress ?? 0;
+			// Prevent any progress regression for this library
+			const next = value < prev ? prev : value;
+			this.multiLibraryProgress[libraryKey] = {
+				...(entry || { name: libraryKey }),
+				progress: next,
+			};
+			await this.plugin.storage.setSession('multiLibraryProgress', {
+				...this.multiLibraryProgress,
+			});
+			const total = Object.values(this.multiLibraryProgress).reduce(
+				(a, b) => a + b.progress,
+				0
+			);
+			const avg = total / Object.keys(this.multiLibraryProgress).length;
+			await this.plugin.storage.setSession('syncProgress', avg);
+			return;
+		}
 
-                // Fallback for single-library syncs
-                await this.plugin.storage.setSession('syncProgress', value);
-        }
+		// Fallback for single-library syncs
+		await this.plugin.storage.setSession('syncProgress', value);
+	}
 
 	private async setSyncingStatus(active: boolean) {
 		await this.plugin.storage.setSession('syncing', active);
 	}
 
-        private async checkAbort(isMulti: boolean): Promise<boolean> {
-                const stop = await checkAbortFlag(this.plugin);
-                if (stop) {
-                        await this.setSyncingStatus(false);
-                        await this.updateProgress(0);
-                        await this.plugin.storage.setSession('syncStartTime', undefined);
-                        if (isMulti) {
-                                this.multiLibraryProgress = null;
-                                await this.plugin.storage.setSession('multiLibraryProgress', undefined);
-                        }
-                        await logMessage(this.plugin, 'Sync aborted', LogType.Info, false);
-                }
-                return stop;
-        }
+	private async checkAbort(isMulti: boolean): Promise<boolean> {
+		const stop = await checkAbortFlag(this.plugin);
+		if (stop) {
+			await this.setSyncingStatus(false);
+			await this.updateProgress(0);
+			await this.plugin.storage.setSession('syncStartTime', undefined);
+			if (isMulti) {
+				this.multiLibraryProgress = null;
+				await this.plugin.storage.setSession('multiLibraryProgress', undefined);
+			}
+			await logMessage(this.plugin, 'Sync aborted', LogType.Info, false);
+		}
+		return stop;
+	}
 
-        async sync(): Promise<void> {
-                const existing = await this.plugin.storage.getSession('syncing');
-                if (existing) {
-                        await logMessage(
-                                this.plugin,
-                                'Incomplete previous sync detected. Cleaning up.',
-                                LogType.Warning,
-                                false
-                        );
-                        await this.setSyncingStatus(false);
-                }
-                if (!tryAcquire()) {
-                        await logMessage(
-                                this.plugin,
-                                'Sync already running; skipping new request.',
-                                LogType.Info,
+	async sync(): Promise<void> {
+		const existing = await this.plugin.storage.getSession('syncing');
+		if (existing) {
+			await logMessage(
+				this.plugin,
+				'Incomplete previous sync detected. Cleaning up.',
+				LogType.Warning,
+				false
+			);
+			await this.setSyncingStatus(false);
+		}
+		if (!tryAcquire()) {
+			await logMessage(
+				this.plugin,
+				'Sync already running; skipping new request.',
+				LogType.Info,
 				false
 			);
 			return;
 		}
 		try {
-                        const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
-                       if (multi) {
-                               const libs = await fetchLibraries(this.plugin);
-                               this.multiLibraryProgress = {};
-                               for (const lib of libs) {
-                                       this.multiLibraryProgress[`${lib.type}:${lib.id}`] = {
-                                               progress: 0,
-                                               name: lib.name,
-                                       };
-                               }
-                               await this.plugin.storage.setSession('multiLibraryProgress', { ...this.multiLibraryProgress });
-                                await this.setSyncingStatus(true);
-                                await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
-                                await this.updateProgress(0);
-                                for (const lib of libs) {
-                                        await this.syncLibrary(lib, true);
-                                }
-                                await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
-                                this.multiLibraryProgress = null;
-                                await this.plugin.storage.setSession('multiLibraryProgress', undefined);
-                                await this.setSyncingStatus(false);
-                                await this.updateProgress(0);
-                                await this.plugin.storage.setSession('syncStartTime', undefined);
-                                return;
-                        }
+			const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
+			if (multi) {
+				const libs = await fetchLibraries(this.plugin);
+				this.multiLibraryProgress = {};
+				for (const lib of libs) {
+					this.multiLibraryProgress[`${lib.type}:${lib.id}`] = {
+						progress: 0,
+						name: lib.name,
+					};
+				}
+				await this.plugin.storage.setSession('multiLibraryProgress', {
+					...this.multiLibraryProgress,
+				});
+				await this.setSyncingStatus(true);
+				await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
+				await this.updateProgress(0);
+				for (const lib of libs) {
+					await this.syncLibrary(lib, true);
+				}
+				await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
+				this.multiLibraryProgress = null;
+				await this.plugin.storage.setSession('multiLibraryProgress', undefined);
+				await this.setSyncingStatus(false);
+				await this.updateProgress(0);
+				await this.plugin.storage.setSession('syncStartTime', undefined);
+				return;
+			}
 
 			const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as
 				| string
@@ -155,144 +156,143 @@ export class ZoteroSyncManager {
 		}
 	}
 
-        private async syncLibrary(library: ZoteroLibraryInfo, isMulti: boolean = false): Promise<void> {
-                const key = `${library.type}:${library.id}`;
-                await this.plugin.storage.setSynced('syncedLibraryId', key);
+	private async syncLibrary(library: ZoteroLibraryInfo, isMulti: boolean = false): Promise<void> {
+		const key = `${library.type}:${library.id}`;
+		await this.plugin.storage.setSynced('syncedLibraryId', key);
 
-                if (!isMulti) {
-                        await this.setSyncingStatus(true);
-                        await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
-                }
-                await this.updateProgress(0, key);
+		if (!isMulti) {
+			await this.setSyncingStatus(true);
+			await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
+		}
+		await this.updateProgress(0, key);
 
-                try {
-                        await ensureZoteroLibraryRemExists(this.plugin);
-                        await ensureSpecificLibraryRemExists(this.plugin, library);
-                        await ensureUnfiledItemsRemExists(this.plugin, key);
+		try {
+			await ensureZoteroLibraryRemExists(this.plugin);
+			await ensureSpecificLibraryRemExists(this.plugin, library);
+			await ensureUnfiledItemsRemExists(this.plugin, key);
 
-                        if (await this.checkAbort(isMulti)) return;
+			if (await this.checkAbort(isMulti)) return;
 
-                        await this.updateProgress(0.1, key);
-                        if (await this.checkAbort(isMulti)) return;
+			await this.updateProgress(0.1, key);
+			if (await this.checkAbort(isMulti)) return;
 
-                        // 2. Fetch current data from Zotero.
-                        const currentData = await this.api.fetchLibraryData(library.type, library.id);
+			// 2. Fetch current data from Zotero.
+			const currentData = await this.api.fetchLibraryData(library.type, library.id);
 
-                        // 3. Retrieve previous sync data (shadow copy) from storage.
-                        const dataMap = (await this.plugin.storage.getSynced('zoteroDataMap')) as
-                                | Record<
-                                                string,
-                                                {
-                                                        items?: Partial<Item>[];
-                                                        collections?: Partial<Collection>[];
-                                                }
-                                  >
-                                | undefined;
-                        const prevDataRaw = dataMap?.[key];
-                        const prevData = {
-                                items: (prevDataRaw?.items || []).map((i) => ({
-                                        rem: null,
-                                        ...i,
-                                })) as Item[],
-                                collections: (prevDataRaw?.collections || []).map((c) => ({
-                                        rem: null,
-                                        ...c,
-                                })) as Collection[],
-                        };
+			// 3. Retrieve previous sync data (shadow copy) from storage.
+			const dataMap = (await this.plugin.storage.getSynced('zoteroDataMap')) as
+				| Record<
+						string,
+						{
+							items?: Partial<Item>[];
+							collections?: Partial<Collection>[];
+						}
+				  >
+				| undefined;
+			const prevDataRaw = dataMap?.[key];
+			const prevData = {
+				items: (prevDataRaw?.items || []).map((i) => ({
+					rem: null,
+					...i,
+				})) as Item[],
+				collections: (prevDataRaw?.collections || []).map((c) => ({
+					rem: null,
+					...c,
+				})) as Collection[],
+			};
 
-                        // 4. Initialize node cache for the current Rem tree.
-                        this.treeBuilder.setLibraryKey(key);
-                        await this.updateProgress(0.2, key);
-                        if (await this.checkAbort(isMulti)) return;
-                        await this.treeBuilder.initializeNodeCache();
+			// 4. Initialize node cache for the current Rem tree.
+			this.treeBuilder.setLibraryKey(key);
+			await this.updateProgress(0.2, key);
+			if (await this.checkAbort(isMulti)) return;
+			await this.treeBuilder.initializeNodeCache();
 
-		// 5. Detect changes by comparing prevData and currentData.
-                        const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
-                        // 6. For each updated item, merge local modifications with remote data,
-                        //    using the previous sync (shadow) data as the base.
-                        await mergeUpdatedItems(
-                                this.plugin,
-                                changes,
-                                prevData.items,
-                                this.treeBuilder.getNodeCache()
-                        );
+			// 5. Detect changes by comparing prevData and currentData.
+			const changes: ChangeSet = this.changeDetector.detectChanges(prevData, currentData);
+			// 6. For each updated item, merge local modifications with remote data,
+			//    using the previous sync (shadow) data as the base.
+			await mergeUpdatedItems(
+				this.plugin,
+				changes,
+				prevData.items,
+				this.treeBuilder.getNodeCache()
+			);
 
-                        await this.updateProgress(0.4, key);
-                        if (await this.checkAbort(isMulti)) return;
+			await this.updateProgress(0.4, key);
+			if (await this.checkAbort(isMulti)) return;
 
-                // 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.)
-                        await logMessage(this.plugin, 'Applying tree changes', LogType.Debug, false);
-                        await logMessage(this.plugin, JSON.stringify(changes), LogType.Debug, false);
-                        const applyTotal =
-                                changes.newItems.length +
-                                changes.updatedItems.length +
-                                changes.deletedItems.length +
-                                changes.movedItems.length +
-                                changes.newCollections.length +
-                                changes.updatedCollections.length +
-                                changes.deletedCollections.length +
-                                changes.movedCollections.length;
-                        let applied = 0;
-                        const applyProgress = async () => {
-                                applied++;
-                                await this.updateProgress(0.4 + (applied / Math.max(applyTotal, 1)) * 0.3, key);
-                        };
-                        await this.treeBuilder.applyChanges(changes, applyProgress);
-		// 8. Populate detailed properties (build fields) on each Rem.
-                        const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
-                        const hydrateTotal =
-                                changes.newItems.length +
-                                changes.updatedItems.length +
-                                changes.newCollections.length +
-                                changes.updatedCollections.length;
-                        let hydrated = 0;
-                        const hydrateProgress = async () => {
-                                hydrated++;
-                                await this.updateProgress(0.7 + (hydrated / Math.max(hydrateTotal, 1)) * 0.2, key);
-                        };
-                        if (!isSimpleSync) {
-                                await this.propertyHydrator.hydrateItemAndCollectionProperties(
-                                        changes,
-                                        hydrateProgress
-                                );
-                        } else {
-                                await this.updateProgress(0.9, key);
-                        }
-                        if (await this.checkAbort(isMulti)) return;
+			// 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.)
+			await logMessage(this.plugin, 'Applying tree changes', LogType.Debug, false);
+			await logMessage(this.plugin, JSON.stringify(changes), LogType.Debug, false);
+			const applyTotal =
+				changes.newItems.length +
+				changes.updatedItems.length +
+				changes.deletedItems.length +
+				changes.movedItems.length +
+				changes.newCollections.length +
+				changes.updatedCollections.length +
+				changes.deletedCollections.length +
+				changes.movedCollections.length;
+			let applied = 0;
+			const applyProgress = async () => {
+				applied++;
+				await this.updateProgress(0.4 + (applied / Math.max(applyTotal, 1)) * 0.3, key);
+			};
+			await this.treeBuilder.applyChanges(changes, applyProgress);
+			// 8. Populate detailed properties (build fields) on each Rem.
+			const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
+			const hydrateTotal =
+				changes.newItems.length +
+				changes.updatedItems.length +
+				changes.newCollections.length +
+				changes.updatedCollections.length;
+			let hydrated = 0;
+			const hydrateProgress = async () => {
+				hydrated++;
+				await this.updateProgress(0.7 + (hydrated / Math.max(hydrateTotal, 1)) * 0.2, key);
+			};
+			if (!isSimpleSync) {
+				await this.propertyHydrator.hydrateItemAndCollectionProperties(
+					changes,
+					hydrateProgress
+				);
+			} else {
+				await this.updateProgress(0.9, key);
+			}
+			if (await this.checkAbort(isMulti)) return;
 
-		// 9. Save the current data as the new shadow copy for future syncs.
-                        const serializableData = {
-                                items: currentData.items.map((item) => {
-                                        const { rem: _rem, ...rest } = item;
-                                        return rest;
-                                }),
-                                collections: currentData.collections.map((collection) => {
-                                        const { rem: _rem, ...rest } = collection;
-                                        return rest;
-                                }),
-                        };
+			// 9. Save the current data as the new shadow copy for future syncs.
+			const serializableData = {
+				items: currentData.items.map((item) => {
+					const { rem: _rem, ...rest } = item;
+					return rest;
+				}),
+				collections: currentData.collections.map((collection) => {
+					const { rem: _rem, ...rest } = collection;
+					return rest;
+				}),
+			};
 
-                        const updatedMap = {
-                                ...(dataMap || {}),
-                                [key]: serializableData,
-                        };
-                        await this.plugin.storage.setSynced('zoteroDataMap', updatedMap);
+			const updatedMap = {
+				...(dataMap || {}),
+				[key]: serializableData,
+			};
+			await this.plugin.storage.setSynced('zoteroDataMap', updatedMap);
 
-                        await this.updateProgress(1, key);
-                        await this.plugin.storage.setSynced('lastSyncTime', new Date().toISOString());
-                        await logMessage(this.plugin, 'Library sync complete', LogType.Info, false);
-
-                } catch (error) {
-                        await logMessage(this.plugin, error as Error, LogType.Error, false);
-                } finally {
-                        if (!isMulti) {
-                                await this.setSyncingStatus(false);
-                                await this.updateProgress(0, key);
-                                await this.plugin.storage.setSession('syncStartTime', undefined);
-                        } else {
-                                // ensure final progress is recorded as complete
-                                await this.updateProgress(1, key);
-                        }
-                }
-        }
+			await this.updateProgress(1, key);
+			await this.plugin.storage.setSynced('lastSyncTime', new Date().toISOString());
+			await logMessage(this.plugin, 'Library sync complete', LogType.Info, false);
+		} catch (error) {
+			await logMessage(this.plugin, error as Error, LogType.Error, false);
+		} finally {
+			if (!isMulti) {
+				await this.setSyncingStatus(false);
+				await this.updateProgress(0, key);
+				await this.plugin.storage.setSession('syncStartTime', undefined);
+			} else {
+				// ensure final progress is recorded as complete
+				await this.updateProgress(1, key);
+			}
+		}
+	}
 }
