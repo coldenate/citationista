@@ -518,7 +518,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 
 async function registerWidgets(plugin: RNPlugin) {
 	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
-		dimensions: { height: 300, width: 500 },
+		dimensions: { height: 180, width: 420 },
 		powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
 	});
 }

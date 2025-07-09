@@ -16,7 +16,6 @@ interface SyncStatus {
 	lastSyncTime?: Date;
 	libraryName?: string;
 	libraries?: LibraryEntry[];
-	timeRemaining?: number;
 }
 
 function SyncStatusWidget() {
@@ -24,44 +23,10 @@ function SyncStatusWidget() {
 	const [syncStatus, setSyncStatus] = useState<SyncStatus>({
 		isActive: false,
 		progress: 0,
-		timeRemaining: undefined,
 		libraries: [],
 	});
 	const [isProcessing, setIsProcessing] = useState(false);
 
-	// 1) INJECT A GLOBAL CSS RESET
-	useEffect(() => {
-		const style = document.createElement('style');
-		style.innerHTML = `
-	  /* keep your html/body reset… */
-	  html, body {
-		margin: 0 !important;
-		padding: 0 !important;
-		width: 100% !important;
-		height: 100% !important;
-		overflow: hidden !important;
-	  }
-
-	  /* ↓ our “last in” overrides for the card itself ↓ */
-	  #sync-status-root {
-		height: auto !important;
-	  }
-	  .sync-status-card {
-		display: flex    !important;
-		width: min(90vw, 420px) !important;
-		padding: 1rem 1.75rem !important;
-		gap: 1.5rem      !important;
-		/* temporary debug outline—remove once you see it */
-		outline: 2px dashed lime !important;
-	  }
-	`;
-		document.head.appendChild(style);
-		return () => {
-			document.head.removeChild(style);
-		};
-	}, []);
-
-	// Get current Zotero library Rem
 	const getCurrentLibraryRem = useCallback(async (): Promise<Rem | null> => {
 		const syncedLibraryId = await plugin.storage.getSynced('syncedLibraryId');
 		if (!syncedLibraryId) return null;
@@ -79,7 +44,6 @@ function SyncStatusWidget() {
 		return null;
 	}, [plugin]);
 
-	// Retrieve a library name by its key using the stored Rem mapping
 	const getLibraryName = useCallback(
 		async (key: string): Promise<string> => {
 			const libraryRemMap = (await plugin.storage.getSynced('libraryRemMap')) as
@@ -98,25 +62,13 @@ function SyncStatusWidget() {
 		[plugin]
 	);
 
-	// Update sync status from storage
 	const updateSyncStatus = useCallback(async () => {
 		try {
 			const multi = await plugin.settings.getSetting('sync-multiple-libraries');
 
 			const progress = ((await plugin.storage.getSession('syncProgress')) as number) || 0;
 			const isActive = ((await plugin.storage.getSession('syncing')) as boolean) || false;
-			const startTime = (await plugin.storage.getSession('syncStartTime')) as
-				| string
-				| undefined;
-			let timeRemaining: number | undefined = undefined;
-			if (startTime && progress > 0.01 && progress < 1) {
-				const start = new Date(startTime).getTime();
-				const elapsed = Date.now() - start;
-				const total = elapsed / progress;
-				timeRemaining = Math.max(total - elapsed, 0);
-			}
 
-			// When syncing multiple libraries, collect progress for each
 			if (multi) {
 				const progressMap = (await plugin.storage.getSession('multiLibraryProgress')) as
 					| Record<string, { progress: number; name: string }>
@@ -139,18 +91,15 @@ function SyncStatusWidget() {
 					progress,
 					lastSyncTime,
 					libraries,
-					timeRemaining,
 				});
 				return;
 			}
 
-			// Single library mode
 			const libraryRem = await getCurrentLibraryRem();
 			if (!libraryRem) {
 				setSyncStatus({
 					isActive: false,
 					progress: 0,
-					timeRemaining: undefined,
 					libraries: [],
 				});
 				return;
@@ -167,8 +116,6 @@ function SyncStatusWidget() {
 				progress,
 				lastSyncTime,
 				libraryName,
-				libraries: undefined,
-				timeRemaining,
 			});
 		} catch (error) {
 			await logMessage(
@@ -181,7 +128,6 @@ function SyncStatusWidget() {
 		}
 	}, [getCurrentLibraryRem, plugin, getLibraryName]);
 
-	// Handle sync now button
 	const handleSyncNow = async () => {
 		if (isProcessing) return;
 
@@ -190,7 +136,6 @@ function SyncStatusWidget() {
 			const syncManager = new ZoteroSyncManager(plugin);
 			await syncManager.sync();
 
-			// Update last sync time
 			await plugin.storage.setSynced('lastSyncTime', new Date().toISOString());
 			await updateSyncStatus();
 		} catch (error) {
@@ -202,7 +147,6 @@ function SyncStatusWidget() {
 		}
 	};
 
-	// Handle abort sync
 	const handleAbortSync = async () => {
 		try {
 			await markAbortRequested(plugin);
@@ -213,7 +157,6 @@ function SyncStatusWidget() {
 		}
 	};
 
-	// Format last sync time
 	const formatLastSync = (date: Date): string => {
 		const now = new Date();
 		const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
@@ -231,18 +174,16 @@ function SyncStatusWidget() {
 		return `${diffInDays} days ago`;
 	};
 
-	// Set up polling for sync status updates
 	useEffect(() => {
 		updateSyncStatus();
 
-		const interval = setInterval(updateSyncStatus, 50); // Poll every 50ms
+		const interval = setInterval(updateSyncStatus, 50);
 
 		return () => clearInterval(interval);
 	}, [updateSyncStatus]);
 
 	const progressPercentage = Math.min(100, Math.max(0, syncStatus.progress * 100));
 
-	// Debug logging for progress
 	useEffect(() => {
 		console.log('Sync Status:', {
 			isActive: syncStatus.isActive,
@@ -252,14 +193,23 @@ function SyncStatusWidget() {
 		});
 	}, [syncStatus.progress, syncStatus.isActive, progressPercentage]);
 
-	// Test mode - uncomment to test progress bar visually
-	// const testProgressPercentage = 45; // Test with 45% progress
-
-	// 2) USE A FULL‐BLEED WRAPPER AND BOTTOM-0
 	return (
 		<div id="sync-status-root">
-			<div className="fixed inset-x-0 bottom-0 z-50 pointer-events-none flex justify-center">
-				<div className="pointer-events-auto rounded-xl shadow-md p-4 flex items-center gap-4 border sync-status-card">
+			<div
+				style={{
+					position: 'absolute',
+					bottom: 0,
+					left: '50%',
+					transform: 'translateX(-50%)',
+					pointerEvents: 'none',
+					width: '100%',
+					height: '100%',
+					display: 'flex',
+					justifyContent: 'center',
+					alignItems: 'flex-end',
+				}}
+			>
+				<div className="pointer-events-auto sync-status-card">
 					<div className="sync-status-btn-col">
 						<button
 							type="button"
@@ -295,14 +245,6 @@ function SyncStatusWidget() {
 							<span>{syncStatus.isActive ? 'Syncing...' : 'Ready'}</span>
 							<span>{Math.round(progressPercentage)}%</span>
 						</div>
-						{syncStatus.isActive && syncStatus.timeRemaining !== undefined && (
-							<>
-								<hr className="sync-status-divider" />
-								<p className="text-xs mt-1 sync-status-info">
-									~{Math.ceil(syncStatus.timeRemaining / 1000)}s remaining
-								</p>
-							</>
-						)}
 						{syncStatus.lastSyncTime && (
 							<>
 								<hr className="sync-status-divider" />
