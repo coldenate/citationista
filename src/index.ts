@@ -12,7 +12,7 @@ import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
 import { ensureZoteroLibraryRemExists } from './services/ensureUIPrettyZoteroRemExist';
 import { registerIconCSS } from './services/iconCSS';
-import { markAbortRequested } from './services/pluginIO';
+import { markAbortRequested, createRem } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
@@ -293,17 +293,17 @@ async function registerPowerups(plugin: RNPlugin) {
 	for (const powerup of freshZItemPowerups) {
 		try {
 			await plugin.app.registerPowerup(powerup);
-                } catch (error) {
-                        await logMessage(
-                                plugin,
-                                `Error registering powerup: ${powerup.name}`,
-                                LogType.Error,
-                                false,
-                                String(error)
-                        );
-                        await plugin.app.toast(`Error registering powerup: ${powerup.name}`);
-                        return;
-                }
+		} catch (error) {
+			await logMessage(
+				plugin,
+				`Error registering powerup: ${powerup.name}`,
+				LogType.Error,
+				false,
+				String(error)
+			);
+			await plugin.app.toast(`Error registering powerup: ${powerup.name}`);
+			return;
+		}
 		const powerUpRem = await plugin.powerup.getPowerupByCode(powerup.code);
 		if (powerUpRem) {
 			await powerUpRem.addTag(zItemID);
@@ -433,7 +433,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 		quickCode: 'tmrtwzp',
 		action: async () => {
 			const currentRem = await plugin.focus.getFocusedRem();
-			const rem = await plugin.rem.createRem();
+			const rem = await createRem(plugin);
 			if (currentRem) {
 				rem?.setParent(currentRem);
 			}
@@ -498,11 +498,11 @@ async function registerDebugCommands(plugin: RNPlugin) {
 		quickCode: 'lrc',
 		action: async () => {
 			const focusedRem = await plugin.focus.getFocusedRem();
-                        if (focusedRem) {
-                                await logMessage(plugin, focusedRem.text ?? '', LogType.Debug, false);
-                        }
-                },
-        });
+			if (focusedRem) {
+				await logMessage(plugin, focusedRem.text ?? '', LogType.Debug, false);
+			}
+		},
+	});
 	// command to reregister icon CSS
 	await plugin.app.registerCommand({
 		id: 'register-icon-css',
@@ -528,17 +528,17 @@ async function onActivate(plugin: RNPlugin) {
 	await registerPowerups(plugin);
 	const homePage = await ensureZoteroLibraryRemExists(plugin);
 	if (homePage) {
-                try {
-                        await plugin.window.openRem(homePage);
-                } catch (err) {
-                        await logMessage(
-                                plugin,
-                                'Failed to open Zotero home page',
-                                LogType.Error,
-                                false,
-                                String(err)
-                        );
-                }
+		try {
+			await plugin.window.openRem(homePage);
+		} catch (err) {
+			await logMessage(
+				plugin,
+				'Failed to open Zotero home page',
+				LogType.Error,
+				false,
+				String(err)
+			);
+		}
 	}
 	await registerWidgets(plugin);
 	await handleLibrarySwitch(plugin);
