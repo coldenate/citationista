@@ -1,4 +1,4 @@
-import type { RNPlugin, Rem } from '@remnote/plugin-sdk';
+import type { Rem, RNPlugin } from '@remnote/plugin-sdk';
 import { LogType, logMessage } from '../utils/logging';
 import { ensureUnfiledItemsRemExists, getUnfiledItemsRem } from './ensureUIPrettyZoteroRemExist';
 

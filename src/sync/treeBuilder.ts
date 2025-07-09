@@ -1,10 +1,10 @@
 import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
+import { checkAbortFlag, createRem } from '../services/pluginIO';
 import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
 import { generatePowerupCode } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
-import { checkAbortFlag, createRem } from '../services/pluginIO';
 
 export class TreeBuilder {
 	getNodeCache(): Map<string, RemNode> {
@@ -55,6 +55,7 @@ export class TreeBuilder {
 	 * @returns {Promise<void>} A promise that resolves when the node cache has been initialized.
 	 */
 	async initializeNodeCache(): Promise<void> {
+		this.nodeCache.clear();
 		logMessage(this.plugin, 'Initializing Node Cache', LogType.Info, false);
 
 		const collectionPowerup = await this.plugin.powerup.getPowerupByCode(
