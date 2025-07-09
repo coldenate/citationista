@@ -127,108 +127,139 @@ export class TreeBuilder {
 		);
 	}
 
-	async applyChanges(changes: ChangeSet): Promise<void> {
-		await this.handleCollections(changes);
-		await this.handleItems(changes);
-	}
+       async applyChanges(
+               changes: ChangeSet,
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               await this.handleCollections(changes, onProgress);
+               await this.handleItems(changes, onProgress);
+       }
 
-	private async handleCollections(changes: ChangeSet): Promise<void> {
-		await this.createCollections(changes.newCollections);
-		await this.updateCollections(changes.updatedCollections);
-		await this.deleteCollections(changes.deletedCollections);
-		await this.moveCollections([
-			...changes.newCollections,
-			...changes.movedCollections,
-			...changes.updatedCollections,
-		]);
-	}
+       private async handleCollections(
+               changes: ChangeSet,
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               await this.createCollections(changes.newCollections, onProgress);
+               await this.updateCollections(changes.updatedCollections, onProgress);
+               await this.deleteCollections(changes.deletedCollections, onProgress);
+               await this.moveCollections([
+                       ...changes.newCollections,
+                       ...changes.movedCollections,
+                       ...changes.updatedCollections,
+               ], onProgress);
+       }
 
-	private async handleItems(changes: ChangeSet): Promise<void> {
-		await this.createItems(changes.newItems);
-		await this.updateItems(changes.updatedItems);
-		await this.deleteItems(changes.deletedItems);
-		await this.moveItems([...changes.newItems, ...changes.movedItems, ...changes.updatedItems]);
-	}
+       private async handleItems(
+               changes: ChangeSet,
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               await this.createItems(changes.newItems, onProgress);
+               await this.updateItems(changes.updatedItems, onProgress);
+               await this.deleteItems(changes.deletedItems, onProgress);
+               await this.moveItems(
+                       [...changes.newItems, ...changes.movedItems, ...changes.updatedItems],
+                       onProgress
+               );
+       }
 
 	// Collection methods.
-	private async createCollections(collections: Collection[]): Promise<void> {
-		for (const collection of collections) {
-			const rem = await createRem(this.plugin, this.libraryKey ?? undefined);
-			if (!rem) continue;
-			await rem.addPowerup(powerupCodes.COLLECTION);
-			await rem.setPowerupProperty(powerupCodes.COLLECTION, 'key', [collection.key]);
-			collection.rem = rem;
-			this.nodeCache.set(collection.key, {
-				remId: rem._id,
-				zoteroId: collection.key,
-				zoteroParentId: collection.parentCollection || null,
-				rem,
-			});
-		}
-	}
+       private async createCollections(
+               collections: Collection[],
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               for (const collection of collections) {
+                       const rem = await createRem(this.plugin, this.libraryKey ?? undefined);
+                       if (!rem) continue;
+                       await rem.addPowerup(powerupCodes.COLLECTION);
+                       await rem.setPowerupProperty(powerupCodes.COLLECTION, 'key', [collection.key]);
+                       collection.rem = rem;
+                       this.nodeCache.set(collection.key, {
+                               remId: rem._id,
+                               zoteroId: collection.key,
+                               zoteroParentId: collection.parentCollection || null,
+                               rem,
+                       });
+                       if (onProgress) await onProgress();
+               }
+       }
 
-	private async updateCollections(collections: Collection[]): Promise<void> {
-		for (const collection of collections) {
-			const remNode = this.nodeCache.get(collection.key);
-			if (remNode) {
-				await remNode.rem.setText([collection.name]);
-				collection.rem = remNode.rem;
-				const newParentId = collection.parentCollection || null;
-				if (remNode.zoteroParentId !== newParentId) {
-					remNode.zoteroParentId = newParentId;
-				}
-			} else {
-				logMessage(
-					this.plugin,
-					`Collection ${collection.key} not found, creating it`,
-					LogType.Info
-				);
-				await this.createCollections([collection]);
-			}
-		}
-	}
+       private async updateCollections(
+               collections: Collection[],
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               for (const collection of collections) {
+                       const remNode = this.nodeCache.get(collection.key);
+                       if (remNode) {
+                               await remNode.rem.setText([collection.name]);
+                               collection.rem = remNode.rem;
+                               const newParentId = collection.parentCollection || null;
+                               if (remNode.zoteroParentId !== newParentId) {
+                                       remNode.zoteroParentId = newParentId;
+                               }
+                       } else {
+                               logMessage(
+                                       this.plugin,
+                                       `Collection ${collection.key} not found, creating it`,
+                                       LogType.Info
+                               );
+                               await this.createCollections([collection]);
+                       }
+                       if (onProgress) await onProgress();
+               }
+       }
 
-	private async deleteCollections(collections: Collection[]): Promise<void> {
-		const deletionPromises: Promise<void>[] = [];
-		for (const collection of collections) {
-			const remNode = this.nodeCache.get(collection.key);
-			if (remNode) {
-				deletionPromises.push(remNode.rem.remove());
-				this.nodeCache.delete(collection.key);
-			}
-		}
-		await Promise.all(deletionPromises);
-	}
+       private async deleteCollections(
+               collections: Collection[],
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               const deletionPromises: Promise<void>[] = [];
+               for (const collection of collections) {
+                       const remNode = this.nodeCache.get(collection.key);
+                       if (remNode) {
+                               deletionPromises.push(remNode.rem.remove());
+                               this.nodeCache.delete(collection.key);
+                               if (onProgress) await onProgress();
+                       }
+               }
+               await Promise.all(deletionPromises);
+       }
 
-	private async moveCollections(collections: Collection[]): Promise<void> {
-		for (const collection of collections) {
-			const remNode = this.nodeCache.get(collection.key);
-			if (remNode) {
-				const newParentId = collection.parentCollection || null;
-				const parentNode = newParentId ? this.nodeCache.get(newParentId) : null;
-				if (parentNode) {
-					await remNode.rem.setParent(parentNode.rem);
-				} else {
-					// Fallback: assign to the Zotero Library Rem.
+       private async moveCollections(
+               collections: Collection[],
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               for (const collection of collections) {
+                       const remNode = this.nodeCache.get(collection.key);
+                       if (remNode) {
+                               const newParentId = collection.parentCollection || null;
+                               const parentNode = newParentId ? this.nodeCache.get(newParentId) : null;
+                               if (parentNode) {
+                                       await remNode.rem.setParent(parentNode.rem);
+                               } else {
+                                       // Fallback: assign to the Zotero Library Rem.
 
 					const zoteroLibraryRem = await getZoteroLibraryRem(
 						this.plugin,
 						this.libraryKey ?? undefined
 					);
 
-					if (zoteroLibraryRem) {
-						await remNode.rem.setParent(zoteroLibraryRem);
-					}
-				}
-				remNode.zoteroParentId = newParentId;
-			}
-		}
-	}
+                                       if (zoteroLibraryRem) {
+                                               await remNode.rem.setParent(zoteroLibraryRem);
+                                       }
+                               }
+                               remNode.zoteroParentId = newParentId;
+                               if (onProgress) await onProgress();
+                       }
+               }
+       }
 
 	// Item methods.
-	private async createItems(items: Item[]): Promise<void> {
-		for (const item of items) {
-			if (await checkAbortFlag(this.plugin)) return;
+       private async createItems(
+               items: Item[],
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               for (const item of items) {
+                       if (await checkAbortFlag(this.plugin)) return;
 			const itemTypeCode = generatePowerupCode(item.data.itemType);
 			const itemTypePowerup = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
 
@@ -261,18 +292,22 @@ export class TreeBuilder {
 				continue;
 			}
 			item.rem = rem;
-			this.nodeCache.set(item.key, {
-				remId: rem._id,
-				zoteroId: item.key,
-				zoteroParentId: item.data.parentItem || item.data.collections?.[0] || null,
-				rem,
-			});
-		}
-	}
+                       this.nodeCache.set(item.key, {
+                               remId: rem._id,
+                               zoteroId: item.key,
+                               zoteroParentId: item.data.parentItem || item.data.collections?.[0] || null,
+                               rem,
+                       });
+                       if (onProgress) await onProgress();
+               }
+       }
 
-	private async updateItems(items: Item[]): Promise<void> {
-		for (const item of items) {
-			if (await checkAbortFlag(this.plugin)) return;
+       private async updateItems(
+               items: Item[],
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               for (const item of items) {
+                       if (await checkAbortFlag(this.plugin)) return;
 			const remNode = this.nodeCache.get(item.key);
 			if (remNode) {
 				const safeTitle = await this.plugin.richText.parseFromMarkdown(
@@ -290,29 +325,37 @@ export class TreeBuilder {
 					`Item ${item.key} not found, creating it`,
 					LogType.Info
 				);
-				await this.createItems([item]);
-			}
-		}
-	}
+                               await this.createItems([item]);
+                       }
+                       if (onProgress) await onProgress();
+               }
+       }
 
-	private async deleteItems(items: Item[]): Promise<void> {
-		const deletionPromises: Promise<void>[] = [];
-		for (const item of items) {
-			if (await checkAbortFlag(this.plugin)) return;
-			const remNode = this.nodeCache.get(item.key);
-			if (remNode) {
-				deletionPromises.push(remNode.rem.remove());
-				this.nodeCache.delete(item.key);
-			}
-		}
-		await Promise.all(deletionPromises);
-	}
+       private async deleteItems(
+               items: Item[],
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               const deletionPromises: Promise<void>[] = [];
+               for (const item of items) {
+                       if (await checkAbortFlag(this.plugin)) return;
+                       const remNode = this.nodeCache.get(item.key);
+                       if (remNode) {
+                               deletionPromises.push(remNode.rem.remove());
+                               this.nodeCache.delete(item.key);
+                               if (onProgress) await onProgress();
+                       }
+               }
+               await Promise.all(deletionPromises);
+       }
 
-	private async moveItems(items: Item[]): Promise<void> {
-		const unfiledZoteroItemsRem = await getUnfiledItemsRem(
-			this.plugin,
-			this.libraryKey ?? undefined
-		);
+       private async moveItems(
+               items: Item[],
+               onProgress?: () => Promise<void>
+       ): Promise<void> {
+               const unfiledZoteroItemsRem = await getUnfiledItemsRem(
+                       this.plugin,
+                       this.libraryKey ?? undefined
+               );
 
 		const multipleCollectionsBehavior = (await this.plugin.settings.getSetting(
 			'multiple-colections-behavior'
@@ -394,14 +437,15 @@ export class TreeBuilder {
 							emptyRem?.setText([{ i: 'q', _id: remNode.rem._id }]); // a workaround behavior
 						}
 					}
-					remNode.zoteroParentId = primaryParent.zoteroId;
-				}
-			}
-		}
-		await logMessage(
-			this.plugin,
-			`Unfiled Items: ${listOfUnfiledItems.length}`,
-			LogType.Debug,
+                                        remNode.zoteroParentId = primaryParent.zoteroId;
+                                }
+                        }
+                        if (remNode && onProgress) await onProgress();
+                }
+                await logMessage(
+                        this.plugin,
+                        `Unfiled Items: ${listOfUnfiledItems.length}`,
+                        LogType.Debug,
 			false
 		);
 	}
