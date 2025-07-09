@@ -22,8 +22,13 @@ export class ZoteroSyncManager {
         private treeBuilder: TreeBuilder;
         private changeDetector: ChangeDetector;
         private propertyHydrator: ZoteroPropertyHydrator;
-        /** Map tracking progress for each library during a multi-library sync */
-        private multiLibraryProgress: Record<string, number> | null = null;
+       /**
+        * Map tracking progress for each library during a multi-library sync.
+        * Each entry stores both the numeric progress (0-1) and a human readable
+        * library name so the widget can display meaningful labels before the
+        * corresponding Rems are created.
+        */
+       private multiLibraryProgress: Record<string, { progress: number; name: string }> | null = null;
 
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
@@ -33,26 +38,30 @@ export class ZoteroSyncManager {
 		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
 	}
 
-        private async updateProgress(value: number, libraryKey?: string) {
-                // When multi-library progress tracking is active, update the
-                // per-library progress map and derive an aggregated progress
-                if (this.multiLibraryProgress && libraryKey) {
-                        const prev = this.multiLibraryProgress[libraryKey] ?? 0;
-                        // Ensure progress never moves backwards
-                        const next = value < prev ? prev : value;
-                        this.multiLibraryProgress[libraryKey] = next;
-                        await this.plugin.storage.setSession(
-                                'multiLibraryProgress',
-                                { ...this.multiLibraryProgress }
-                        );
-                        const total = Object.values(this.multiLibraryProgress).reduce(
-                                (a, b) => a + b,
-                                0
-                        );
-                        const avg = total / Object.keys(this.multiLibraryProgress).length;
-                        await this.plugin.storage.setSession('syncProgress', avg);
-                        return;
-                }
+       private async updateProgress(value: number, libraryKey?: string) {
+               // When multi-library progress tracking is active, update the per-library
+               // progress entry and also store an aggregated overall progress value.
+               if (this.multiLibraryProgress && libraryKey) {
+                       const entry = this.multiLibraryProgress[libraryKey];
+                       const prev = entry?.progress ?? 0;
+                       // Prevent any progress regression for this library
+                       const next = value < prev ? prev : value;
+                       this.multiLibraryProgress[libraryKey] = {
+                               ...(entry || { name: libraryKey }),
+                               progress: next,
+                       };
+                       await this.plugin.storage.setSession(
+                               'multiLibraryProgress',
+                               { ...this.multiLibraryProgress }
+                       );
+                       const total = Object.values(this.multiLibraryProgress).reduce(
+                               (a, b) => a + b.progress,
+                               0
+                       );
+                       const avg = total / Object.keys(this.multiLibraryProgress).length;
+                       await this.plugin.storage.setSession('syncProgress', avg);
+                       return;
+               }
 
                 // Fallback for single-library syncs
                 await this.plugin.storage.setSession('syncProgress', value);
@@ -99,13 +108,16 @@ export class ZoteroSyncManager {
 		}
 		try {
                         const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
-                        if (multi) {
-                                const libs = await fetchLibraries(this.plugin);
-                                this.multiLibraryProgress = {};
-                                for (const lib of libs) {
-                                        this.multiLibraryProgress[`${lib.type}:${lib.id}`] = 0;
-                                }
-                                await this.plugin.storage.setSession('multiLibraryProgress', { ...this.multiLibraryProgress });
+                       if (multi) {
+                               const libs = await fetchLibraries(this.plugin);
+                               this.multiLibraryProgress = {};
+                               for (const lib of libs) {
+                                       this.multiLibraryProgress[`${lib.type}:${lib.id}`] = {
+                                               progress: 0,
+                                               name: lib.name,
+                                       };
+                               }
+                               await this.plugin.storage.setSession('multiLibraryProgress', { ...this.multiLibraryProgress });
                                 await this.setSyncingStatus(true);
                                 await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
                                 await this.updateProgress(0);

@@ -93,7 +93,7 @@ function SyncStatusWidget() {
                         const isActive = ((await plugin.storage.getSession('syncing')) as boolean) || false;
                         const startTime = (await plugin.storage.getSession('syncStartTime')) as string | undefined;
                         let timeRemaining: number | undefined = undefined;
-                        if (startTime && progress > 0 && progress < 1) {
+                        if (startTime && progress > 0.01 && progress < 1) {
                                 const start = new Date(startTime).getTime();
                                 const elapsed = Date.now() - start;
                                 const total = elapsed / progress;
@@ -103,13 +103,13 @@ function SyncStatusWidget() {
                         // When syncing multiple libraries, collect progress for each
                         if (multi) {
                                 const progressMap = (await plugin.storage.getSession('multiLibraryProgress')) as
-                                        | Record<string, number>
+                                        | Record<string, { progress: number; name: string }>
                                         | undefined;
                                 const libraries: LibraryEntry[] = [];
                                 if (progressMap) {
                                         for (const [key, val] of Object.entries(progressMap)) {
-                                                const name = await getLibraryName(key);
-                                                libraries.push({ name, progress: val });
+                                                const name = val.name || (await getLibraryName(key));
+                                                libraries.push({ name, progress: val.progress });
                                         }
                                 }
 
