@@ -160,7 +160,7 @@ function SyncStatusWidget() {
 	useEffect(() => {
 		updateSyncStatus();
 
-		const interval = setInterval(updateSyncStatus, 2000); // Update every 2 seconds
+		const interval = setInterval(updateSyncStatus, 50); // Poll every 50ms
 
 		return () => clearInterval(interval);
 	}, [updateSyncStatus]);
