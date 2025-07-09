@@ -17,11 +17,13 @@ import { release, tryAcquire } from './syncLock';
 import { TreeBuilder } from './treeBuilder';
 
 export class ZoteroSyncManager {
-	private plugin: RNPlugin;
-	private api: ZoteroAPI;
-	private treeBuilder: TreeBuilder;
-	private changeDetector: ChangeDetector;
-	private propertyHydrator: ZoteroPropertyHydrator;
+        private plugin: RNPlugin;
+        private api: ZoteroAPI;
+        private treeBuilder: TreeBuilder;
+        private changeDetector: ChangeDetector;
+        private propertyHydrator: ZoteroPropertyHydrator;
+        /** Map tracking progress for each library during a multi-library sync */
+        private multiLibraryProgress: Record<string, number> | null = null;
 
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
@@ -31,24 +33,49 @@ export class ZoteroSyncManager {
 		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
 	}
 
-	private async updateProgress(value: number) {
-		await this.plugin.storage.setSession('syncProgress', value);
-	}
+        private async updateProgress(value: number, libraryKey?: string) {
+                // When multi-library progress tracking is active, update the
+                // per-library progress map and derive an aggregated progress
+                if (this.multiLibraryProgress && libraryKey) {
+                        const prev = this.multiLibraryProgress[libraryKey] ?? 0;
+                        // Ensure progress never moves backwards
+                        const next = value < prev ? prev : value;
+                        this.multiLibraryProgress[libraryKey] = next;
+                        await this.plugin.storage.setSession(
+                                'multiLibraryProgress',
+                                { ...this.multiLibraryProgress }
+                        );
+                        const total = Object.values(this.multiLibraryProgress).reduce(
+                                (a, b) => a + b,
+                                0
+                        );
+                        const avg = total / Object.keys(this.multiLibraryProgress).length;
+                        await this.plugin.storage.setSession('syncProgress', avg);
+                        return;
+                }
+
+                // Fallback for single-library syncs
+                await this.plugin.storage.setSession('syncProgress', value);
+        }
 
 	private async setSyncingStatus(active: boolean) {
 		await this.plugin.storage.setSession('syncing', active);
 	}
 
-	private async checkAbort(): Promise<boolean> {
-		const stop = await checkAbortFlag(this.plugin);
-		if (stop) {
-			await this.setSyncingStatus(false);
-			await this.updateProgress(0);
-			await this.plugin.storage.setSession('syncStartTime', undefined);
-			await logMessage(this.plugin, 'Sync aborted', LogType.Info, false);
-		}
-		return stop;
-	}
+        private async checkAbort(isMulti: boolean): Promise<boolean> {
+                const stop = await checkAbortFlag(this.plugin);
+                if (stop) {
+                        await this.setSyncingStatus(false);
+                        await this.updateProgress(0);
+                        await this.plugin.storage.setSession('syncStartTime', undefined);
+                        if (isMulti) {
+                                this.multiLibraryProgress = null;
+                                await this.plugin.storage.setSession('multiLibraryProgress', undefined);
+                        }
+                        await logMessage(this.plugin, 'Sync aborted', LogType.Info, false);
+                }
+                return stop;
+        }
 
         async sync(): Promise<void> {
                 const existing = await this.plugin.storage.getSession('syncing');
@@ -71,15 +98,28 @@ export class ZoteroSyncManager {
 			return;
 		}
 		try {
-			const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
-			if (multi) {
-				const libs = await fetchLibraries(this.plugin);
-				for (const lib of libs) {
-					await this.syncLibrary(lib);
-				}
-				await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
-				return;
-			}
+                        const multi = await this.plugin.settings.getSetting('sync-multiple-libraries');
+                        if (multi) {
+                                const libs = await fetchLibraries(this.plugin);
+                                this.multiLibraryProgress = {};
+                                for (const lib of libs) {
+                                        this.multiLibraryProgress[`${lib.type}:${lib.id}`] = 0;
+                                }
+                                await this.plugin.storage.setSession('multiLibraryProgress', { ...this.multiLibraryProgress });
+                                await this.setSyncingStatus(true);
+                                await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
+                                await this.updateProgress(0);
+                                for (const lib of libs) {
+                                        await this.syncLibrary(lib, true);
+                                }
+                                await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
+                                this.multiLibraryProgress = null;
+                                await this.plugin.storage.setSession('multiLibraryProgress', undefined);
+                                await this.setSyncingStatus(false);
+                                await this.updateProgress(0);
+                                await this.plugin.storage.setSession('syncStartTime', undefined);
+                                return;
+                        }
 
 			const selected = (await this.plugin.settings.getSetting('zotero-library-id')) as
 				| string
@@ -103,23 +143,25 @@ export class ZoteroSyncManager {
 		}
 	}
 
-        private async syncLibrary(library: ZoteroLibraryInfo): Promise<void> {
+        private async syncLibrary(library: ZoteroLibraryInfo, isMulti: boolean = false): Promise<void> {
                 const key = `${library.type}:${library.id}`;
                 await this.plugin.storage.setSynced('syncedLibraryId', key);
 
-                await this.setSyncingStatus(true);
-                await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
-                await this.updateProgress(0);
+                if (!isMulti) {
+                        await this.setSyncingStatus(true);
+                        await this.plugin.storage.setSession('syncStartTime', new Date().toISOString());
+                }
+                await this.updateProgress(0, key);
 
                 try {
                         await ensureZoteroLibraryRemExists(this.plugin);
                         await ensureSpecificLibraryRemExists(this.plugin, library);
                         await ensureUnfiledItemsRemExists(this.plugin, key);
 
-                        if (await this.checkAbort()) return;
+                        if (await this.checkAbort(isMulti)) return;
 
-                        await this.updateProgress(0.1);
-                        if (await this.checkAbort()) return;
+                        await this.updateProgress(0.1, key);
+                        if (await this.checkAbort(isMulti)) return;
 
                         // 2. Fetch current data from Zotero.
                         const currentData = await this.api.fetchLibraryData(library.type, library.id);
@@ -148,8 +190,8 @@ export class ZoteroSyncManager {
 
                         // 4. Initialize node cache for the current Rem tree.
                         this.treeBuilder.setLibraryKey(key);
-                        await this.updateProgress(0.2);
-                        if (await this.checkAbort()) return;
+                        await this.updateProgress(0.2, key);
+                        if (await this.checkAbort(isMulti)) return;
                         await this.treeBuilder.initializeNodeCache();
 
 		// 5. Detect changes by comparing prevData and currentData.
@@ -163,8 +205,8 @@ export class ZoteroSyncManager {
                                 this.treeBuilder.getNodeCache()
                         );
 
-                        await this.updateProgress(0.4);
-                        if (await this.checkAbort()) return;
+                        await this.updateProgress(0.4, key);
+                        if (await this.checkAbort(isMulti)) return;
 
                 // 7. Apply structural changes to update the Rem tree. (this step and beyond actually modify the user's KB.)
                         await logMessage(this.plugin, 'Applying tree changes', LogType.Debug, false);
@@ -181,7 +223,7 @@ export class ZoteroSyncManager {
                         let applied = 0;
                         const applyProgress = async () => {
                                 applied++;
-                                await this.updateProgress(0.4 + (applied / Math.max(applyTotal, 1)) * 0.3);
+                                await this.updateProgress(0.4 + (applied / Math.max(applyTotal, 1)) * 0.3, key);
                         };
                         await this.treeBuilder.applyChanges(changes, applyProgress);
 		// 8. Populate detailed properties (build fields) on each Rem.
@@ -194,7 +236,7 @@ export class ZoteroSyncManager {
                         let hydrated = 0;
                         const hydrateProgress = async () => {
                                 hydrated++;
-                                await this.updateProgress(0.7 + (hydrated / Math.max(hydrateTotal, 1)) * 0.2);
+                                await this.updateProgress(0.7 + (hydrated / Math.max(hydrateTotal, 1)) * 0.2, key);
                         };
                         if (!isSimpleSync) {
                                 await this.propertyHydrator.hydrateItemAndCollectionProperties(
@@ -202,9 +244,9 @@ export class ZoteroSyncManager {
                                         hydrateProgress
                                 );
                         } else {
-                                await this.updateProgress(0.9);
+                                await this.updateProgress(0.9, key);
                         }
-                        if (await this.checkAbort()) return;
+                        if (await this.checkAbort(isMulti)) return;
 
 		// 9. Save the current data as the new shadow copy for future syncs.
                         const serializableData = {
@@ -224,16 +266,21 @@ export class ZoteroSyncManager {
                         };
                         await this.plugin.storage.setSynced('zoteroDataMap', updatedMap);
 
-                        await this.updateProgress(1);
+                        await this.updateProgress(1, key);
                         await this.plugin.storage.setSynced('lastSyncTime', new Date().toISOString());
                         await logMessage(this.plugin, 'Library sync complete', LogType.Info, false);
 
                 } catch (error) {
                         await logMessage(this.plugin, error as Error, LogType.Error, false);
                 } finally {
-                        await this.setSyncingStatus(false);
-                        await this.updateProgress(0);
-                        await this.plugin.storage.setSession('syncStartTime', undefined);
+                        if (!isMulti) {
+                                await this.setSyncingStatus(false);
+                                await this.updateProgress(0, key);
+                                await this.plugin.storage.setSession('syncStartTime', undefined);
+                        } else {
+                                // ensure final progress is recorded as complete
+                                await this.updateProgress(1, key);
+                        }
                 }
         }
 }
