@@ -231,16 +231,12 @@ function SyncStatusWidget() {
 						{syncStatus.isActive ? '⏹' : '▶'}
 					</button>
 					<div className="flex-1">
-						<div className="w-full rounded-full h-2 overflow-hidden mb-2 sync-status-progress-bg">
-							<div
-								className="sync-status-progress-bar"
-								style={
-									{
-										'--progress-width': `${progressPercentage}%`,
-									} as React.CSSProperties
-								}
-							/>
-						</div>
+                                                <div className="w-full rounded-full h-2 overflow-hidden mb-2 sync-status-progress-bg">
+                                                        <div
+                                                                className="sync-status-progress-bar"
+                                                                style={{ width: `${progressPercentage}%` }}
+                                                        />
+                                                </div>
 						<hr className="sync-status-divider" />
 						<div className="text-xs mt-1 flex justify-between sync-status-info">
 							<span>{syncStatus.isActive ? 'Syncing...' : 'Ready'}</span>
@@ -265,9 +261,9 @@ function SyncStatusWidget() {
                                                 {syncStatus.libraries && syncStatus.libraries.length > 0 ? (
                                                         <>
                                                                 <hr className="sync-status-divider" />
-                                                                <div className="sync-status-library-list mt-1">
+                                                                <div className="sync-status-library-list mt-1 text-xs">
                                                                         {syncStatus.libraries.map((lib) => (
-                                                                                <div key={lib.name} className="sync-status-library-item">
+                                                                        <div key={lib.name} className="sync-status-library-item">
                                                                                         <span>{lib.name}</span>
                                                                                         <span>{Math.round(Math.min(100, Math.max(0, lib.progress * 100)))}%</span>
                                                                                 </div>
