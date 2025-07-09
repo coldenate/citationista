@@ -45,8 +45,10 @@
 }
 
 .sync-status-library-item {
-        display: flex;
-        justify-content: space-between;
-        color: #c4a7e7;
-        font-size: 0.75rem;
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       gap: 0.5rem;
+       color: #c4a7e7;
+       font-size: 0.65rem;
 }
