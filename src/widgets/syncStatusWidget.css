@@ -5,13 +5,14 @@
 	height: 100%;
 	box-sizing: border-box;
 	overflow: hidden;
+	background: #fff;
 }
 
 /* 2) Main card: two-column grid, adaptive */
 .sync-status-card {
-	background-color: #232136;
-	border: 2px solid #393552;
-	color: #eceff4;
+	background-color: #fff;
+	border: 1.5px solid #e0e0e0;
+	color: #222;
 
 	width: 100%;
 	height: 100%;
@@ -26,7 +27,9 @@
 	box-sizing: border-box;
 	padding: 1.25rem 1.25rem;
 	border-radius: 1rem;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	box-shadow:
+		0 2px 12px 0 rgba(0, 0, 0, 0.08),
+		0 1.5px 0 #f5f5f5 inset;
 	overflow: hidden;
 	margin-bottom: 0;
 }
@@ -62,19 +65,22 @@
 .sync-status-info-banner {
 	display: flex;
 	align-items: center;
-	background-color: #393552;
-	color: #c4a7e7;
+	background-color: #f5f5f5;
+	color: #292936;
 	padding: 0.5rem 1.25rem;
 	border-radius: 0.5rem;
 	font-size: 0.75rem;
 	line-height: 1.2;
 	gap: 0.5rem;
 	margin-bottom: 0.75rem;
+	border: 1px solid #e0e0e0;
+	box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.04);
 }
 
 .sync-status-info-icon {
 	font-size: 1rem;
 	flex-shrink: 0;
+	color: #292936;
 }
 
 .sync-status-info-text {
@@ -90,7 +96,7 @@
 	border-radius: 0.5rem;
 	font-size: 1rem;
 	font-weight: 500;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	box-shadow: 0 2px 8px rgba(75, 105, 255, 0.08);
 	transition:
 		background 0.18s,
 		color 0.18s,
@@ -104,34 +110,35 @@
 }
 
 .sync-action-btn {
-	background: linear-gradient(90deg, #c4a7e7 0%, #a78bfa 100%);
-	color: #232136;
-	border: 2px solid #c4a7e7;
+	background: #4b69ff;
+	color: #fff;
+	border: 2px solid #4b69ff;
 }
 .sync-action-btn:hover:not(.disabled) {
-	background: linear-gradient(90deg, #a78bfa 0%, #c4a7e7 100%);
-	opacity: 0.96;
-	box-shadow: 0 6px 20px rgba(196, 167, 231, 0.18);
+	background: #fff;
+	color: #4b69ff;
+	border: 2px solid #4b69ff;
+	box-shadow: 0 6px 20px rgba(75, 105, 255, 0.18);
 }
 
 .abort-action-btn {
-	background: #393552;
-	color: #c4a7e7;
-	border: 2px solid #c4a7e7;
+	background: #fff;
+	color: #4b69ff;
+	border: 2px solid #4b69ff;
 }
 .abort-action-btn:hover:not(.disabled) {
-	background: #c4a7e7;
-	color: #232136;
-	box-shadow: 0 4px 16px rgba(196, 167, 231, 0.18);
+	background: #4b69ff;
+	color: #fff;
+	box-shadow: 0 4px 16px rgba(75, 105, 255, 0.18);
 }
 
 .sync-action-btn.disabled,
 .abort-action-btn.disabled,
 .sync-action-btn:disabled,
 .abort-action-btn:disabled {
-	background: #393552 !important;
-	color: #a6adc8 !important;
-	border-color: #393552 !important;
+	background: #f5f5f5 !important;
+	color: #bbb !important;
+	border-color: #e0e0e0 !important;
 	cursor: not-allowed;
 	opacity: 0.6;
 	box-shadow: none;
@@ -139,12 +146,12 @@
 
 /* 6) Dividers & progress bar */
 .sync-status-divider {
-	border-color: #393552;
+	border-color: #e0e0e0;
 	margin: 6px 0;
 }
 
 .sync-status-progress-bg {
-	background-color: #393552;
+	background-color: #f5f5f5;
 	border-radius: 9999px;
 	height: 0.5rem;
 }
@@ -153,18 +160,18 @@
 	height: 0.5rem;
 	border-radius: 9999px;
 	transition: width 0.2s ease-in-out;
-	background: linear-gradient(90deg, #c4a7e7 0%, #a78bfa 100%);
+	background: #4b69ff;
 	min-width: 2px;
 }
 
 /* 7) Text styles */
 .sync-status-info {
-	color: #a6adc8;
+	color: #292936;
 	font-size: 0.75rem;
 }
 
 .sync-status-library {
-	color: #c4a7e7;
+	color: #292936;
 	font-size: 0.75rem;
 }
 
@@ -186,7 +193,7 @@
 	justify-content: space-between;
 	align-items: center;
 	gap: 0.5rem;
-	color: #c4a7e7;
+	color: #292936;
 	font-size: 0.65rem;
 }
 
