@@ -2,12 +2,12 @@
 	"manifestVersion": 1,
 	"id": "zotero",
 	"name": "Zotero Connector",
-	"author": "coldenate",
+	"author": "RemNote",
 	"repoUrl": "https://github.com/coldenate/zotero-remnote-connector",
 	"version": {
 		"major": 1,
 		"minor": 0,
-		"patch": 1
+		"patch": 2
 	},
 	"theme": [],
 	"enableOnMobile": true,
