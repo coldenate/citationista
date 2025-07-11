@@ -3,7 +3,7 @@
 </h1>
 
 <h3 align="center">
-    📚 zotero-remnote-connector
+    📚 Zotero Connector
 </h3>
 <p align="center">
     <i>Streamlined reference management and Zotero Integration for RemNote</i>
@@ -17,7 +17,7 @@
 
 ## Overview
 
-zotero-remnote-connector is a RemNote plugin that integrates with Zotero, the reference management software. It syncs your Zotero library into RemNote and provides tools for managing citations and sources within your notes.
+The Zotero Connector for RemNote syncs your Zotero library into RemNote and provides tools for managing citations and sources within your notes.
 
 **Core Features:**
 
@@ -25,32 +25,26 @@ zotero-remnote-connector is a RemNote plugin that integrates with Zotero, the re
 -   **Citation Management** – Work with academic sources and maintain citation integrity
 -   **Source Integration** – Connect RemNote sources with proper bibliographic data
 
-## Project Status
-
-**Currently Working:**
+## Features
 
 -   Zotero library sync (items, notes, tags)
--   Basic citation management
+-   Reference papers in your Zotero library
 -   RemNote Reader compatibility
-
-**In Development:**
-
--   [ ] Installation and setup documentation
--   [ ] User interface improvements
--   [ ] Bibliography generation from source links
--   [ ] Automated sync intervals
--   [ ] LaTeX title rendering
--   [ ] Advanced citation features
--   [ ] Source aggregation tools
+-   Friendly user interface for syncing management
+-   Automated sync intervals (configurable)
 
 ## Development Roadmap
 
 **Next Steps:**
 
--   Background sync automation
--   Add bibliography generation from RemNote source links
--   Improve citation detection and formatting
--   Better installation and setup process
+-   [x] Installation and setup documentation
+-   [ ] Bibliography generation from source links
+-   [ ] Advanced citation features
+-   [ ] Source aggregation tools
+-   [x] Background sync automation
+-   [ ] Bibliography generation from RemNote source links
+-   [ ] Improve citation detection and formatting
+-   [ ] Better installation and setup process
 
 **Future Goals:**
 

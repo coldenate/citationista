@@ -23,6 +23,8 @@ let autoSyncInterval: NodeJS.Timeout | undefined;
 // Helper functions for organizing registration logic
 
 async function registerSettings(plugin: RNPlugin) {
+	// user sign-in
+
 	await plugin.settings.registerStringSetting({
 		id: 'zotero-user-id',
 		title: 'Zotero userID',
@@ -34,6 +36,8 @@ async function registerSettings(plugin: RNPlugin) {
 		description:
 			'Find this at https://www.zotero.org/settings/keys. Make sure to enable all read/write for all features to work. But feel free to disable any you do not need.',
 	});
+
+	// selecting library
 
 	const libraries = await fetchLibraries(plugin);
 	const libraryOptions =
@@ -60,20 +64,8 @@ async function registerSettings(plugin: RNPlugin) {
 		defaultValue: false,
 	});
 
-	await plugin.settings.registerBooleanSetting({
-		id: 'simple-mode',
-		title: 'Simple Syncing Mode',
-		description:
-			'(not recommended) Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
-		defaultValue: false,
-	});
-	await plugin.settings.registerDropdownSetting({
-		id: 'export-citations-format',
-		title: 'Export Citations Format',
-		description: 'The format used when exporting citations.',
-		defaultValue: 'BibTeX',
-		options: citationFormats,
-	});
+	// plugin logic configuration
+
 	await plugin.settings.registerDropdownSetting({
 		id: 'multiple-colections-behavior',
 		title: 'Items in Multiple Collections Display Behavior',
@@ -85,10 +77,12 @@ async function registerSettings(plugin: RNPlugin) {
 			{ key: 'reference', label: 'Reference', value: 'reference' },
 		],
 	});
+
 	await plugin.settings.registerBooleanSetting({
-		id: 'debug-mode',
-		title: 'Debug Mode (Zotero Connector)',
-		description: 'Enables certain testing commands. Non-destructive.',
+		id: 'simple-mode',
+		title: 'Simple Syncing Mode',
+		description:
+			'(not recommended) Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
 		defaultValue: false,
 	});
 
@@ -97,6 +91,20 @@ async function registerSettings(plugin: RNPlugin) {
 		title: 'Disable Auto Sync',
 		description: 'Prevent Zotero Connector from syncing every 5 minutes.',
 		defaultValue: true,
+	});
+
+	// await plugin.settings.registerDropdownSetting({
+	// 	id: 'export-citations-format',
+	// 	title: 'Export Citations Format',
+	// 	description: 'The format used when exporting citations.',
+	// 	defaultValue: 'BibTeX',
+	// 	options: citationFormats,
+	// });
+	await plugin.settings.registerBooleanSetting({
+		id: 'debug-mode',
+		title: 'Debug Mode (Zotero Connector)',
+		description: 'Enables certain testing commands. Non-destructive.',
+		defaultValue: false,
 	});
 }
 
