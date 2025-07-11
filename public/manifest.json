@@ -1,7 +1,7 @@
 {
 	"manifestVersion": 1,
 	"id": "zotero",
-	"name": "Zotero Connector test | Reference Manager + Zotero Integration",
+	"name": "Zotero Connector",
 	"author": "coldenate",
 	"repoUrl": "https://github.com/coldenate/zotero-connector",
 	"version": {
@@ -11,8 +11,8 @@
 	},
 	"theme": [],
 	"enableOnMobile": true,
-	"unlisted": true,
-	"description": "📚 RemNote's Reference Manager! Official Zotero Integration, Export Sources as Bibliography, and more!",
+	"unlisted": false,
+	"description": "📚 Official Zotero Integration, Export Sources as Bibliography, and more!",
 	"requestNative": false,
 	"requiredScopes": [
 		{
