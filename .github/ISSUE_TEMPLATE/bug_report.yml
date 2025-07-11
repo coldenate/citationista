@@ -33,7 +33,7 @@ body:
     - type: input
       id: pluginVersion
       attributes:
-          label: Citationista plugin version
+          label: zotero-remnote-connector plugin version
           description: Please enter the version of the plugin you are using.
           placeholder: e.g. 1.0.0
       validations:

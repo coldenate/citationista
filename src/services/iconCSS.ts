@@ -14,47 +14,47 @@ const iconTagMap: Record<string, string> = {
 	'zotero-item': 'document',
 	zitem: 'document',
 
-	/* ─── Citationista power‑ups ─── */
-	'citationista-annotation': 'note-annotation',
-	'artwork-citationista': 'artwork',
-	'attachment-citationista': 'attachment-file',
-	'audiorecording-citationista': 'audio-recording',
-	'bill-citationista': 'bill',
-	'blogpost-citationista': 'blog-post',
-	'book-citationista': 'book',
-	'booksection-citationista': 'book-section',
-	'case-citationista': 'case',
-	'computerprogram-citationista': 'computer-program',
-	'conferencepaper-citationista': 'conference-paper',
-	'dataset-citationista': 'dataset',
-	'dictionaryentry-citationista': 'dictionary-entry',
-	'document-citationista': 'document',
-	'email-citationista': 'email',
-	'encyclopediaarticle-citationista': 'encyclopedia-article',
-	'film-citationista': 'film',
-	'forumpost-citationista': 'forum-post',
-	'hearing-citationista': 'hearing',
-	'instantmessage-citationista': 'instant-message',
-	'interview-citationista': 'interview',
-	'journalarticle-citationista': 'journal-article',
-	'letter-citationista': 'letter',
-	'magazinearticle-citationista': 'magazine-article',
-	'manuscript-citationista': 'manuscript',
-	'map-citationista': 'map',
-	'newspaperarticle-citationista': 'newspaper-article',
-	'note-citationista': 'note',
-	'patent-citationista': 'patent',
-	'podcast-citationista': 'podcast',
-	'preprint-citationista': 'preprint',
-	'presentation-citationista': 'presentation',
-	'radiobroadcast-citationista': 'radio-broadcast',
-	'report-citationista': 'report',
-	'standard-citationista': 'standard',
-	'statute-citationista': 'statute',
-	'thesis-citationista': 'thesis',
-	'tvbroadcast-citationista': 'tv-broadcast',
-	'videorecording-citationista': 'video-recording',
-	'webpage-citationista': 'webpage',
+	/* ─── Zotero Connector power‑ups ─── */
+	'zotero-connector-annotation': 'note-annotation',
+	'artwork-zotero-connector': 'artwork',
+	'attachment-zotero-connector': 'attachment-file',
+	'audiorecording-zotero-connector': 'audio-recording',
+	'bill-zotero-connector': 'bill',
+	'blogpost-zotero-connector': 'blog-post',
+	'book-zotero-connector': 'book',
+	'booksection-zotero-connector': 'book-section',
+	'case-zotero-connector': 'case',
+	'computerprogram-zotero-connector': 'computer-program',
+	'conferencepaper-zotero-connector': 'conference-paper',
+	'dataset-zotero-connector': 'dataset',
+	'dictionaryentry-zotero-connector': 'dictionary-entry',
+	'document-zotero-connector': 'document',
+	'email-zotero-connector': 'email',
+	'encyclopediaarticle-zotero-connector': 'encyclopedia-article',
+	'film-zotero-connector': 'film',
+	'forumpost-zotero-connector': 'forum-post',
+	'hearing-zotero-connector': 'hearing',
+	'instantmessage-zotero-connector': 'instant-message',
+	'interview-zotero-connector': 'interview',
+	'journalarticle-zotero-connector': 'journal-article',
+	'letter-zotero-connector': 'letter',
+	'magazinearticle-zotero-connector': 'magazine-article',
+	'manuscript-zotero-connector': 'manuscript',
+	'map-zotero-connector': 'map',
+	'newspaperarticle-zotero-connector': 'newspaper-article',
+	'note-zotero-connector': 'note',
+	'patent-zotero-connector': 'patent',
+	'podcast-zotero-connector': 'podcast',
+	'preprint-zotero-connector': 'preprint',
+	'presentation-zotero-connector': 'presentation',
+	'radiobroadcast-zotero-connector': 'radio-broadcast',
+	'report-zotero-connector': 'report',
+	'standard-zotero-connector': 'standard',
+	'statute-zotero-connector': 'statute',
+	'thesis-zotero-connector': 'thesis',
+	'tvbroadcast-zotero-connector': 'tv-broadcast',
+	'videorecording-zotero-connector': 'video-recording',
+	'webpage-zotero-connector': 'webpage',
 };
 
 /*───────────────────────────────────────────────────────────────────────────*/
@@ -121,8 +121,8 @@ function iconCSS(tag: string, base: string, url: string): string {
 /*───────────────────────────────────────────────────────────────────────────*/
 function buildCSS(): string {
 	const base =
-		'https://raw.githubusercontent.com/coldenate/citationista/refs/heads/main/public/icons/flat-icons';
-	let css = '/* Citationista icon overrides */\n';
+		'https://raw.githubusercontent.com/coldenate/zotero-connector/refs/heads/main/public/icons/flat-icons';
+	let css = '/* Zotero Connector icon overrides */\n';
 	for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base);
 	return css;
 }
@@ -134,9 +134,9 @@ export async function registerIconCSS(plugin: RNPlugin): Promise<void> {
 	const css = buildCSS();
 	await logMessage(
 		plugin,
-		`[Citationista‑Icons] injecting ${css.length} chars`,
+		`[Zotero Connector‑Icons] injecting ${css.length} chars`,
 		LogType.Debug,
 		false
 	);
-	await plugin.app.registerCSS('citationista-icons', css);
+	await plugin.app.registerCSS('zotero-connector-icons', css);
 }

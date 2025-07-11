@@ -1,9 +1,9 @@
 {
 	"manifestVersion": 1,
 	"id": "zotero",
-	"name": "Citationista test | Reference Manager + Zotero Integration",
+	"name": "Zotero Connector test | Reference Manager + Zotero Integration",
 	"author": "coldenate",
-	"repoUrl": "https://github.com/coldenate/citationista",
+	"repoUrl": "https://github.com/coldenate/zotero-connector",
 	"version": {
 		"major": 1,
 		"minor": 0,
