@@ -79,18 +79,18 @@ async function registerSettings(plugin: RNPlugin) {
 	});
 
 	await plugin.settings.registerBooleanSetting({
+		id: 'disable-auto-sync',
+		title: 'Disable Auto Sync',
+		description: 'Prevent Zotero Connector from syncing every 5 minutes.',
+		defaultValue: true,
+	});
+
+	await plugin.settings.registerBooleanSetting({
 		id: 'simple-mode',
 		title: 'Simple Syncing Mode',
 		description:
 			'(not recommended) Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
 		defaultValue: false,
-	});
-
-	await plugin.settings.registerBooleanSetting({
-		id: 'disable-auto-sync',
-		title: 'Disable Auto Sync',
-		description: 'Prevent Zotero Connector from syncing every 5 minutes.',
-		defaultValue: true,
 	});
 
 	// await plugin.settings.registerDropdownSetting({
