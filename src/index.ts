@@ -537,20 +537,12 @@ async function registerDebugCommands(plugin: RNPlugin) {
 
 async function registerCommands(plugin: RNPlugin) {
 	// send sources of this rem to zotero
-
-
-	// copy the citation of this rem's sources to clipboard
-  
-
-	// copy the bibliography of this rem's sources to clipboard
-
-
+	// copy the citation of this rem's sources to clipboard (still sends to zotero, we have to do that to get the citation)
+	// copy the bibliography of this rem's sources to clipboard (still sends to zotero, we have to do that to get the bibliography)
+	// copy the citation of this rem's sources to clipboard (wikipedia, not sending to zotero option)
+	// copy the bibliography of this rem's sources to clipboard (wikipedia, not sending to zotero option)
 	// Add/Edit CitationAdd a new citation or edit an existing citation in your document at the cursor location
-
-
 	// Add/Edit BibliographyInsert a bibliography at the cursor location or edit an existing bibliography.
-
-
 }
 
 async function registerWidgets(plugin: RNPlugin) {
