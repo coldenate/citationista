@@ -535,6 +535,10 @@ async function registerDebugCommands(plugin: RNPlugin) {
 	});
 }
 
+async function registerCommands(plugin: RNPlugin) {
+  
+}
+
 async function registerWidgets(plugin: RNPlugin) {
 	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
 		dimensions: { height: 200, width: 500 },
@@ -561,6 +565,7 @@ async function onActivate(plugin: RNPlugin) {
 	}
 	await registerWidgets(plugin);
 	await handleLibrarySwitch(plugin);
+	await registerCommands(plugin);
 
 	const multiInit = (await plugin.settings.getSetting('sync-multiple-libraries')) as
 		| boolean
