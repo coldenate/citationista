@@ -5,16 +5,53 @@ import { LogType, logMessage } from '../utils/logging';
 export async function extractSourceUrls(plugin: RNPlugin, rem: Rem): Promise<string[]> {
 	const sources = await rem.getSources();
 	const urls: string[] = [];
+
 	for (const source of sources) {
-		const rt = source.text;
-		if (!rt) continue;
-		const markdown = await plugin.richText.toMarkdown(rt);
-		const match = /\(([^)]+)\)/.exec(markdown);
-		const url = match ? match[1] : markdown.trim();
-		if (isValidUrl(url)) {
-			urls.push(url);
+		const children = await source.getChildrenRem();
+
+		// 1 ▸ ensure “the fourth child” exists
+		if (!children || children.length < 5) {
+			await logMessage(
+				plugin,
+				`Source ${source._id.slice(0, 8)}: fewer than 5 children – skipped`,
+				LogType.Debug,
+				false
+			);
+			continue;
+		}
+
+		const meta = children[4]; // 0-based index → “the fourth Rem”
+
+		// 2 ▸ try back-text first, then front-text
+		const rt = meta.backText ?? meta.text;
+		if (!rt) {
+			await logMessage(
+				plugin,
+				`Source ${source._id.slice(0, 8)} child #4 has no text`,
+				LogType.Debug,
+				false
+			);
+			continue;
+		}
+
+		const md = await plugin.richText.toMarkdown(rt);
+
+		// works for `[label](url)` *and* bare `https://…`
+		const linkMatch = /\((https?:\/\/[^)]+)\)/.exec(md);
+		const candidate = linkMatch ? linkMatch[1] : md.trim();
+
+		if (isValidUrl(candidate)) {
+			urls.push(candidate);
+		} else {
+			await logMessage(
+				plugin,
+				`Source ${source._id.slice(0, 8)}: extracted string is not a URL → “${candidate}”`,
+				LogType.Debug,
+				false
+			);
 		}
 	}
+
 	return urls;
 }
 
@@ -27,35 +64,63 @@ function isValidUrl(url: string): boolean {
 	}
 }
 
-async function getLibraryInfo(
-	plugin: RNPlugin
-): Promise<{ apiKey: string; libraryId: string; libraryType: 'users' | 'groups' }> {
+async function getLibraryInfo(plugin: RNPlugin) {
 	const apiKey = await plugin.settings.getSetting('zotero-api-key');
 	const userId = await plugin.settings.getSetting('zotero-user-id');
-	const librarySetting = await plugin.settings.getSetting('zotero-library-id');
-	if (!apiKey || !userId) {
-		throw new Error('Zotero credentials not set');
-	}
+	const libSetting = await plugin.settings.getSetting('zotero-library-id');
+
+	if (!apiKey || !userId) throw new Error('Zotero credentials not set');
+
 	let libraryId = String(userId);
 	let libraryType: 'users' | 'groups' = 'users';
-	if (librarySetting && typeof librarySetting === 'string' && librarySetting.includes(':')) {
-		const [type, id] = librarySetting.split(':');
+
+	if (typeof libSetting === 'string' && libSetting.includes(':')) {
+		const [type, id] = libSetting.split(':');
 		libraryType = type === 'group' ? 'groups' : 'users';
 		libraryId = id;
 	}
 	return { apiKey: String(apiKey), libraryId, libraryType };
 }
-
+/**
+ * Take an array of URLs, translate them with Wikimedia Citoid, push each item
+ * into the configured Zotero library, and return the new item keys.
+ */
 export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promise<string[]> {
 	const { apiKey, libraryId, libraryType } = await getLibraryInfo(plugin);
 	const itemKeys: string[] = [];
+
 	for (const url of urls) {
 		try {
+			/* ── 1 ▸ translate URL → Zotero JSON via Citoid ───────────────────── */
 			const citoidRes = await fetch(
-				`https://en.wikipedia.org/api/rest_v1/data/citation/zotero/${encodeURIComponent(url)}`
+				`https://en.wikipedia.org/api/rest_v1/data/citation/zotero/${encodeURIComponent(
+					url
+				)}`
 			);
-			if (!citoidRes.ok) continue;
-			const citoidJson = await citoidRes.json();
+			if (!citoidRes.ok) {
+				await logMessage(
+					plugin,
+					`Citoid ${citoidRes.status} for ${url}`,
+					LogType.Warning,
+					false
+				);
+				continue;
+			}
+
+			// Citoid returns an *array*; grab the first element
+			const citoidData = await citoidRes.json();
+			const item = Array.isArray(citoidData) ? citoidData[0] : citoidData;
+			if (!item) {
+				await logMessage(
+					plugin,
+					`Citoid returned empty payload for ${url}`,
+					LogType.Warning,
+					false
+				);
+				continue;
+			}
+
+			/* ── 2 ▸ POST into Zotero library ─────────────────────────────────── */
 			const postRes = await fetch(
 				`https://api.zotero.org/${libraryType}/${libraryId}/items`,
 				{
@@ -64,10 +129,21 @@ export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promis
 						'Content-Type': 'application/json',
 						'Zotero-API-Key': apiKey,
 					},
-					body: JSON.stringify([citoidJson]),
+					body: JSON.stringify([item]), // one-item array per API spec
 				}
 			);
-			if (!postRes.ok) continue;
+
+			if (!postRes.ok) {
+				const txt = await postRes.text(); // surface Zotero’s error msg
+				await logMessage(
+					plugin,
+					`Zotero POST ${postRes.status}: ${txt}`,
+					LogType.Error,
+					false
+				);
+				continue;
+			}
+
 			const data = await postRes.json();
 			const key = data?.[0]?.key;
 			if (key) itemKeys.push(key);
@@ -80,8 +156,13 @@ export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promis
 			);
 		}
 	}
+
 	return itemKeys;
 }
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* 3 ▸  Formatting helpers (unchanged API)                                  */
+/* ────────────────────────────────────────────────────────────────────────── */
 
 export async function fetchZoteroFormatted(
 	plugin: RNPlugin,
@@ -97,7 +178,6 @@ export async function fetchZoteroFormatted(
 	return res.ok ? res.text() : null;
 }
 
-// thin wrappers so the rest of the code keeps compiling
 export const fetchZoteroCitation = (plugin: RNPlugin, itemKey: string, style = 'apa') =>
 	fetchZoteroFormatted(plugin, itemKey, 'citation', style);
 
@@ -119,10 +199,10 @@ export async function fetchWikipediaBibliography(
 	style = 'apa'
 ): Promise<string | null> {
 	const res = await fetch(`${WIKIPEDIA_API_URL}${encodeURIComponent(url)}`, {
-		headers: new Headers({
+		headers: {
 			...Object.fromEntries(WIKIPEDIA_API_HEADERS.entries()),
 			Accept: `text/x-bibliography; style=${style}; locale=en-US`,
-		}),
+		},
 	});
 	return res.ok ? res.text() : null;
 }

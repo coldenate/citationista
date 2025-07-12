@@ -553,6 +553,7 @@ async function registerCommands(plugin: RNPlugin) {
 			const rem = await plugin.focus.getFocusedRem();
 			if (!rem) return;
 			const urls = await extractSourceUrls(plugin, rem);
+			console.log('Extracted URLs:', urls);
 			if (urls.length === 0) {
 				await plugin.app.toast('No sources found');
 				return;
