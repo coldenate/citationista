@@ -121,7 +121,7 @@ function iconCSS(tag: string, base: string, url: string): string {
 /*───────────────────────────────────────────────────────────────────────────*/
 function buildCSS(): string {
 	const base =
-		'https://raw.githubusercontent.com/coldenate/zotero-connector/refs/heads/main/public/icons/flat-icons';
+		'https://raw.githubusercontent.com/coldenate/zotero-remnote-connector/refs/heads/main/public/icons/flat-icons';
 	let css = '/* Zotero Connector icon overrides */\n';
 	for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base);
 	return css;
