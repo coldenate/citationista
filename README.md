@@ -21,6 +21,14 @@
 
 The Zotero Connector syncs your Zotero library into RemNote and provides tools for working with citations and sources.
 
+## Features
+
+-   Zotero library sync (items, notes, tags)
+-   Reference papers directly from your Zotero library
+-   RemNote Reader compatibility
+-   Friendly interface for managing sync
+-   Automated sync intervals (configurable)
+
 ## Installation
 
 1. In RemNote, open **Settings → Plugins**.
@@ -53,14 +61,6 @@ The Zotero Connector syncs your Zotero library into RemNote and provides tools f
 -   **Disable Auto Sync** – prevents automatic synchronization every five minutes.
 -   **Simple Syncing Mode** – skips metadata (notes, dates, etc.) when importing items.
 -   **Debug Mode (Zotero Connector)** – exposes extra diagnostic commands and enables verbose logging. (please use this when reporting bugs and sending console logs! 🙏)
-
-## Features
-
--   Zotero library sync (items, notes, tags)
--   Reference papers directly from your Zotero library
--   RemNote Reader compatibility
--   Friendly interface for managing sync
--   Automated sync intervals (configurable)
 
 ## Development Roadmap
 
