@@ -1,5 +1,5 @@
-import type { RNPlugin, Rem } from '@remnote/plugin-sdk';
-import { WIKIPEDIA_API_URL, WIKIPEDIA_API_HEADERS } from '../constants/constants';
+import type { Rem, RNPlugin } from '@remnote/plugin-sdk';
+import { WIKIPEDIA_API_HEADERS, WIKIPEDIA_API_URL } from '../constants/constants';
 import { LogType, logMessage } from '../utils/logging';
 
 export async function extractSourceUrls(plugin: RNPlugin, rem: Rem): Promise<string[]> {
@@ -83,33 +83,34 @@ export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promis
 	return itemKeys;
 }
 
-export async function fetchZoteroCitation(
+export async function fetchZoteroFormatted(
 	plugin: RNPlugin,
 	itemKey: string,
+	include: 'citation' | 'bib',
 	style = 'apa'
 ): Promise<string | null> {
 	const { apiKey, libraryId, libraryType } = await getLibraryInfo(plugin);
 	const res = await fetch(
-		`https://api.zotero.org/${libraryType}/${libraryId}/items/${itemKey}?include=citation&style=${style}`,
-		{
-			headers: { 'Zotero-API-Key': apiKey },
-		}
+		`https://api.zotero.org/${libraryType}/${libraryId}/items/${itemKey}?include=${include}&style=${style}`,
+		{ headers: { 'Zotero-API-Key': apiKey } }
 	);
 	return res.ok ? res.text() : null;
 }
 
-export async function fetchZoteroBibliography(
-	plugin: RNPlugin,
-	itemKey: string,
-	style = 'apa'
-): Promise<string | null> {
-	const { apiKey, libraryId, libraryType } = await getLibraryInfo(plugin);
-	const res = await fetch(
-		`https://api.zotero.org/${libraryType}/${libraryId}/items/${itemKey}?include=bib&style=${style}`,
-		{
-			headers: { 'Zotero-API-Key': apiKey },
-		}
-	);
+// thin wrappers so the rest of the code keeps compiling
+export const fetchZoteroCitation = (plugin: RNPlugin, itemKey: string, style = 'apa') =>
+	fetchZoteroFormatted(plugin, itemKey, 'citation', style);
+
+export const fetchZoteroBibliography = (plugin: RNPlugin, itemKey: string, style = 'apa') =>
+	fetchZoteroFormatted(plugin, itemKey, 'bib', style);
+
+export async function fetchWikipediaCitation(url: string, style = 'apa'): Promise<string | null> {
+	const res = await fetch(`${WIKIPEDIA_API_URL}${encodeURIComponent(url)}`, {
+		headers: {
+			...Object.fromEntries(WIKIPEDIA_API_HEADERS.entries()),
+			Accept: `text/x-bibliography; style=${style}; locale=en-US`,
+		},
+	});
 	return res.ok ? res.text() : null;
 }
 

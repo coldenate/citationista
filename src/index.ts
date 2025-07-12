@@ -10,6 +10,14 @@ import { fetchLibraries } from './api/zotero';
 import { citationFormats, powerupCodes } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
+import {
+	extractSourceUrls,
+	fetchWikipediaBibliography,
+	fetchWikipediaCitation,
+	fetchZoteroBibliography,
+	fetchZoteroCitation,
+	sendUrlsToZotero,
+} from './services/citationHelpers';
 import { ensureZoteroLibraryRemExists } from './services/ensureUIPrettyZoteroRemExist';
 import { registerIconCSS } from './services/iconCSS';
 import { createRem, markAbortRequested } from './services/pluginIO';
@@ -17,13 +25,6 @@ import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { release } from './sync/syncLock';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
-import {
-	extractSourceUrls,
-	sendUrlsToZotero,
-	fetchZoteroCitation,
-	fetchZoteroBibliography,
-	fetchWikipediaBibliography,
-} from './services/citationHelpers';
 
 let autoSyncInterval: NodeJS.Timeout | undefined;
 
@@ -616,7 +617,7 @@ async function registerCommands(plugin: RNPlugin) {
 			const urls = await extractSourceUrls(plugin, rem);
 			const cites: string[] = [];
 			for (const url of urls) {
-				const c = await fetchWikipediaBibliography(url);
+				const c = await fetchWikipediaCitation(url);
 				if (c) cites.push(c.trim());
 			}
 			if (cites.length) {
