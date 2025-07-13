@@ -1,4 +1,4 @@
-// Rename summary: api -> createZoteroClient; connection -> zoteroConnection; getItems/getCollections/getAllData -> fetchItems/fetchCollections/fetchLibraryData
+/** Utility wrappers around the Zotero REST API. */
 import type { RNPlugin } from '@remnote/plugin-sdk';
 // @ts-ignore
 import createZoteroClient from 'zotero-api-client';

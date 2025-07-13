@@ -1,4 +1,4 @@
-// Rename summary: PropertyHydrator -> ZoteroPropertyHydrator; hydrateProperties -> hydrateItemAndCollectionProperties; addMultipleUrlSources -> addAllUrlSources
+/** Populates Rem properties using Zotero item metadata. */
 import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { checkAbortFlag } from '../services/pluginIO';

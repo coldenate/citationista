@@ -1,4 +1,3 @@
-// Rename summary: abort sync handling and CITATION_POOL rename
 import {
 	AppEvents,
 	declareIndexPlugin,

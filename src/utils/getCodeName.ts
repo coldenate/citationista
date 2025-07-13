@@ -1,10 +1,14 @@
-// Rename summary: getCode -> generatePowerupCode; getName -> generatePowerupName; deriveName -> stripPowerupSuffix
+/** Utility helpers for generating consistent power‑up identifiers. */
 export function generatePowerupCode(name: string): string {
-	return `zotero-connector-${name}`;
+        return `zotero-connector-${name}`;
 }
-export function generatePowerupName(itemType: string) {
-	return `${itemType} (Zotero Connector)`;
+
+/** Create a human readable power‑up name. */
+export function generatePowerupName(itemType: string): string {
+        return `${itemType} (Zotero Connector)`;
 }
-export function stripPowerupSuffix(itemType: string) {
-	return itemType.replace(' (Zotero Connector)', '');
+
+/** Remove the plugin suffix from a power‑up name. */
+export function stripPowerupSuffix(itemType: string): string {
+        return itemType.replace(' (Zotero Connector)', '');
 }

@@ -1,4 +1,4 @@
-// Rename summary: PropertyHydrator -> ZoteroPropertyHydrator; ensureZoteroRemExists -> ensureZoteroLibraryRemExists; getAllData -> fetchLibraryData
+/** Coordinates syncing between Zotero and RemNote. */
 import type { RNPlugin } from '@remnote/plugin-sdk';
 
 import { fetchLibraries, ZoteroAPI, type ZoteroLibraryInfo } from '../api/zotero';

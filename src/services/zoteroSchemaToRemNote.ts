@@ -1,4 +1,4 @@
-// Rename summary: getCode/getName -> generatePowerupCode/generatePowerupName; hasTitleRelatedField -> isTitleLikeField; getPropertyType -> inferPropertyType
+/** Helpers for generating and registering RemNote power‑ups from Zotero item types. */
 import {
 	type PowerupCode,
 	PropertyLocation,

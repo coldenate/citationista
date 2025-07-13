@@ -1,61 +1,11 @@
 import type { RNPlugin } from '@remnote/plugin-sdk';
 import { LogType, logMessage } from '../utils/logging';
+import { iconTagMap } from '../constants/iconTagMap';
 
 /**
- * Maps RemNote tag identifiers → icon basenames (no theme suffix).
+ * iconTagMap moved to `constants/iconTagMap.ts`.
+ * It maps RemNote tag identifiers → icon basenames.
  */
-const iconTagMap: Record<string, string> = {
-	/* ─── Zotero helpers ─── */
-	collection: 'collection',
-	'zotero-collection': 'collection',
-	coolPool: 'collection',
-	'zotero-unfiled-items': 'unfiled',
-	'zotero-synced-library': 'library',
-	'zotero-item': 'document',
-	zitem: 'document',
-
-	/* ─── Zotero Connector power‑ups ─── */
-	'zotero-connector-annotation': 'note-annotation',
-	'artwork-zotero-connector': 'artwork',
-	'attachment-zotero-connector': 'attachment-file',
-	'audiorecording-zotero-connector': 'audio-recording',
-	'bill-zotero-connector': 'bill',
-	'blogpost-zotero-connector': 'blog-post',
-	'book-zotero-connector': 'book',
-	'booksection-zotero-connector': 'book-section',
-	'case-zotero-connector': 'case',
-	'computerprogram-zotero-connector': 'computer-program',
-	'conferencepaper-zotero-connector': 'conference-paper',
-	'dataset-zotero-connector': 'dataset',
-	'dictionaryentry-zotero-connector': 'dictionary-entry',
-	'document-zotero-connector': 'document',
-	'email-zotero-connector': 'email',
-	'encyclopediaarticle-zotero-connector': 'encyclopedia-article',
-	'film-zotero-connector': 'film',
-	'forumpost-zotero-connector': 'forum-post',
-	'hearing-zotero-connector': 'hearing',
-	'instantmessage-zotero-connector': 'instant-message',
-	'interview-zotero-connector': 'interview',
-	'journalarticle-zotero-connector': 'journal-article',
-	'letter-zotero-connector': 'letter',
-	'magazinearticle-zotero-connector': 'magazine-article',
-	'manuscript-zotero-connector': 'manuscript',
-	'map-zotero-connector': 'map',
-	'newspaperarticle-zotero-connector': 'newspaper-article',
-	'note-zotero-connector': 'note',
-	'patent-zotero-connector': 'patent',
-	'podcast-zotero-connector': 'podcast',
-	'preprint-zotero-connector': 'preprint',
-	'presentation-zotero-connector': 'presentation',
-	'radiobroadcast-zotero-connector': 'radio-broadcast',
-	'report-zotero-connector': 'report',
-	'standard-zotero-connector': 'standard',
-	'statute-zotero-connector': 'statute',
-	'thesis-zotero-connector': 'thesis',
-	'tvbroadcast-zotero-connector': 'tv-broadcast',
-	'videorecording-zotero-connector': 'video-recording',
-	'webpage-zotero-connector': 'webpage',
-};
 
 /*───────────────────────────────────────────────────────────────────────────*/
 /* Utility helpers                                                          */
@@ -121,7 +71,7 @@ function iconCSS(tag: string, base: string, url: string): string {
 /*───────────────────────────────────────────────────────────────────────────*/
 function buildCSS(): string {
 	const base =
-		'https://raw.githubusercontent.com/coldenate/zotero-remnote-connector/refs/heads/main/public/icons/flat-icons';
+		'https://raw.githubusercontent.com/coldenate/zotero-remnote-connector/refs/heads/main/public/icons/';
 	let css = '/* Zotero Connector icon overrides */\n';
 	for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base);
 	return css;
@@ -134,7 +84,7 @@ export async function registerIconCSS(plugin: RNPlugin): Promise<void> {
 	const css = buildCSS();
 	await logMessage(
 		plugin,
-		`[Zotero Connector‑Icons] injecting ${css.length} chars`,
+		`[Zotero Connector-Icons] injecting ${css.length} chars`,
 		LogType.Debug,
 		false
 	);
