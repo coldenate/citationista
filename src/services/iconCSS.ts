@@ -10,7 +10,7 @@ const iconTagMap: Record<string, string> = {
 	'zotero-collection': 'collection',
 	coolPool: 'collection',
 	'zotero-unfiled-items': 'unfiled',
-	'zotero-synced-library': 'library',
+	'zotero-library-sync-powerup': 'library',
 	'zotero-item': 'document',
 	zitem: 'document',
 
@@ -121,7 +121,7 @@ function iconCSS(tag: string, base: string, url: string): string {
 /*───────────────────────────────────────────────────────────────────────────*/
 function buildCSS(): string {
 	const base =
-		'https://raw.githubusercontent.com/coldenate/zotero-remnote-connector/refs/heads/main/public/icons/flat-icons';
+		'https://raw.githubusercontent.com/coldenate/zotero-remnote-connector/refs/heads/main/public/icons/';
 	let css = '/* Zotero Connector icon overrides */\n';
 	for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base);
 	return css;
@@ -134,7 +134,7 @@ export async function registerIconCSS(plugin: RNPlugin): Promise<void> {
 	const css = buildCSS();
 	await logMessage(
 		plugin,
-		`[Zotero Connector‑Icons] injecting ${css.length} chars`,
+		`[Zotero Connector-Icons] injecting ${css.length} chars`,
 		LogType.Debug,
 		false
 	);
