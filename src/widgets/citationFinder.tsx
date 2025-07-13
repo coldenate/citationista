@@ -98,8 +98,6 @@ function CitationFinderWidget() {
                const sel = results[i];
                if (!sel) return;
 
-               wid && plugin.window.closeFloatingWidget(wid);
-
                if (placeholder) {
                        await plugin.editor.deleteCharacters(1, -1);
                        await plugin.storage.setSession('citationPlaceholder', false);
@@ -111,6 +109,8 @@ function CitationFinderWidget() {
                                : await fetchZoteroCitation(plugin, sel.key);
 
                if (txt) await plugin.editor.insertPlainText(txt);
+
+               wid && plugin.window.closeFloatingWidget(wid);
        }
 
 	/* UI */
