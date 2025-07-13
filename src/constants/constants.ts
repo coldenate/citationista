@@ -1,4 +1,4 @@
-// Rename summary: powerupCodes.COOL_POOL -> powerupCodes.CITATION_POOL
+/** Shared constants used across the plugin. */
 export const citationFormats = [
 	{
 		key: 'BibTeX',
@@ -53,7 +53,8 @@ export const powerupCodes = {
 	ZOTERO_TAG: 'zotero-tag',
 	ZOTERO_NOTE: 'zotero-note',
 	ZITEM_ATTACHMENT: 'zitem-attachment',
-	CITATION_POOL: 'coolPool',
+        // Historical name kept for compatibility
+        CITATION_POOL: 'coolPool',
 	ZOTERO_UNFILED_ITEMS: 'zotero-unfiled-items',
 	ZOTERO_CONNECTOR_HOME: 'zotero-connector-home',
 };
