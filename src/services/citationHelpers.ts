@@ -65,76 +65,98 @@ export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promis
 	const itemKeys: string[] = [];
 
 	for (const url of urls) {
-		try {
-			/* ── 1 ▸ translate URL → Zotero JSON via Citoid ───────────────────── */
-			const citoidRes = await fetch(
-				`https://en.wikipedia.org/api/rest_v1/data/citation/zotero/${encodeURIComponent(
-					url
-				)}`
-			);
-			if (!citoidRes.ok) {
-				await logMessage(
-					plugin,
-					`Citoid ${citoidRes.status} for ${url}`,
-					LogType.Warning,
-					false
-				);
-				continue;
-			}
+		await logMessage(plugin, `▶ Translating ${url}`, LogType.Debug, false);
 
-			// Citoid returns an *array*; grab the first element
-			const citoidData = await citoidRes.json();
-			const item = Array.isArray(citoidData) ? citoidData[0] : citoidData;
-			if (!item) {
-				await logMessage(
-					plugin,
-					`Citoid returned empty payload for ${url}`,
-					LogType.Warning,
-					false
-				);
-				continue;
-			}
+		/* 1 ▸ translate with Citoid */
+		const citoidRes = await fetch(
+			`https://en.wikipedia.org/api/rest_v1/data/citation/zotero/${encodeURIComponent(url)}`
+		);
 
-			/* ── 2 ▸ POST into Zotero library ─────────────────────────────────── */
-			const postRes = await fetch(
-				`https://api.zotero.org/${libraryType}/${libraryId}/items`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Zotero-API-Key': apiKey,
-					},
-					body: JSON.stringify([item]), // one-item array per API spec
-				}
-			);
-
-			if (!postRes.ok) {
-				const txt = await postRes.text(); // surface Zotero’s error msg
-				await logMessage(
-					plugin,
-					`Zotero POST ${postRes.status}: ${txt}`,
-					LogType.Error,
-					false
-				);
-				continue;
-			}
-
-			const data = await postRes.json();
-			const key = data?.[0]?.key;
-			if (key) itemKeys.push(key);
-		} catch (err) {
+		if (!citoidRes.ok) {
 			await logMessage(
 				plugin,
-				`Failed to send ${url} to Zotero: ${String(err)}`,
+				`Citoid ${citoidRes.status} for ${url}`,
+				LogType.Warning,
+				false
+			);
+			continue;
+		}
+
+		const citoidPayload = await citoidRes.json();
+		const item = Array.isArray(citoidPayload) ? citoidPayload[0] : citoidPayload;
+
+		if (!item) {
+			await logMessage(plugin, `Citoid empty payload for ${url}`, LogType.Warning, false);
+			continue;
+		}
+
+		/* 2 ▸ POST to Zotero */
+		await logMessage(plugin, `⤴ Pushing item to Zotero`, LogType.Debug, false);
+
+		const postRes = await fetch(`https://api.zotero.org/${libraryType}/${libraryId}/items`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Zotero-API-Key': apiKey,
+				'Zotero-API-Version': '3', // explicit version = clearer errors
+			},
+			body: JSON.stringify([item]), // array per API spec
+		});
+
+		const bodyText = await postRes.text(); // we’ll need this for logging
+
+		if (!postRes.ok) {
+			await logMessage(
+				plugin,
+				`Zotero POST ${postRes.status}: ${bodyText}`,
+				LogType.Error,
+				false
+			);
+			continue;
+		}
+
+		/* 3 ▸ extract the new itemKey – real success payload is an object */
+		try {
+			const data = JSON.parse(bodyText);
+
+			// Success envelope can be "success" (old) or "successful" (newer docs)
+			const successObj = data.successful ?? data.success ?? data;
+
+			const firstKeyObj = Object.values(successObj)[0] as any;
+			const key = firstKeyObj?.key;
+
+			if (key) {
+				itemKeys.push(key);
+				await logMessage(plugin, `✓ Added item ${key}`, LogType.Debug, false);
+			} else {
+				await logMessage(
+					plugin,
+					`Zotero response parsed but no key found: ${bodyText}`,
+					LogType.Warning,
+					false
+				);
+			}
+		} catch (e) {
+			await logMessage(
+				plugin,
+				`Failed to parse Zotero response: ${String(e)}\n${bodyText}`,
 				LogType.Error,
 				false
 			);
 		}
 	}
 
+	if (!itemKeys.length) {
+		await logMessage(
+			plugin,
+			'No items were added; see warnings/errors above.',
+			LogType.Warning,
+			false
+		);
+	}
+
 	return itemKeys;
 }
-
 /* ────────────────────────────────────────────────────────────────────────── */
 /* 3 ▸  Formatting helpers (unchanged API)                                  */
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -146,13 +168,21 @@ export async function fetchZoteroFormatted(
 	style = 'apa'
 ): Promise<string | null> {
 	const { apiKey, libraryId, libraryType } = await getLibraryInfo(plugin);
-	const res = await fetch(
-		`https://api.zotero.org/${libraryType}/${libraryId}/items/${itemKey}?include=${include}&style=${style}`,
-		{ headers: { 'Zotero-API-Key': apiKey } }
-	);
-	return res.ok ? res.text() : null;
-}
 
+	const url =
+		`https://api.zotero.org/${libraryType}/${libraryId}/items/${itemKey}` +
+		`?include=${include}&style=${style}`;
+
+	const res = await fetch(url, { headers: { 'Zotero-API-Key': apiKey } });
+
+	if (!res.ok) {
+		const msg = await res.text();
+		await logMessage(plugin, `Zotero GET ${res.status}: ${msg}`, LogType.Warning, false);
+		return null;
+	}
+
+	return await res.text(); // <- await prevents the nested-Promise bug
+}
 export const fetchZoteroCitation = (plugin: RNPlugin, itemKey: string, style = 'apa') =>
 	fetchZoteroFormatted(plugin, itemKey, 'citation', style);
 
