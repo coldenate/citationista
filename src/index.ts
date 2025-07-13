@@ -8,7 +8,12 @@ import {
 	WidgetLocation,
 } from '@remnote/plugin-sdk';
 import { fetchLibraries } from './api/zotero';
-import { citationFormats, citationSourceOptions, powerupCodes, POPUP_Y_OFFSET } from './constants/constants';
+import {
+    citationFormats,
+    citationSourceOptions,
+    POPUP_Y_OFFSET,
+    powerupCodes,
+} from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
 import {
@@ -687,11 +692,11 @@ async function registerCommands(plugin: RNPlugin) {
 		},
 	});
 
-	const source = (await plugin.settings.getSetting('citation-source')) as string | undefined;
-	if (source === 'zotero') {
-		await registerZoteroCitationCommands(plugin);
-	} else if (source === 'wikipedia') {
-		await registerWikipediaCitationCommands(plugin);
+        const source = (await plugin.settings.getSetting('citation-source')) as string | undefined;
+        if (source === 'zotero') {
+                await registerZoteroCitationCommands(plugin);
+        } else if (source === 'wikipedia') {
+                await registerWikipediaCitationCommands(plugin);
         } else {
                 await registerZoteroCitationCommands(plugin);
                 await registerWikipediaCitationCommands(plugin);
@@ -768,13 +773,13 @@ async function registerCommands(plugin: RNPlugin) {
 }
 
 async function registerWidgets(plugin: RNPlugin) {
-        await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
-                dimensions: { height: 200, width: 500 },
-                powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
-        });
-        await plugin.app.registerWidget('citationFinder', WidgetLocation.FloatingWidget, {
-                dimensions: { height: 'auto', width: '320px' },
-        });
+    await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
+        dimensions: { height: 200, width: 500 },
+        powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
+    });
+    await plugin.app.registerWidget('citationFinder', WidgetLocation.FloatingWidget, {
+        dimensions: { height: 'auto', width: '320px' },
+    });
 }
 
 async function onActivate(plugin: RNPlugin) {
