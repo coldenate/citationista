@@ -1,4 +1,5 @@
 import {
+	AppEvents,
 	declareIndexPlugin,
 	PropertyLocation,
 	PropertyType,
@@ -7,7 +8,12 @@ import {
 	WidgetLocation,
 } from '@remnote/plugin-sdk';
 import { fetchLibraries } from './api/zotero';
-import { citationFormats, citationSourceOptions, powerupCodes } from './constants/constants';
+import {
+	citationFormats,
+	citationSourceOptions,
+	POPUP_Y_OFFSET,
+	powerupCodes,
+} from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
 import {
@@ -29,6 +35,7 @@ import { LogType, logMessage } from './utils/logging';
 let autoSyncInterval: NodeJS.Timeout | undefined;
 let zoteroCitationRegistered = false;
 let wikiCitationRegistered = false;
+let citationWidgetId: string | undefined;
 
 // Helper functions for organizing registration logic
 
@@ -695,6 +702,41 @@ async function registerCommands(plugin: RNPlugin) {
 		await registerWikipediaCitationCommands(plugin);
 	}
 
+	const openFinder = async (mode: 'citation' | 'bib') => {
+		await plugin.storage.setSession('citationFinderMode', mode);
+
+		// Insert a temporary space so the caret exists
+		await plugin.editor.insertPlainText(' ');
+		await plugin.storage.setSession('citationPlaceholder', true);
+
+		const caret = await plugin.editor.getCaretPosition();
+
+		citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
+			top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
+			left: caret?.x,
+		});
+	};
+
+	await plugin.app.registerCommand({
+		id: 'insert-citation-at-cursor',
+		name: 'Add/Edit Citation',
+		description: 'Insert a citation from your Zotero library.',
+		quickCode: 'icite',
+		action: async () => {
+			await openFinder('citation');
+		},
+	});
+
+	await plugin.app.registerCommand({
+		id: 'insert-bibliography-at-cursor',
+		name: 'Add/Edit Bibliography',
+		description: 'Insert a bibliography entry from your Zotero library.',
+		quickCode: 'ibib',
+		action: async () => {
+			await openFinder('bib');
+		},
+	});
+
 	// await plugin.app.registerCommand({
 	// 	id: 'insert-citation-at-cursor',
 	// 	name: 'Add/Edit Citation',
@@ -740,6 +782,9 @@ async function registerWidgets(plugin: RNPlugin) {
 	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
 		dimensions: { height: 200, width: 500 },
 		powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
+	});
+	await plugin.app.registerWidget('citationFinder', WidgetLocation.FloatingWidget, {
+		dimensions: { height: 'auto', width: '320px' },
 	});
 }
 

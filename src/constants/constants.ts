@@ -1,4 +1,4 @@
-/** Shared constants used across the plugin. */
+export const POPUP_Y_OFFSET = 25;
 export const citationFormats = [
 	{
 		key: 'BibTeX',
