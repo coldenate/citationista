@@ -703,15 +703,29 @@ async function registerCommands(plugin: RNPlugin) {
 		await registerWikipediaCitationCommands(plugin);
 	}
 
-	const openFinder = async (mode: 'citation' | 'bib') => {
-		const caret = await plugin.editor.getCaretPosition();
-		await plugin.storage.setSession('citationFinderMode', mode);
+        const openFinder = async (mode: 'citation' | 'bib') => {
+                await plugin.storage.setSession('citationFinderMode', mode);
 
-		citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
-			top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
-			left: caret?.x,
-		});
-	};
+                const tryOpen = async () => {
+                        const caret = await plugin.editor.getCaretPosition();
+                        if (!caret) return false;
+                        citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
+                                top: caret.y + POPUP_Y_OFFSET,
+                                left: caret.x,
+                        });
+                        return true;
+                };
+
+                if (await tryOpen()) return;
+
+                const key = 'citation-finder-open';
+                const handler = async () => {
+                        if (await tryOpen()) {
+                                plugin.event.removeListener(AppEvents.EditorTextEdited, key, handler);
+                        }
+                };
+                plugin.event.addListener(AppEvents.EditorTextEdited, key, handler);
+        };
 
 	await plugin.app.registerCommand({
 		id: 'insert-citation-at-cursor',
