@@ -7,7 +7,7 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 	// Measure the time taken
 	const startTime = Date.now();
 	await plugin.app.waitForInitialSync();
-	const endTime = Date.now(); // TODO: figure this out
+	const endTime = Date.now();
 	await logMessage(
 		plugin,
 		`waitForInitialSync took ${endTime - startTime} ms`,
@@ -16,31 +16,38 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 	);
 
 	const zoteroLibraryRemId = await plugin.storage.getSynced('zoteroLibraryRemId');
+	let homeRem: Rem | null | undefined;
 	if (zoteroLibraryRemId !== undefined) {
-		const doesRemExist = await plugin.rem.findOne(zoteroLibraryRemId as string);
-		if (doesRemExist !== undefined) {
-			await doesRemExist.setText(['Zotero Connector Home Page']);
-			if (!(await doesRemExist.hasPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME))) {
-				await doesRemExist.addPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
-			}
-			if (await doesRemExist.hasPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY)) {
-				await doesRemExist.removePowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
-			}
-			const powerRem = await plugin.powerup.getPowerupByCode(
-				powerupCodes.ZOTERO_CONNECTOR_HOME
-			);
-			const tagged = powerRem ? await powerRem.taggedRem() : [];
+		homeRem = await plugin.rem.findOne(zoteroLibraryRemId as string);
+	}
+
+	// Fallback to searching by powerup in case the stored ID was lost
+	if (!homeRem) {
+		const powerRem = await plugin.powerup.getPowerupByCode(powerupCodes.ZOTERO_CONNECTOR_HOME);
+		const tagged = powerRem ? await powerRem.taggedRem() : [];
+		if (tagged.length > 0) {
+			homeRem = tagged[0];
 			if (tagged.length > 1) {
-				for (const extra of tagged) {
-					if (extra._id !== doesRemExist._id) {
-						await extra.removePowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
-					}
+				for (const extra of tagged.slice(1)) {
+					await extra.removePowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
 				}
 			}
-			logMessage(plugin, 'Zotero Connector Home Page already exists', LogType.Info, false);
-			return doesRemExist;
 		}
 	}
+
+	if (homeRem) {
+		await homeRem.setText(['Zotero Connector Home Page']);
+		if (!(await homeRem.hasPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME))) {
+			await homeRem.addPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
+		}
+		if (await homeRem.hasPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY)) {
+			await homeRem.removePowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
+		}
+		await plugin.storage.setSynced('zoteroLibraryRemId', homeRem._id);
+		logMessage(plugin, 'Zotero Connector Home Page already exists', LogType.Info, false);
+		return homeRem;
+	}
+
 	await logMessage(plugin, 'Zotero Connector Home Page Ensured', LogType.Info, false);
 
 	const rem: Rem | undefined = await plugin.rem.createRem();
