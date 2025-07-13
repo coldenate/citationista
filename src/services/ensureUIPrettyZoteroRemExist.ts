@@ -1,4 +1,3 @@
-// Rename summary: ensureZoteroRemExists -> ensureZoteroLibraryRemExists; ensureUnfiledItemsRem -> ensureUnfiledItemsRemExists; COOL_POOL -> CITATION_POOL
 import { BuiltInPowerupCodes, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { LogType, logMessage } from '../utils/logging';

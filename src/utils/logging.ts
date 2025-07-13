@@ -1,5 +1,7 @@
 import type { ReactRNPlugin, RNPlugin } from '@remnote/plugin-sdk';
 
+/** Lightweight logger with optional toast notifications. */
+
 // Define the log types enum
 export enum LogType {
 	Debug = 'Debug',
@@ -16,7 +18,7 @@ type LogTypeInfo = {
 	[key in LogType]: { name: key; emoji: string };
 };
 
-// Define the log type to emoji mapping
+// Mapping of log types to friendly emoji for console/toast output
 const logTypeToEmoji: LogTypeInfo = {
 	Debug: { name: LogType.Debug, emoji: '🐞' },
 	Info: { name: LogType.Info, emoji: 'ℹ️' },
