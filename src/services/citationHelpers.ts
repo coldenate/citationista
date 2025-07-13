@@ -1,4 +1,4 @@
-import type { Rem, RNPlugin } from '@remnote/plugin-sdk';
+import { BuiltInPowerupCodes, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { WIKIPEDIA_API_HEADERS, WIKIPEDIA_API_URL } from '../constants/constants';
 import { LogType, logMessage } from '../utils/logging';
 
@@ -7,34 +7,9 @@ export async function extractSourceUrls(plugin: RNPlugin, rem: Rem): Promise<str
 	const urls: string[] = [];
 
 	for (const source of sources) {
-		const children = await source.getChildrenRem();
-
-		// 1 ▸ ensure “the fourth child” exists
-		if (!children || children.length < 5) {
-			await logMessage(
-				plugin,
-				`Source ${source._id.slice(0, 8)}: fewer than 5 children – skipped`,
-				LogType.Debug,
-				false
-			);
-			continue;
-		}
-
-		const meta = children[4]; // 0-based index → “the fourth Rem”
-
-		// 2 ▸ try back-text first, then front-text
-		const rt = meta.backText ?? meta.text;
-		if (!rt) {
-			await logMessage(
-				plugin,
-				`Source ${source._id.slice(0, 8)} child #4 has no text`,
-				LogType.Debug,
-				false
-			);
-			continue;
-		}
-
-		const md = await plugin.richText.toMarkdown(rt);
+		const md = await plugin.richText.toMarkdown(
+			await source.getPowerupPropertyAsRichText(BuiltInPowerupCodes.Link, 'URL')
+		);
 
 		// works for `[label](url)` *and* bare `https://…`
 		const linkMatch = /\((https?:\/\/[^)]+)\)/.exec(md);
