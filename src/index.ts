@@ -745,7 +745,10 @@ async function registerWidgets(plugin: RNPlugin) {
 }
 
 async function onActivate(plugin: RNPlugin) {
-	await registerSettings(plugin);
+       // Register custom bullet icons at startup so library pages
+       // immediately display the correct library icon
+       await registerIconCSS(plugin);
+       await registerSettings(plugin);
 	await registerPowerups(plugin);
 	const homePage = await ensureZoteroLibraryRemExists(plugin);
 	if (homePage) {
