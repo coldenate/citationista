@@ -715,27 +715,27 @@ async function registerCommands(plugin: RNPlugin) {
 	// 	},
 	// });
 
-	await plugin.app.registerCommand({
-		id: 'insert-bibliography-at-cursor',
-		name: 'Add/Edit Bibliography',
-		description: "Insert bibliography entries for the focused Rem's sources.",
-		quickCode: 'ibib',
-		action: async () => {
-			const rem = await plugin.focus.getFocusedRem();
-			if (!rem) return;
-			const urls = await extractSourceUrls(plugin, rem);
-			const keys = await sendUrlsToZotero(plugin, urls);
-			const bibs: string[] = [];
-			for (const key of keys) {
-				const b = await fetchZoteroBibliography(plugin, key);
-				if (b) bibs.push(b.trim());
-			}
-			if (bibs.length) {
-				await plugin.editor.insertPlainText(bibs.join('\n'));
-			}
-		},
-	});
-}
+// 	await plugin.app.registerCommand({
+// 		id: 'insert-bibliography-at-cursor',
+// 		name: 'Add/Edit Bibliography',
+// 		description: "Insert bibliography entries for the focused Rem's sources.",
+// 		quickCode: 'ibib',
+// 		action: async () => {
+// 			const rem = await plugin.focus.getFocusedRem();
+// 			if (!rem) return;
+// 			const urls = await extractSourceUrls(plugin, rem);
+// 			const keys = await sendUrlsToZotero(plugin, urls);
+// 			const bibs: string[] = [];
+// 			for (const key of keys) {
+// 				const b = await fetchZoteroBibliography(plugin, key);
+// 				if (b) bibs.push(b.trim());
+// 			}
+// 			if (bibs.length) {
+// 				await plugin.editor.insertPlainText(bibs.join('\n'));
+// 			}
+// 		},
+// 	});
+// }
 
 async function registerWidgets(plugin: RNPlugin) {
 	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
