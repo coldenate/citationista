@@ -1,11 +1,13 @@
 /*  src/widgets/citationFinder.tsx  */
 import './citationFinder.css';
 import {
-	renderWidget,
-	usePlugin,
-	useRunAsync,
-	useTracker,
-	type WidgetLocation,
+        renderWidget,
+        usePlugin,
+        useRunAsync,
+        useTracker,
+        useAPIEventListener,
+        type WidgetLocation,
+        AppEvents,
 } from '@remnote/plugin-sdk';
 import * as React from 'react';
 import { powerupCodes } from '../constants/constants';
@@ -18,7 +20,7 @@ interface ZoteroItem {
 }
 
 function CitationFinderWidget() {
-	const plugin = usePlugin();
+        const plugin = usePlugin();
 
 	/* floating-widget context (needed only for close) */
 	const ctx = useRunAsync(
@@ -33,10 +35,11 @@ function CitationFinderWidget() {
 		return m === 'bib' ? 'bib' : 'citation';
 	}, []);
 
-	/* search */
-	const [query, setQuery] = React.useState('');
-	const results =
-		useTracker(
+        /* search */
+        const [query, setQuery] = React.useState('');
+        const [selIdx, setSel] = React.useState(0);
+        const results =
+                useTracker(
 			async (rp) => {
 				if (!query.trim()) return [] as ZoteroItem[];
 
@@ -54,21 +57,38 @@ function CitationFinderWidget() {
 				return out;
 			},
 			[query]
-		) ?? [];
+                ) ?? [];
 
-	/* click → insert & close */
-	async function choose(i: number) {
-		const sel = results[i];
-		if (!sel) return;
+        /* steal navigation keys */
+        const HOTKEYS = ['down', 'up', 'enter', 'tab'];
+        React.useEffect(() => {
+                if (!wid) return;
+                plugin.window.stealKeys(wid, HOTKEYS);
+                return () => {
+                        plugin.window.releaseKeys(wid, HOTKEYS);
+                };
+        }, [wid]);
 
-		const txt =
-			mode === 'bib'
-				? await fetchZoteroBibliography(plugin, sel.key)
-				: await fetchZoteroCitation(plugin, sel.key);
+        useAPIEventListener(AppEvents.StealKeyEvent, wid, ({ key }) => {
+                if (key === 'down') setSel((i) => Math.min(i + 1, results.length - 1));
+                if (key === 'up') setSel((i) => Math.max(i - 1, 0));
+                if (key === 'enter' || key === 'tab') choose(selIdx);
+        });
 
-		if (txt) await plugin.editor.insertPlainText(txt);
-		wid && plugin.window.closeFloatingWidget(wid);
-	}
+        /* click → insert & close */
+        async function choose(i: number) {
+                const sel = results[i];
+                if (!sel) return;
+
+                wid && plugin.window.closeFloatingWidget(wid);
+
+                const txt =
+                        mode === 'bib'
+                                ? await fetchZoteroBibliography(plugin, sel.key)
+                                : await fetchZoteroCitation(plugin, sel.key);
+
+                if (txt) await plugin.editor.insertPlainText(txt);
+        }
 
 	/* UI */
 	return (
@@ -83,18 +103,18 @@ function CitationFinderWidget() {
 
 			{results.length > 0 && (
 				<div className="citation-finder-results">
-					{results.map((it, idx) => (
-						<button
-							key={it.id}
-							type="button"
-							className="citation-finder-item"
-							onClick={() => choose(idx)}
-						>
-							{it.title}
-						</button>
-					))}
-				</div>
-			)}
+                                        {results.map((it, idx) => (
+                                                <button
+                                                        key={it.id}
+                                                        type="button"
+                                                        className={`citation-finder-item${idx === selIdx ? ' selected' : ''}`}
+                                                        onClick={() => choose(idx)}
+                                                >
+                                                        {it.title}
+                                                </button>
+                                        ))}
+                                </div>
+                        )}
 		</div>
 	);
 }

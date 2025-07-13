@@ -703,15 +703,32 @@ async function registerCommands(plugin: RNPlugin) {
 		await registerWikipediaCitationCommands(plugin);
 	}
 
-	const openFinder = async (mode: 'citation' | 'bib') => {
-		const caret = await plugin.editor.getCaretPosition();
-		await plugin.storage.setSession('citationFinderMode', mode);
+        const openFinder = async (mode: 'citation' | 'bib') => {
+                await plugin.storage.setSession('citationFinderMode', mode);
 
-		citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
-			top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
-			left: caret?.x,
-		});
-	};
+                async function waitForCaret(): Promise<DOMRect | null> {
+                        const pos = await plugin.editor.getCaretPosition();
+                        if (pos) return pos;
+
+                        return await new Promise((resolve) => {
+                                const cb = async () => {
+                                        const p = await plugin.editor.getCaretPosition();
+                                        if (p) {
+                                                plugin.event.removeListener(AppEvents.EditorTextEdited, undefined, cb);
+                                                resolve(p);
+                                        }
+                                };
+                                plugin.event.addListener(AppEvents.EditorTextEdited, undefined, cb);
+                        });
+                }
+
+                const caret = await waitForCaret();
+
+                citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
+                        top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
+                        left: caret?.x,
+                });
+        };
 
 	await plugin.app.registerCommand({
 		id: 'insert-citation-at-cursor',
