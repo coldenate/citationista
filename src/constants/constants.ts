@@ -1,3 +1,4 @@
+export const POPUP_Y_OFFSET = 25;
 // Rename summary: powerupCodes.COOL_POOL -> powerupCodes.CITATION_POOL
 export const citationFormats = [
 	{
