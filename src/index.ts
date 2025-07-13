@@ -1,5 +1,6 @@
 // Rename summary: abort sync handling and CITATION_POOL rename
 import {
+	AppEvents,
 	declareIndexPlugin,
 	PropertyLocation,
 	PropertyType,
@@ -9,10 +10,10 @@ import {
 } from '@remnote/plugin-sdk';
 import { fetchLibraries } from './api/zotero';
 import {
-    citationFormats,
-    citationSourceOptions,
-    POPUP_Y_OFFSET,
-    powerupCodes,
+	citationFormats,
+	citationSourceOptions,
+	POPUP_Y_OFFSET,
+	powerupCodes,
 } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
@@ -692,55 +693,45 @@ async function registerCommands(plugin: RNPlugin) {
 		},
 	});
 
-        const source = (await plugin.settings.getSetting('citation-source')) as string | undefined;
-        if (source === 'zotero') {
-                await registerZoteroCitationCommands(plugin);
-        } else if (source === 'wikipedia') {
-                await registerWikipediaCitationCommands(plugin);
-        } else {
-                await registerZoteroCitationCommands(plugin);
-                await registerWikipediaCitationCommands(plugin);
-        }
+	const source = (await plugin.settings.getSetting('citation-source')) as string | undefined;
+	if (source === 'zotero') {
+		await registerZoteroCitationCommands(plugin);
+	} else if (source === 'wikipedia') {
+		await registerWikipediaCitationCommands(plugin);
+	} else {
+		await registerZoteroCitationCommands(plugin);
+		await registerWikipediaCitationCommands(plugin);
+	}
 
-        const openFinder = async (mode: 'citation' | 'bib') => {
-                // 1 ▸ remember where the caret is **before** focus shifts
-                const caret = await plugin.editor.getCaretPosition();
-                if (caret) {
-                        await plugin.storage.setSession('citationFinderInitialPos', {
-                                x: caret.x,
-                                y: caret.y,
-                        });
-                } else {
-                        await plugin.storage.setSession('citationFinderInitialPos', null);
-                }
+	const openFinder = async (mode: 'citation' | 'bib') => {
+		const caret = await plugin.editor.getCaretPosition();
+		await plugin.storage.setSession('citationFinderMode', mode);
 
-                // 2 ▸ open the widget (use the same coords if we have them)
-                citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
-                        top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
-                        left: caret?.x,
-                });
-                await plugin.storage.setSession('citationFinderMode', mode);
-        };
+		citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
+			top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
+			left: caret?.x,
+		});
+	};
 
-        await plugin.app.registerCommand({
-                id: 'insert-citation-at-cursor',
-                name: 'Add/Edit Citation',
-                description: 'Insert a citation from your Zotero library.',
-                quickCode: 'icite',
-                action: async () => {
-                        await openFinder('citation');
-                },
-        });
+	await plugin.app.registerCommand({
+		id: 'insert-citation-at-cursor',
+		name: 'Add/Edit Citation',
+		description: 'Insert a citation from your Zotero library.',
+		quickCode: 'icite',
+		action: async () => {
+			await openFinder('citation');
+		},
+	});
 
-        await plugin.app.registerCommand({
-                id: 'insert-bibliography-at-cursor',
-                name: 'Add/Edit Bibliography',
-                description: 'Insert a bibliography entry from your Zotero library.',
-                quickCode: 'ibib',
-                action: async () => {
-                        await openFinder('bib');
-                },
-        });
+	await plugin.app.registerCommand({
+		id: 'insert-bibliography-at-cursor',
+		name: 'Add/Edit Bibliography',
+		description: 'Insert a bibliography entry from your Zotero library.',
+		quickCode: 'ibib',
+		action: async () => {
+			await openFinder('bib');
+		},
+	});
 
 	// await plugin.app.registerCommand({
 	// 	id: 'insert-citation-at-cursor',
@@ -784,13 +775,13 @@ async function registerCommands(plugin: RNPlugin) {
 }
 
 async function registerWidgets(plugin: RNPlugin) {
-    await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
-        dimensions: { height: 200, width: 500 },
-        powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
-    });
-    await plugin.app.registerWidget('citationFinder', WidgetLocation.FloatingWidget, {
-        dimensions: { height: 'auto', width: '320px' },
-    });
+	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
+		dimensions: { height: 200, width: 500 },
+		powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
+	});
+	await plugin.app.registerWidget('citationFinder', WidgetLocation.FloatingWidget, {
+		dimensions: { height: 'auto', width: '320px' },
+	});
 }
 
 async function onActivate(plugin: RNPlugin) {
