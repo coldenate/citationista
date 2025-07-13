@@ -8,7 +8,7 @@ import {
 	WidgetLocation,
 } from '@remnote/plugin-sdk';
 import { fetchLibraries } from './api/zotero';
-import { citationFormats, powerupCodes } from './constants/constants';
+import { citationFormats, citationSourceOptions, powerupCodes } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
 import {
@@ -28,6 +28,8 @@ import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
 
 let autoSyncInterval: NodeJS.Timeout | undefined;
+let zoteroCitationRegistered = false;
+let wikiCitationRegistered = false;
 
 // Helper functions for organizing registration logic
 
@@ -103,6 +105,22 @@ async function registerSettings(plugin: RNPlugin) {
 		defaultValue: false,
 	});
 
+	await plugin.settings.registerDropdownSetting({
+		id: 'citation-format',
+		title: 'Citation Format',
+		description: 'Formatting style for citations and bibliographies.',
+		defaultValue: 'apa',
+		options: citationFormats,
+	});
+
+	await plugin.settings.registerDropdownSetting({
+		id: 'citation-source',
+		title: 'Citation Source',
+		description: 'Which service provides citation data for commands.',
+		defaultValue: 'zotero',
+		options: citationSourceOptions,
+	});
+
 	// await plugin.settings.registerDropdownSetting({
 	// 	id: 'export-citations-format',
 	// 	title: 'Export Citations Format',
@@ -116,6 +134,110 @@ async function registerSettings(plugin: RNPlugin) {
 		description: 'Enables certain testing commands. Non-destructive.',
 		defaultValue: false,
 	});
+}
+
+async function registerZoteroCitationCommands(plugin: RNPlugin) {
+	if (zoteroCitationRegistered) return;
+	await plugin.app.registerCommand({
+		id: 'copy-citation-from-zotero',
+		name: 'Copy Citation via Zotero',
+		description: "Copy formatted citations for the focused Rem's sources.",
+		quickCode: 'citez',
+		action: async () => {
+			const rem = await plugin.focus.getFocusedRem();
+			if (!rem) return;
+			const urls = await extractSourceUrls(plugin, rem);
+			const keys = await sendUrlsToZotero(plugin, urls);
+			const citations: string[] = [];
+			for (const key of keys) {
+				const cit = await fetchZoteroCitation(plugin, key);
+				if (cit) citations.push(cit.trim());
+			}
+			if (citations.length) {
+				await plugin.app.toast(
+					`${citations[0]} ${citations.length > 1 ? `and ${citations.length - 1} more` : ''} copied to clipboard`
+				);
+				await navigator.clipboard.writeText(citations.join('\n'));
+			}
+		},
+	});
+
+	await plugin.app.registerCommand({
+		id: 'copy-bib-from-zotero',
+		name: 'Copy Bibliography via Zotero',
+		description: "Copy bibliography entries for the focused Rem's sources.",
+		quickCode: 'bibz',
+		action: async () => {
+			const rem = await plugin.focus.getFocusedRem();
+			if (!rem) return;
+			const urls = await extractSourceUrls(plugin, rem);
+			const keys = await sendUrlsToZotero(plugin, urls);
+			const bibs: string[] = [];
+			for (const key of keys) {
+				const bib = await fetchZoteroBibliography(plugin, key);
+				if (bib) bibs.push(bib.trim());
+			}
+			if (bibs.length) {
+				await navigator.clipboard.writeText(bibs.join('\n'));
+				await plugin.app.toast(
+					`${bibs[0]} ${bibs.length > 1 ? `and ${bibs.length - 1} more` : ''} copied to clipboard`
+				);
+			}
+		},
+	});
+
+	zoteroCitationRegistered = true;
+}
+
+async function registerWikipediaCitationCommands(plugin: RNPlugin) {
+	if (wikiCitationRegistered) return;
+	await plugin.app.registerCommand({
+		id: 'copy-citation-from-wiki',
+		name: 'Copy Citation via Wikipedia',
+		description: "Get citations for the focused Rem's sources without using Zotero.",
+		quickCode: 'citew',
+		action: async () => {
+			const rem = await plugin.focus.getFocusedRem();
+			if (!rem) return;
+			const urls = await extractSourceUrls(plugin, rem);
+			const cites: string[] = [];
+			for (const url of urls) {
+				const c = await fetchWikipediaCitation(plugin, url);
+				if (c) cites.push(c.trim());
+			}
+			if (cites.length) {
+				await navigator.clipboard.writeText(cites.join('\n'));
+				await plugin.app.toast(
+					`${cites[0]} ${cites.length > 1 ? `and ${cites.length - 1} more` : ''} copied to clipboard`
+				);
+			}
+		},
+	});
+
+	await plugin.app.registerCommand({
+		id: 'copy-bib-from-wiki',
+		name: 'Copy Bibliography via Wikipedia',
+		description: 'Get bibliography entries for sources without using Zotero.',
+		quickCode: 'bibw',
+		action: async () => {
+			const rem = await plugin.focus.getFocusedRem();
+			if (!rem) return;
+			const urls = await extractSourceUrls(plugin, rem);
+			const entries: string[] = [];
+			for (const url of urls) {
+				const b = await fetchWikipediaBibliography(plugin, url);
+				if (b) entries.push(b.trim());
+			}
+			if (entries.length) {
+				await navigator.clipboard.writeText(entries.join('\n'));
+				await plugin.app.toast(
+					`${entries[0]} ${entries.length > 1 ? `and ${entries.length - 1} more` : ''} copied to clipboard`
+				);
+			}
+		},
+	});
+
+	wikiCitationRegistered = true;
 }
 
 async function registerPowerups(plugin: RNPlugin) {
@@ -564,99 +686,15 @@ async function registerCommands(plugin: RNPlugin) {
 		},
 	});
 
-	await plugin.app.registerCommand({
-		id: 'copy-citation-from-zotero',
-		name: 'Copy Citation via Zotero',
-		description: "Copy formatted citations for the focused Rem's sources.",
-		quickCode: 'citez',
-		action: async () => {
-			const rem = await plugin.focus.getFocusedRem();
-			if (!rem) return;
-			const urls = await extractSourceUrls(plugin, rem);
-			const keys = await sendUrlsToZotero(plugin, urls);
-			const citations: string[] = [];
-			for (const key of keys) {
-				const cit = await fetchZoteroCitation(plugin, key);
-				if (cit) citations.push(cit.trim());
-			}
-			if (citations.length) {
-				await plugin.app.toast(
-					`${citations[0]} ${citations.length > 1 ? `and ${citations.length - 1} more` : ''} copied to clipboard`
-				);
-				await navigator.clipboard.writeText(citations.join('\n'));
-			}
-		},
-	});
-
-	await plugin.app.registerCommand({
-		id: 'copy-bib-from-zotero',
-		name: 'Copy Bibliography via Zotero',
-		description: "Copy bibliography entries for the focused Rem's sources.",
-		quickCode: 'bibz',
-		action: async () => {
-			const rem = await plugin.focus.getFocusedRem();
-			if (!rem) return;
-			const urls = await extractSourceUrls(plugin, rem);
-			const keys = await sendUrlsToZotero(plugin, urls);
-			const bibs: string[] = [];
-			for (const key of keys) {
-				const bib = await fetchZoteroBibliography(plugin, key);
-				if (bib) bibs.push(bib.trim());
-			}
-			if (bibs.length) {
-				await navigator.clipboard.writeText(bibs.join('\n'));
-				await plugin.app.toast(
-					`${bibs[0]} ${bibs.length > 1 ? `and ${bibs.length - 1} more` : ''} copied to clipboard`
-				);
-			}
-		},
-	});
-
-	await plugin.app.registerCommand({
-		id: 'copy-citation-from-wiki',
-		name: 'Copy Citation via Wikipedia',
-		description: "Get citations for the focused Rem's sources without using Zotero.",
-		quickCode: 'citew',
-		action: async () => {
-			const rem = await plugin.focus.getFocusedRem();
-			if (!rem) return;
-			const urls = await extractSourceUrls(plugin, rem);
-			const cites: string[] = [];
-			for (const url of urls) {
-				const c = await fetchWikipediaCitation(url);
-				if (c) cites.push(c.trim());
-			}
-			if (cites.length) {
-				await navigator.clipboard.writeText(cites.join('\n'));
-				await plugin.app.toast(
-					`${cites[0]} ${cites.length > 1 ? `and ${cites.length - 1} more` : ''} copied to clipboard`
-				);
-			}
-		},
-	});
-
-	await plugin.app.registerCommand({
-		id: 'copy-bib-from-wiki',
-		name: 'Copy Bibliography via Wikipedia',
-		description: 'Get bibliography entries for sources without using Zotero.',
-		quickCode: 'bibw',
-		action: async () => {
-			const rem = await plugin.focus.getFocusedRem();
-			if (!rem) return;
-			const urls = await extractSourceUrls(plugin, rem);
-			const entries: string[] = [];
-			for (const url of urls) {
-				const b = await fetchWikipediaBibliography(url);
-				if (b) entries.push(b.trim());
-			}
-			if (entries.length) {
-				await navigator.clipboard.writeText(entries.join('\n'));
-				await plugin.app.toast(
-					`${entries[0]} ${entries.length > 1 ? `and ${entries.length - 1} more` : ''} copied to clipboard`
-				);
-			}
-		},
-	});
+	const source = (await plugin.settings.getSetting('citation-source')) as string | undefined;
+	if (source === 'zotero') {
+		await registerZoteroCitationCommands(plugin);
+	} else if (source === 'wikipedia') {
+		await registerWikipediaCitationCommands(plugin);
+	} else {
+		await registerZoteroCitationCommands(plugin);
+		await registerWikipediaCitationCommands(plugin);
+	}
 
 	// await plugin.app.registerCommand({
 	// 	id: 'insert-citation-at-cursor',
@@ -677,27 +715,27 @@ async function registerCommands(plugin: RNPlugin) {
 	// 	},
 	// });
 
-	await plugin.app.registerCommand({
-		id: 'insert-bibliography-at-cursor',
-		name: 'Add/Edit Bibliography',
-		description: "Insert bibliography entries for the focused Rem's sources.",
-		quickCode: 'ibib',
-		action: async () => {
-			const rem = await plugin.focus.getFocusedRem();
-			if (!rem) return;
-			const urls = await extractSourceUrls(plugin, rem);
-			const keys = await sendUrlsToZotero(plugin, urls);
-			const bibs: string[] = [];
-			for (const key of keys) {
-				const b = await fetchZoteroBibliography(plugin, key);
-				if (b) bibs.push(b.trim());
-			}
-			if (bibs.length) {
-				await plugin.editor.insertPlainText(bibs.join('\n'));
-			}
-		},
-	});
-}
+// 	await plugin.app.registerCommand({
+// 		id: 'insert-bibliography-at-cursor',
+// 		name: 'Add/Edit Bibliography',
+// 		description: "Insert bibliography entries for the focused Rem's sources.",
+// 		quickCode: 'ibib',
+// 		action: async () => {
+// 			const rem = await plugin.focus.getFocusedRem();
+// 			if (!rem) return;
+// 			const urls = await extractSourceUrls(plugin, rem);
+// 			const keys = await sendUrlsToZotero(plugin, urls);
+// 			const bibs: string[] = [];
+// 			for (const key of keys) {
+// 				const b = await fetchZoteroBibliography(plugin, key);
+// 				if (b) bibs.push(b.trim());
+// 			}
+// 			if (bibs.length) {
+// 				await plugin.editor.insertPlainText(bibs.join('\n'));
+// 			}
+// 		},
+// 	});
+// }
 
 async function registerWidgets(plugin: RNPlugin) {
 	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
@@ -746,6 +784,7 @@ async function onActivate(plugin: RNPlugin) {
 	let lastLibrary: string | undefined;
 	let lastDisable: boolean | undefined;
 	let lastMulti: boolean | undefined;
+	let lastCitationSource: string | undefined;
 	let debugRegistered = false;
 	let syncTimeout: NodeJS.Timeout | undefined;
 
@@ -832,6 +871,24 @@ async function onActivate(plugin: RNPlugin) {
 					}, 300000);
 				}
 			}
+		}
+
+		const citationSource = (await reactivePlugin.settings.getSetting('citation-source')) as
+			| string
+			| undefined;
+		if (citationSource !== lastCitationSource) {
+			if (citationSource === 'zotero') {
+				await registerZoteroCitationCommands(plugin);
+			} else if (citationSource === 'wikipedia') {
+				await registerWikipediaCitationCommands(plugin);
+			} else {
+				await registerZoteroCitationCommands(plugin);
+				await registerWikipediaCitationCommands(plugin);
+			}
+			lastCitationSource = citationSource;
+			await plugin.app.toast(
+				'Citation source changed. Reload the app to unregister old commands.'
+			);
 		}
 	});
 
