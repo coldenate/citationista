@@ -703,20 +703,20 @@ async function registerCommands(plugin: RNPlugin) {
 		await registerWikipediaCitationCommands(plugin);
 	}
 
-       const openFinder = async (mode: 'citation' | 'bib') => {
-               await plugin.storage.setSession('citationFinderMode', mode);
+	const openFinder = async (mode: 'citation' | 'bib') => {
+		await plugin.storage.setSession('citationFinderMode', mode);
 
-               // Insert a temporary space so the caret exists
-               await plugin.editor.insertPlainText(' ');
-               await plugin.storage.setSession('citationPlaceholder', true);
+		// Insert a temporary space so the caret exists
+		await plugin.editor.insertPlainText(' ');
+		await plugin.storage.setSession('citationPlaceholder', true);
 
-               const caret = await plugin.editor.getCaretPosition();
+		const caret = await plugin.editor.getCaretPosition();
 
-               citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
-                       top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
-                       left: caret?.x,
-               });
-       };
+		citationWidgetId = await plugin.window.openFloatingWidget('citationFinder', {
+			top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
+			left: caret?.x,
+		});
+	};
 
 	await plugin.app.registerCommand({
 		id: 'insert-citation-at-cursor',
