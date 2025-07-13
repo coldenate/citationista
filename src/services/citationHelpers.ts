@@ -161,21 +161,26 @@ export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promis
 /* 3 ▸  Formatting helpers (unchanged API)                                  */
 /* ────────────────────────────────────────────────────────────────────────── */
 
-export async function fetchZoteroFormatted(
-       plugin: RNPlugin,
-       itemKey: string,
-       include: 'citation' | 'bib',
-       style?: string
-): Promise<string | null> {
-       const finalStyle =
-               style ??
-               ((await plugin.settings.getSetting('citation-format')) as string | undefined) ??
-               'apa';
-       const { apiKey, libraryId, libraryType } = await getLibraryInfo(plugin);
+function stripHtml(html: string): string {
+	return html.replace(/<\/?[^>]+(>|$)/g, '').trim();
+}
 
-       const url =
-               `https://api.zotero.org/${libraryType}/${libraryId}/items/${itemKey}` +
-               `?include=${include}&style=${finalStyle}`;
+export async function fetchZoteroFormatted(
+	plugin: RNPlugin,
+	itemKey: string,
+	include: 'citation' | 'bib',
+	style?: string
+): Promise<string | null> {
+	const finalStyle =
+		style ??
+		((await plugin.settings.getSetting('citation-format')) as string | undefined) ??
+		'apa';
+
+	const { apiKey, libraryId, libraryType } = await getLibraryInfo(plugin);
+
+	const url =
+		`https://api.zotero.org/${libraryType}/${libraryId}/items/${itemKey}` +
+		`?include=${include}&style=${finalStyle}&linkwrap=0`; // no <a> tags
 
 	const res = await fetch(url, { headers: { 'Zotero-API-Key': apiKey } });
 
@@ -185,52 +190,58 @@ export async function fetchZoteroFormatted(
 		return null;
 	}
 
-	return await res.text(); // <- await prevents the nested-Promise bug
+	try {
+		const json = await res.json();
+		const rawHtml = include === 'citation' ? json.citation : json.bib;
+		return stripHtml(rawHtml);
+	} catch (e) {
+		await logMessage(
+			plugin,
+			`Failed to parse Zotero ${include} JSON for ${itemKey}: ${String(e)}`,
+			LogType.Error,
+			false
+		);
+		return null;
+	}
 }
-export const fetchZoteroCitation = (
-       plugin: RNPlugin,
-       itemKey: string,
-       style?: string
-) => fetchZoteroFormatted(plugin, itemKey, 'citation', style);
+export const fetchZoteroCitation = (plugin: RNPlugin, itemKey: string, style?: string) =>
+	fetchZoteroFormatted(plugin, itemKey, 'citation', style);
 
-export const fetchZoteroBibliography = (
-       plugin: RNPlugin,
-       itemKey: string,
-       style?: string
-) => fetchZoteroFormatted(plugin, itemKey, 'bib', style);
+export const fetchZoteroBibliography = (plugin: RNPlugin, itemKey: string, style?: string) =>
+	fetchZoteroFormatted(plugin, itemKey, 'bib', style);
 
 export async function fetchWikipediaCitation(
-       plugin: RNPlugin,
-       url: string,
-       style?: string
+	plugin: RNPlugin,
+	url: string,
+	style?: string
 ): Promise<string | null> {
-       const finalStyle =
-               style ??
-               ((await plugin.settings.getSetting('citation-format')) as string | undefined) ??
-               'apa';
-       const res = await fetch(`${WIKIPEDIA_API_URL}${encodeURIComponent(url)}`, {
-               headers: {
-                       ...Object.fromEntries(WIKIPEDIA_API_HEADERS.entries()),
-                       Accept: `text/x-bibliography; style=${finalStyle}; locale=en-US`,
-               },
-       });
-       return res.ok ? res.text() : null;
+	const finalStyle =
+		style ??
+		((await plugin.settings.getSetting('citation-format')) as string | undefined) ??
+		'apa';
+	const res = await fetch(`${WIKIPEDIA_API_URL}${encodeURIComponent(url)}`, {
+		headers: {
+			...Object.fromEntries(WIKIPEDIA_API_HEADERS.entries()),
+			Accept: `text/x-bibliography; style=${finalStyle}; locale=en-US`,
+		},
+	});
+	return res.ok ? res.text() : null;
 }
 
 export async function fetchWikipediaBibliography(
-       plugin: RNPlugin,
-       url: string,
-       style?: string
+	plugin: RNPlugin,
+	url: string,
+	style?: string
 ): Promise<string | null> {
-       const finalStyle =
-               style ??
-               ((await plugin.settings.getSetting('citation-format')) as string | undefined) ??
-               'apa';
-       const res = await fetch(`${WIKIPEDIA_API_URL}${encodeURIComponent(url)}`, {
-               headers: {
-                       ...Object.fromEntries(WIKIPEDIA_API_HEADERS.entries()),
-                       Accept: `text/x-bibliography; style=${finalStyle}; locale=en-US`,
-               },
-       });
-       return res.ok ? res.text() : null;
+	const finalStyle =
+		style ??
+		((await plugin.settings.getSetting('citation-format')) as string | undefined) ??
+		'apa';
+	const res = await fetch(`${WIKIPEDIA_API_URL}${encodeURIComponent(url)}`, {
+		headers: {
+			...Object.fromEntries(WIKIPEDIA_API_HEADERS.entries()),
+			Accept: `text/x-bibliography; style=${finalStyle}; locale=en-US`,
+		},
+	});
+	return res.ok ? res.text() : null;
 }
