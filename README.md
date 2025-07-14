@@ -29,6 +29,24 @@ The Zotero Connector syncs your Zotero library into RemNote and provides tools f
 -   Friendly interface for managing sync
 -   Automated sync intervals (configurable)
 
+## Commands
+
+The connector provides several command palette actions. Each command can be typed directly in RemNote or triggered via its quick code.
+
+-   **Copy Citation via Zotero** (`citez`) – copy formatted citations for the focused Rem's sources.
+    <!-- ![Citation via Zotero](.github/assets/citez.gif) -->
+-   **Copy Bibliography via Zotero** (`bibz`) – copy bibliography entries for the focused Rem's sources.
+    <!-- ![Bibliography via Zotero](.github/assets/bibz.gif) -->
+-   **Copy Citation via Wikipedia** (`citew`) – fetch citations without using Zotero.
+    <!-- ![Citation via Wikipedia](.github/assets/citew.gif) -->
+-   **Copy Bibliography via Wikipedia** (`bibw`) – fetch bibliography entries without using Zotero.
+    <!-- ![Bibliography via Wikipedia](.github/assets/bibw.gif) -->
+-   **Force Zotero Sync** (`sync`) – immediately synchronize your Zotero library.
+-   **Abort Zotero Sync** – stop the current sync job.
+-   **Reset Synced Zotero Data** (`rszd`) – remove all Zotero Connector data from this knowledge base.
+
+Additional diagnostic commands become available when **Debug Mode** is enabled.
+
 ## Installation
 
 1. In RemNote, open **Settings → Plugins**.
@@ -51,6 +69,7 @@ The Zotero Connector syncs your Zotero library into RemNote and provides tools f
 
     ![Final Settings](.github/assets/final.png)
 
+<!-- 
 ## Settings Reference
 
 -   **Zotero UserID** – your Zotero account ID from the Zotero API settings page.
@@ -67,43 +86,13 @@ The Zotero Connector syncs your Zotero library into RemNote and provides tools f
 -   **Select Previous Key** – key to move up in the citation finder widget.
 -   **Select Item Key** – key to insert the selected citation.
 -   **Escape Key** – key to close the citation finder widget.
-
-## Commands
-
-The connector provides several command palette actions. Each command can be typed directly in RemNote or triggered via its quick code.
-
--   **Copy Citation via Zotero** (`citez`) – copy formatted citations for the focused Rem's sources.
-    <!-- ![Citation via Zotero](.github/assets/citez.gif) -->
--   **Copy Bibliography via Zotero** (`bibz`) – copy bibliography entries for the focused Rem's sources.
-    <!-- ![Bibliography via Zotero](.github/assets/bibz.gif) -->
--   **Copy Citation via Wikipedia** (`citew`) – fetch citations without using Zotero.
-    <!-- ![Citation via Wikipedia](.github/assets/citew.gif) -->
--   **Copy Bibliography via Wikipedia** (`bibw`) – fetch bibliography entries without using Zotero.
-    <!-- ![Bibliography via Wikipedia](.github/assets/bibw.gif) -->
--   **Force Zotero Sync** (`sync`) – immediately synchronize your Zotero library.
--   **Abort Zotero Sync** – stop the current sync job.
--   **Reset Synced Zotero Data** (`rszd`) – remove all Zotero Connector data from this knowledge base.
-
-Additional diagnostic commands become available when **Debug Mode** is enabled.
+-   -->
 
 ## Development Roadmap
-
-**Next Steps:**
-
--   [x] Installation and setup documentation
--   [ ] Bibliography generation from source links
--   [ ] Advanced citation features
--   [ ] Source aggregation tools
--   [x] Background sync automation
--   [ ] Bibliography generation from RemNote source links
--   [ ] Improve citation detection and formatting
--   [ ] Better installation and setup process
 
 **Future Goals:**
 
 -   Complete bidirectional sync between Zotero and RemNote
--   Enhanced RemNote source management tools
--   Citation style formatting options
 
 ## Issues and Feedback
 
