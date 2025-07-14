@@ -27,9 +27,9 @@ function both(tag: string, inner: string): string {
 /*───────────────────────────────────────────────────────────────────────────*/
 /* Per‑tag CSS generator                                                    */
 /*───────────────────────────────────────────────────────────────────────────*/
-function iconCSS(tag: string, base: string, url: string): string {
-	const dark = `${url}/${base}-dark.svg`;
-	const light = `${url}/${base}-light.svg`;
+function iconCSS(tag: string, base: string, url: string, darkMode: boolean): string {
+        const dark = `${url}/${base}-dark.svg`;
+        const light = `${url}/${base}-light.svg`;
 
 	// Elements we touch ------------------------------------------------------
 	const coreRing = `${both(tag, '.rem-bullet__core')}, ${both(tag, '.rem-bullet__ring')}`;
@@ -46,42 +46,33 @@ function iconCSS(tag: string, base: string, url: string): string {
 		'--perfect-circle-scale': '10', // force scale(1)
 	});
 
-	/* 3️⃣  Dark‑theme icon */
-	const bgDecl = {
-		'background-image': `url("${dark}")`,
-		'background-repeat': 'no-repeat',
-		'background-position': 'center',
-		'background-size': 'contain',
-	} as const;
-	css += rule(inner, bgDecl);
+        const bgDecl = {
+                'background-image': `url("${darkMode ? dark : light}")`,
+                'background-repeat': 'no-repeat',
+                'background-position': 'center',
+                'background-size': 'contain',
+        } as const;
+        css += rule(inner, bgDecl);
 
-	/* 4️⃣  Light‑theme override */
-	css += `@media (prefers-color-scheme: light) {\n`;
-	css += rule(inner, {
-		...bgDecl,
-		'background-image': `url("${light}")`,
-	});
-	css += `}\n`;
-
-	return css;
+        return css;
 }
 
 /*───────────────────────────────────────────────────────────────────────────*/
 /* Build complete stylesheet                                               */
 /*───────────────────────────────────────────────────────────────────────────*/
-function buildCSS(): string {
+function buildCSS(darkMode: boolean): string {
 	const base =
 		'https://raw.githubusercontent.com/coldenate/zotero-remnote-connector/refs/heads/main/public/icons/';
-	let css = '/* Zotero Connector icon overrides */\n';
-	for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base);
-	return css;
+        let css = '/* Zotero Connector icon overrides */\n';
+        for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base, darkMode);
+        return css;
 }
 
 /*───────────────────────────────────────────────────────────────────────────*/
 /* RemNote plugin entry                                                    */
 /*───────────────────────────────────────────────────────────────────────────*/
-export async function registerIconCSS(plugin: RNPlugin): Promise<void> {
-	const css = buildCSS();
+export async function registerIconCSS(plugin: RNPlugin, darkMode: boolean): Promise<void> {
+        const css = buildCSS(darkMode);
 	await logMessage(
 		plugin,
 		`[Zotero Connector-Icons] injecting ${css.length} chars`,
