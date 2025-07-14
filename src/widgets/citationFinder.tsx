@@ -108,7 +108,17 @@ function CitationFinderWidget() {
 		return () => {
 			plugin.window.releaseKeys(wid, keys);
 		};
-	}, [wid, hidden, hotkeysReady, selectNextKey, selectPrevKey, selectItemKey, escapeKey, plugin.window.releaseKeys, plugin.window.stealKeys]);
+	}, [
+		wid,
+		hidden,
+		hotkeysReady,
+		selectNextKey,
+		selectPrevKey,
+		selectItemKey,
+		escapeKey,
+		plugin.window.releaseKeys,
+		plugin.window.stealKeys,
+	]);
 
 	// handle keys stolen from the editor (when caret is still in editor)
 	useAPIEventListener(AppEvents.StealKeyEvent, wid, ({ key }) => {

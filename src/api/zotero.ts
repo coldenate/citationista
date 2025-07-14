@@ -1,4 +1,5 @@
 /** Utility wrappers around the Zotero REST API. */
+/** biome-ignore-all lint/suspicious/noExplicitAny: <-- this is how it was in the original code --> */
 import type { RNPlugin } from '@remnote/plugin-sdk';
 // @ts-ignore
 import createZoteroClient from 'zotero-api-client';
@@ -41,7 +42,6 @@ export interface ZoteroLibraryInfo {
 
 export class ZoteroAPI {
 	private plugin: RNPlugin;
-	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
 	private zoteroConnection: any | null = null;
 	private lastLibraryKey: string | null = null;
 
@@ -49,7 +49,6 @@ export class ZoteroAPI {
 		this.plugin = plugin;
 	}
 
-	// biome-ignore lint/suspicious/noExplicitAny: how it was in the original code idk :?
 	private async getOrCreateConnection(
 		libraryType?: 'user' | 'group',
 		libraryId?: string

@@ -72,17 +72,17 @@ The Zotero Connector syncs your Zotero library into RemNote and provides tools f
 
 The connector provides several command palette actions. Each command can be typed directly in RemNote or triggered via its quick code.
 
-- **Copy Citation via Zotero** (`citez`) – copy formatted citations for the focused Rem's sources.
-  ![Citation via Zotero](.github/assets/citez.gif)
-- **Copy Bibliography via Zotero** (`bibz`) – copy bibliography entries for the focused Rem's sources.
-  ![Bibliography via Zotero](.github/assets/bibz.gif)
-- **Copy Citation via Wikipedia** (`citew`) – fetch citations without using Zotero.
-  ![Citation via Wikipedia](.github/assets/citew.gif)
-- **Copy Bibliography via Wikipedia** (`bibw`) – fetch bibliography entries without using Zotero.
-  ![Bibliography via Wikipedia](.github/assets/bibw.gif)
-- **Force Zotero Sync** (`sync`) – immediately synchronize your Zotero library.
-- **Abort Zotero Sync** – stop the current sync job.
-- **Reset Synced Zotero Data** (`rszd`) – remove all Zotero Connector data from this knowledge base.
+-   **Copy Citation via Zotero** (`citez`) – copy formatted citations for the focused Rem's sources.
+    <!-- ![Citation via Zotero](.github/assets/citez.gif) -->
+-   **Copy Bibliography via Zotero** (`bibz`) – copy bibliography entries for the focused Rem's sources.
+    <!-- ![Bibliography via Zotero](.github/assets/bibz.gif) -->
+-   **Copy Citation via Wikipedia** (`citew`) – fetch citations without using Zotero.
+    <!-- ![Citation via Wikipedia](.github/assets/citew.gif) -->
+-   **Copy Bibliography via Wikipedia** (`bibw`) – fetch bibliography entries without using Zotero.
+    <!-- ![Bibliography via Wikipedia](.github/assets/bibw.gif) -->
+-   **Force Zotero Sync** (`sync`) – immediately synchronize your Zotero library.
+-   **Abort Zotero Sync** – stop the current sync job.
+-   **Reset Synced Zotero Data** (`rszd`) – remove all Zotero Connector data from this knowledge base.
 
 Additional diagnostic commands become available when **Debug Mode** is enabled.
 

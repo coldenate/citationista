@@ -29,12 +29,12 @@ import {
 } from './services/citationHelpers';
 import { ensureZoteroLibraryRemExists } from './services/ensureUIPrettyZoteroRemExist';
 import { registerIconCSS } from './services/iconCSS';
-import { detectDarkMode, setupThemeDetection } from './utils/theme';
 import { createRem, markAbortRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { release } from './sync/syncLock';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
+import { detectDarkMode, setupThemeDetection } from './utils/theme';
 
 let autoSyncInterval: NodeJS.Timeout | undefined;
 let zoteroCitationRegistered = false;
@@ -69,6 +69,7 @@ async function registerSettings(plugin: RNPlugin) {
 					value: `${lib.type}:${lib.id}`,
 				}))
 			: [{ key: 'none', label: 'None', value: '' }];
+
 	await plugin.settings.registerDropdownSetting({
 		id: 'zotero-library-id',
 		title: 'Primary Zotero Library',
@@ -835,12 +836,12 @@ async function registerCommands(plugin: RNPlugin) {
 }
 
 async function onActivate(plugin: RNPlugin) {
-        await registerSettings(plugin);
-        await registerPowerups(plugin);
-        setupThemeDetection(plugin, async () => {
-                await registerIconCSS(plugin, detectDarkMode());
-        });
-        const homePage = await ensureZoteroLibraryRemExists(plugin);
+	await registerSettings(plugin);
+	await registerPowerups(plugin);
+	setupThemeDetection(plugin, async () => {
+		await registerIconCSS(plugin, detectDarkMode());
+	});
+	const homePage = await ensureZoteroLibraryRemExists(plugin);
 	if (homePage) {
 		try {
 			await plugin.window.openRem(homePage);

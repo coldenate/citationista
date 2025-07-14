@@ -1,13 +1,12 @@
 import { BuiltInPowerupCodes, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { WIKIPEDIA_API_HEADERS, WIKIPEDIA_API_URL } from '../constants/constants';
-import { fetchLibraries } from '../api/zotero';
 import { LogType, logMessage } from '../utils/logging';
 
 /* ──────────────────────────────────────────────────────────────────── */
 /*  Small util: choose Zotero base URL                                 */
 /* ──────────────────────────────────────────────────────────────────── */
 function zoteroBase(): string {
-    return process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
+	return process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
 }
 
 export async function extractSourceUrls(plugin: RNPlugin, rem: Rem): Promise<string[]> {
@@ -51,35 +50,35 @@ function isValidUrl(url: string): boolean {
 /*  0 ▸ helper: current credentials + primary library info            */
 /* ──────────────────────────────────────────────────────────────────── */
 async function getLibraryInfo(plugin: RNPlugin) {
-    const apiKey = await plugin.settings.getSetting('zotero-api-key');
-    const userId = await plugin.settings.getSetting('zotero-user-id');
-    const libSetting = await plugin.settings.getSetting('zotero-library-id');
+	const apiKey = await plugin.settings.getSetting('zotero-api-key');
+	const userId = await plugin.settings.getSetting('zotero-user-id');
+	const libSetting = await plugin.settings.getSetting('zotero-library-id');
 
-    if (!apiKey || !userId) throw new Error('Zotero credentials not set');
+	if (!apiKey || !userId) throw new Error('Zotero credentials not set');
 
-    /* default to personal library */
-    let libraryId = String(userId);
-    let libraryType: 'users' | 'groups' = 'users';
+	/* default to personal library */
+	let libraryId = String(userId);
+	let libraryType: 'users' | 'groups' = 'users';
 
-    if (typeof libSetting === 'string' && libSetting.includes(':')) {
-        const [type, id] = libSetting.split(':');
-        libraryType = type === 'group' ? 'groups' : 'users';
-        libraryId = id;
-    }
-    return {
-        apiKey: String(apiKey),
-        primaryLibId: libraryId,
-        primaryLibType: libraryType,
-        userId: String(userId),
-    };
+	if (typeof libSetting === 'string' && libSetting.includes(':')) {
+		const [type, id] = libSetting.split(':');
+		libraryType = type === 'group' ? 'groups' : 'users';
+		libraryId = id;
+	}
+	return {
+		apiKey: String(apiKey),
+		primaryLibId: libraryId,
+		primaryLibType: libraryType,
+		userId: String(userId),
+	};
 }
 /**
  * Take an array of URLs, translate them with Wikimedia Citoid, push each item
  * into the configured Zotero library, and return the new item keys.
  */
 export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promise<string[]> {
-        const { apiKey, primaryLibId, primaryLibType } = await getLibraryInfo(plugin);
-        const itemKeys: string[] = [];
+	const { apiKey, primaryLibId, primaryLibType } = await getLibraryInfo(plugin);
+	const itemKeys: string[] = [];
 
 	for (const url of urls) {
 		await logMessage(plugin, `▶ Translating ${url}`, LogType.Debug, false);
@@ -99,14 +98,14 @@ export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promis
 			continue;
 		}
 
-                const citoidPayload = await citoidRes.json();
-                const item = Array.isArray(citoidPayload) ? citoidPayload[0] : citoidPayload;
-                if (!item) continue;
+		const citoidPayload = await citoidRes.json();
+		const item = Array.isArray(citoidPayload) ? citoidPayload[0] : citoidPayload;
+		if (!item) continue;
 
 		/* 2 ▸ POST to Zotero */
 		await logMessage(plugin, `⤴ Pushing item to Zotero`, LogType.Debug, false);
 
-                const postRes = await fetch(`${zoteroBase()}/${primaryLibType}/${primaryLibId}/items`, {
+		const postRes = await fetch(`${zoteroBase()}/${primaryLibType}/${primaryLibId}/items`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -129,15 +128,15 @@ export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promis
 		}
 
 		/* 3 ▸ extract the new itemKey – real success payload is an object */
-                try {
-                        const data = JSON.parse(bodyText);
-                        const successObj = data.successful ?? data.success ?? data;
-                        const firstKeyObj = Object.values(successObj)[0] as any;
-                        const key = firstKeyObj?.key;
-                        if (key) itemKeys.push(key);
-                } catch {
-                        /* ignore parse errors – we already logged */
-                }
+		try {
+			const data = JSON.parse(bodyText);
+			const successObj = data.successful ?? data.success ?? data;
+			const firstKeyObj = Object.values(successObj)[0] as { key?: string };
+			const key = firstKeyObj?.key;
+			if (key) itemKeys.push(key);
+		} catch {
+			/* ignore parse errors – we already logged */
+		}
 	}
 
 	if (!itemKeys.length) {
@@ -170,65 +169,65 @@ export async function fetchZoteroFormatted(
 		((await plugin.settings.getSetting('citation-format')) as string | undefined) ??
 		'apa';
 
-        const { apiKey, primaryLibId, primaryLibType, userId } = await getLibraryInfo(plugin);
+	const { apiKey, primaryLibId, primaryLibType, userId } = await getLibraryInfo(plugin);
 
-        /* 1️⃣ try PRIMARY library */
-        const primaryUrl =
-                `${zoteroBase()}/${primaryLibType}/${primaryLibId}/items/${itemKey}` +
-                `?include=${include}&style=${finalStyle}&linkwrap=0`;
+	/* 1️⃣ try PRIMARY library */
+	const primaryUrl =
+		`${zoteroBase()}/${primaryLibType}/${primaryLibId}/items/${itemKey}` +
+		`?include=${include}&style=${finalStyle}&linkwrap=0`;
 
-        const primary = await tryFetchFormatted(plugin, primaryUrl, apiKey);
-        if (primary) return primary;
+	const primary = await tryFetchFormatted(plugin, primaryUrl, apiKey);
+	if (primary) return primary;
 
-        /* 2️⃣ if primary was a group, fallback to *personal* library */
-        if (primaryLibType === 'groups') {
-                const userUrl =
-                        `${zoteroBase()}/users/${userId}/items/${itemKey}` +
-                        `?include=${include}&style=${finalStyle}&linkwrap=0`;
+	/* 2️⃣ if primary was a group, fallback to *personal* library */
+	if (primaryLibType === 'groups') {
+		const userUrl =
+			`${zoteroBase()}/users/${userId}/items/${itemKey}` +
+			`?include=${include}&style=${finalStyle}&linkwrap=0`;
 
-                const personal = await tryFetchFormatted(plugin, userUrl, apiKey);
-                if (personal) return personal;
-        }
+		const personal = await tryFetchFormatted(plugin, userUrl, apiKey);
+		if (personal) return personal;
+	}
 
-        /* 3️⃣ nothing found */
-        return null;
+	/* 3️⃣ nothing found */
+	return null;
 }
 
 /* helper – returns null on any network / 4xx error */
 async function tryFetchFormatted(
-        plugin: RNPlugin,
-        url: string,
-        apiKey: string
+	plugin: RNPlugin,
+	url: string,
+	apiKey: string
 ): Promise<string | null> {
-        let res: Response;
-        try {
-                res = await fetch(url, {
-                        headers: {
-                                'Zotero-API-Key': apiKey,
-                                Accept: 'application/json',
-                        },
-                });
-        } catch (e) {
-                await logMessage(plugin, `Fetch failed for ${url}: ${String(e)}`, LogType.Warning, false);
-                return null;
-        }
+	let res: Response;
+	try {
+		res = await fetch(url, {
+			headers: {
+				'Zotero-API-Key': apiKey,
+				Accept: 'application/json',
+			},
+		});
+	} catch (e) {
+		await logMessage(plugin, `Fetch failed for ${url}: ${String(e)}`, LogType.Warning, false);
+		return null;
+	}
 
-        if (!res.ok) return null;
+	if (!res.ok) return null;
 
-        const ctype = res.headers.get('content-type') ?? '';
-        let rawHtml = '';
-        try {
-                if (ctype.includes('application/json')) {
-                        const json = await res.json();
-                        rawHtml = json.citation ?? json.bib ?? '';
-                } else {
-                        rawHtml = await res.text();
-                }
-        } catch {
-                return null;
-        }
+	const ctype = res.headers.get('content-type') ?? '';
+	let rawHtml = '';
+	try {
+		if (ctype.includes('application/json')) {
+			const json = await res.json();
+			rawHtml = json.citation ?? json.bib ?? '';
+		} else {
+			rawHtml = await res.text();
+		}
+	} catch {
+		return null;
+	}
 
-        return rawHtml ? stripHtml(rawHtml) : null;
+	return rawHtml ? stripHtml(rawHtml) : null;
 }
 export const fetchZoteroCitation = (plugin: RNPlugin, itemKey: string, style?: string) =>
 	fetchZoteroFormatted(plugin, itemKey, 'citation', style);

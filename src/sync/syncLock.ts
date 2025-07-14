@@ -17,5 +17,5 @@ export function release(): void {
 
 /** Check if a sync is currently running. */
 export function isSyncing(): boolean {
-        return syncing;
+	return syncing;
 }

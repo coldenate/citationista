@@ -45,15 +45,15 @@ function iconCSS(tag: string, base: string, url: string, isDark: boolean): strin
 	css += rule(bullet, {
 		'--perfect-circle-scale': '10', // force scale(1)
 	});
-        /* 3️⃣  Icon depending on theme */
-        const icon = isDark ? dark : light;
-        const bgDecl = {
-                'background-image': `url("${icon}")`,
-                'background-repeat': 'no-repeat',
-                'background-position': 'center',
-                'background-size': 'contain',
-        } as const;
-        css += rule(inner, bgDecl);
+	/* 3️⃣  Icon depending on theme */
+	const icon = isDark ? dark : light;
+	const bgDecl = {
+		'background-image': `url("${icon}")`,
+		'background-repeat': 'no-repeat',
+		'background-position': 'center',
+		'background-size': 'contain',
+	} as const;
+	css += rule(inner, bgDecl);
 
 	return css;
 }
