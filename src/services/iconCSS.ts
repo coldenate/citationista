@@ -27,7 +27,7 @@ function both(tag: string, inner: string): string {
 /*───────────────────────────────────────────────────────────────────────────*/
 /* Per‑tag CSS generator                                                    */
 /*───────────────────────────────────────────────────────────────────────────*/
-function iconCSS(tag: string, base: string, url: string): string {
+function iconCSS(tag: string, base: string, url: string, isDark: boolean): string {
 	const dark = `${url}/${base}-dark.svg`;
 	const light = `${url}/${base}-light.svg`;
 
@@ -45,23 +45,15 @@ function iconCSS(tag: string, base: string, url: string): string {
 	css += rule(bullet, {
 		'--perfect-circle-scale': '10', // force scale(1)
 	});
-
-	/* 3️⃣  Dark‑theme icon */
-	const bgDecl = {
-		'background-image': `url("${dark}")`,
-		'background-repeat': 'no-repeat',
-		'background-position': 'center',
-		'background-size': 'contain',
-	} as const;
-	css += rule(inner, bgDecl);
-
-	/* 4️⃣  Light‑theme override */
-	css += `@media (prefers-color-scheme: light) {\n`;
-	css += rule(inner, {
-		...bgDecl,
-		'background-image': `url("${light}")`,
-	});
-	css += `}\n`;
+        /* 3️⃣  Icon depending on theme */
+        const icon = isDark ? dark : light;
+        const bgDecl = {
+                'background-image': `url("${icon}")`,
+                'background-repeat': 'no-repeat',
+                'background-position': 'center',
+                'background-size': 'contain',
+        } as const;
+        css += rule(inner, bgDecl);
 
 	return css;
 }
@@ -69,19 +61,19 @@ function iconCSS(tag: string, base: string, url: string): string {
 /*───────────────────────────────────────────────────────────────────────────*/
 /* Build complete stylesheet                                               */
 /*───────────────────────────────────────────────────────────────────────────*/
-function buildCSS(): string {
+function buildCSS(isDark: boolean): string {
 	const base =
 		'https://raw.githubusercontent.com/coldenate/zotero-remnote-connector/refs/heads/main/public/icons/';
 	let css = '/* Zotero Connector icon overrides */\n';
-	for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base);
+	for (const [tag, file] of Object.entries(iconTagMap)) css += iconCSS(tag, file, base, isDark);
 	return css;
 }
 
 /*───────────────────────────────────────────────────────────────────────────*/
 /* RemNote plugin entry                                                    */
 /*───────────────────────────────────────────────────────────────────────────*/
-export async function registerIconCSS(plugin: RNPlugin): Promise<void> {
-	const css = buildCSS();
+export async function registerIconCSS(plugin: RNPlugin, isDark: boolean): Promise<void> {
+	const css = buildCSS(isDark);
 	await logMessage(
 		plugin,
 		`[Zotero Connector-Icons] injecting ${css.length} chars`,

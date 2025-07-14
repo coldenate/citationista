@@ -29,6 +29,7 @@ import {
 } from './services/citationHelpers';
 import { ensureZoteroLibraryRemExists } from './services/ensureUIPrettyZoteroRemExist';
 import { registerIconCSS } from './services/iconCSS';
+import { detectDarkMode, setupThemeDetection } from './utils/theme';
 import { createRem, markAbortRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { release } from './sync/syncLock';
@@ -706,7 +707,7 @@ async function registerDebugCommands(plugin: RNPlugin) {
 		description: 'Registers the icon CSS for Zotero Connector.',
 		quickCode: 'ric',
 		action: async () => {
-			await registerIconCSS(plugin);
+			await registerIconCSS(plugin, detectDarkMode());
 			plugin.app.toast('Icon CSS registered successfully!');
 		},
 	});
@@ -834,9 +835,12 @@ async function registerCommands(plugin: RNPlugin) {
 }
 
 async function onActivate(plugin: RNPlugin) {
-	await registerSettings(plugin);
-	await registerPowerups(plugin);
-	const homePage = await ensureZoteroLibraryRemExists(plugin);
+        await registerSettings(plugin);
+        await registerPowerups(plugin);
+        setupThemeDetection(plugin, async () => {
+                await registerIconCSS(plugin, detectDarkMode());
+        });
+        const homePage = await ensureZoteroLibraryRemExists(plugin);
 	if (homePage) {
 		try {
 			await plugin.window.openRem(homePage);
@@ -888,7 +892,7 @@ async function onActivate(plugin: RNPlugin) {
 	}
 
 	plugin.track(async (reactivePlugin) => {
-		await registerIconCSS(plugin);
+		await registerIconCSS(plugin, detectDarkMode());
 		const debugMode = await isDebugMode(reactivePlugin);
 		if (debugMode && !debugRegistered) {
 			plugin.app.toast('Debug Mode Enabled; Registering Debug Tools for Zotero Connector...');
