@@ -1,4 +1,9 @@
 export const POPUP_Y_OFFSET = 25;
+export const selectNextKeyID = 'selectNextKey';
+export const selectPreviousKeyID = 'selectPreviousKey';
+export const selectItemKeyID = 'selectItemKey';
+export const escapeKeyID = 'escapeKey';
+
 export const citationFormats = [
 	{
 		key: 'BibTeX',
@@ -34,9 +39,9 @@ export const citationFormats = [
 ];
 
 export const citationSourceOptions = [
-       { key: 'zotero', value: 'zotero', label: 'Zotero' },
-       { key: 'wikipedia', value: 'wikipedia', label: 'Wikipedia' },
-       { key: 'both', value: 'both', label: 'Both' },
+	{ key: 'zotero', value: 'zotero', label: 'Zotero' },
+	{ key: 'wikipedia', value: 'wikipedia', label: 'Wikipedia' },
+	{ key: 'both', value: 'both', label: 'Both' },
 ];
 
 export const WIKIPEDIA_API_URL = 'https://en.wikipedia.org/api/rest_v1/data/citation/bibtex/';
@@ -53,8 +58,8 @@ export const powerupCodes = {
 	ZOTERO_TAG: 'zotero-tag',
 	ZOTERO_NOTE: 'zotero-note',
 	ZITEM_ATTACHMENT: 'zitem-attachment',
-        // Historical name kept for compatibility
-        CITATION_POOL: 'coolPool',
+	// Historical name kept for compatibility
+	CITATION_POOL: 'coolPool',
 	ZOTERO_UNFILED_ITEMS: 'zotero-unfiled-items',
 	ZOTERO_CONNECTOR_HOME: 'zotero-connector-home',
 };

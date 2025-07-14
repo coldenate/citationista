@@ -1,6 +1,6 @@
 import type { RNPlugin } from '@remnote/plugin-sdk';
-import { LogType, logMessage } from '../utils/logging';
 import { iconTagMap } from '../constants/iconTagMap';
+import { LogType, logMessage } from '../utils/logging';
 
 /**
  * iconTagMap moved to `constants/iconTagMap.ts`.

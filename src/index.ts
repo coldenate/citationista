@@ -4,15 +4,18 @@ import {
 	PropertyLocation,
 	PropertyType,
 	type RNPlugin,
-	SelectionType,
 	WidgetLocation,
 } from '@remnote/plugin-sdk';
 import { fetchLibraries } from './api/zotero';
 import {
 	citationFormats,
 	citationSourceOptions,
+	escapeKeyID,
 	POPUP_Y_OFFSET,
 	powerupCodes,
+	selectItemKeyID,
+	selectNextKeyID,
+	selectPreviousKeyID,
 } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
@@ -139,6 +142,42 @@ async function registerSettings(plugin: RNPlugin) {
 		title: 'Debug Mode (Zotero Connector)',
 		description: 'Enables certain testing commands. Non-destructive.',
 		defaultValue: false,
+	});
+
+	// The floating widget hotkey system currently uses
+	// a different hotkey system than the regular hotkey
+	// system because it needs to 'steal' hotkeys like
+	// tab and enter from the RemNote editor component.
+	//
+	// Hotkeys can be customised using strings like `ctrl+enter`
+	// or `tab`.
+
+	await plugin.settings.registerStringSetting({
+		id: selectNextKeyID,
+		title: 'Select Next Key',
+		defaultValue: 'down',
+		description: 'The key used to select the next item in the floating widget.',
+	});
+
+	await plugin.settings.registerStringSetting({
+		id: selectPreviousKeyID,
+		title: 'Select Previous Key',
+		defaultValue: 'up',
+		description: 'The key used to select the previous item in the floating widget.',
+	});
+
+	await plugin.settings.registerStringSetting({
+		id: selectItemKeyID,
+		title: 'Select Item Key',
+		defaultValue: 'enter',
+		description: 'The key used to select the current item in the floating widget.',
+	});
+
+	await plugin.settings.registerStringSetting({
+		id: escapeKeyID,
+		title: 'Escape Key',
+		defaultValue: 'escape',
+		description: 'The key used to close the floating widget.',
 	});
 }
 
@@ -673,6 +712,16 @@ async function registerDebugCommands(plugin: RNPlugin) {
 	});
 }
 
+async function registerWidgets(plugin: RNPlugin) {
+	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
+		dimensions: { height: 200, width: 500 },
+		powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
+	});
+	await plugin.app.registerWidget('citationFinder', WidgetLocation.FloatingWidget, {
+		dimensions: { height: 'auto', width: '320px' },
+	});
+}
+
 async function registerCommands(plugin: RNPlugin) {
 	await plugin.app.registerCommand({
 		id: 'zotero-send-sources',
@@ -702,7 +751,7 @@ async function registerCommands(plugin: RNPlugin) {
 		await registerWikipediaCitationCommands(plugin);
 	}
 
-	const openFinder = async (mode: 'citation' | 'bib') => {
+	async function openFinder(mode: 'citation' | 'bib') {
 		await plugin.storage.setSession('citationFinderMode', mode);
 
 		// Insert a temporary space so the caret exists
@@ -715,7 +764,13 @@ async function registerCommands(plugin: RNPlugin) {
 			top: caret ? caret.y + POPUP_Y_OFFSET : undefined,
 			left: caret?.x,
 		});
-	};
+	}
+
+	plugin.event.addListener(AppEvents.EditorTextEdited, undefined, async () => {
+		if (citationWidgetId && (await plugin.window.isFloatingWidgetOpen(citationWidgetId))) {
+			return;
+		}
+	});
 
 	await plugin.app.registerCommand({
 		id: 'insert-citation-at-cursor',
@@ -776,16 +831,6 @@ async function registerCommands(plugin: RNPlugin) {
 	// 			}
 	// 		},
 	// 	});
-}
-
-async function registerWidgets(plugin: RNPlugin) {
-	await plugin.app.registerWidget('syncStatusWidget', WidgetLocation.DocumentBelowTitle, {
-		dimensions: { height: 200, width: 500 },
-		powerupFilter: powerupCodes.ZOTERO_CONNECTOR_HOME,
-	});
-	await plugin.app.registerWidget('citationFinder', WidgetLocation.FloatingWidget, {
-		dimensions: { height: 'auto', width: '320px' },
-	});
 }
 
 async function onActivate(plugin: RNPlugin) {
