@@ -60,7 +60,31 @@ The Zotero Connector syncs your Zotero library into RemNote and provides tools f
 -   **Items in Multiple Collections Display Behavior** – choose `Portal` to link all instances of an item or `Reference` to create separate copies in each collection.
 -   **Disable Auto Sync** – prevents automatic synchronization every five minutes.
 -   **Simple Syncing Mode** – skips metadata (notes, dates, etc.) when importing items.
+-   **Citation Format** – formatting style for citations and bibliographies (APA, MLA, etc.).
+-   **Citation Source** – choose where citation data comes from (`Zotero`, `Wikipedia`, or `Both`).
 -   **Debug Mode (Zotero Connector)** – exposes extra diagnostic commands and enables verbose logging. (please use this when reporting bugs and sending console logs! 🙏)
+-   **Select Next Key** – key to move down in the citation finder widget.
+-   **Select Previous Key** – key to move up in the citation finder widget.
+-   **Select Item Key** – key to insert the selected citation.
+-   **Escape Key** – key to close the citation finder widget.
+
+## Commands
+
+The connector provides several command palette actions. Each command can be typed directly in RemNote or triggered via its quick code.
+
+- **Copy Citation via Zotero** (`citez`) – copy formatted citations for the focused Rem's sources.
+  ![Citation via Zotero](.github/assets/citez.gif)
+- **Copy Bibliography via Zotero** (`bibz`) – copy bibliography entries for the focused Rem's sources.
+  ![Bibliography via Zotero](.github/assets/bibz.gif)
+- **Copy Citation via Wikipedia** (`citew`) – fetch citations without using Zotero.
+  ![Citation via Wikipedia](.github/assets/citew.gif)
+- **Copy Bibliography via Wikipedia** (`bibw`) – fetch bibliography entries without using Zotero.
+  ![Bibliography via Wikipedia](.github/assets/bibw.gif)
+- **Force Zotero Sync** (`sync`) – immediately synchronize your Zotero library.
+- **Abort Zotero Sync** – stop the current sync job.
+- **Reset Synced Zotero Data** (`rszd`) – remove all Zotero Connector data from this knowledge base.
+
+Additional diagnostic commands become available when **Debug Mode** is enabled.
 
 ## Development Roadmap
 
