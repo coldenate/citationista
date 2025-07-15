@@ -69,7 +69,7 @@ Additional diagnostic commands become available when **Debug Mode** is enabled.
 
     ![Final Settings](.github/assets/final.png)
 
-<!-- 
+<!--
 ## Settings Reference
 
 -   **Zotero UserID** – your Zotero account ID from the Zotero API settings page.
