@@ -62,25 +62,35 @@ export class ZoteroPropertyHydrator {
 
                                // Basic text for notes or annotations
                                if (item.data.itemType === 'note' && item.data.note) {
-                                       const noteRem = await createRem(this.plugin);
-                                       if (noteRem) {
-                                               await noteRem.setParent(rem);
+                                       const tempRem = await createRem(this.plugin);
+                                       if (tempRem) {
+                                               await tempRem.setParent(rem);
                                                await this.plugin.richText.parseAndInsertHtml(
                                                        item.data.note,
-                                                       noteRem
+                                                       tempRem
                                                );
+                                               const children = await tempRem.getChildrenRem();
+                                               for (const child of children) {
+                                                       await child.setParent(rem);
+                                               }
+                                               await tempRem.remove();
                                        }
                                } else if (
                                        item.data.itemType === 'annotation' &&
                                        typeof item.data.annotationText === 'string'
                                ) {
-                                       const annotationRem = await createRem(this.plugin);
-                                       if (annotationRem) {
-                                               await annotationRem.setParent(rem);
+                                       const tempRem = await createRem(this.plugin);
+                                       if (tempRem) {
+                                               await tempRem.setParent(rem);
                                                await this.plugin.richText.parseAndInsertHtml(
                                                        item.data.annotationText,
-                                                       annotationRem
+                                                       tempRem
                                                );
+                                               const children = await tempRem.getChildrenRem();
+                                               for (const child of children) {
+                                                       await child.setParent(rem);
+                                               }
+                                               await tempRem.remove();
                                        }
                                }
 
