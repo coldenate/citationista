@@ -8,6 +8,7 @@ import {
 } from '@remnote/plugin-sdk';
 import { fetchLibraries } from './api/zotero';
 import {
+	autoSortLibrarySettingID,
 	citationFormats,
 	citationSourceOptions,
 	escapeKeyID,
@@ -27,7 +28,10 @@ import {
 	fetchZoteroCitation,
 	sendUrlsToZotero,
 } from './services/citationHelpers';
-import { ensureZoteroLibraryRemExists } from './services/ensureUIPrettyZoteroRemExist';
+import {
+	ensureZoteroLibraryRemExists,
+	updateLibraryRemAutoSort,
+} from './services/ensureUIPrettyZoteroRemExist';
 import { registerIconCSS } from './services/iconCSS';
 import { createRem, markAbortRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
@@ -114,6 +118,14 @@ async function registerSettings(plugin: RNPlugin) {
 		description:
 			'(not recommended) Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
 		defaultValue: false,
+	});
+
+	await plugin.settings.registerBooleanSetting({
+		id: autoSortLibrarySettingID,
+		title: 'Auto Sort Library Rem',
+		description:
+			"Automatically add RemNote's Auto Sort powerup to the Zotero Connector library page.",
+		defaultValue: true,
 	});
 
 	await plugin.settings.registerDropdownSetting({
@@ -859,6 +871,13 @@ async function onActivate(plugin: RNPlugin) {
 	await handleLibrarySwitch(plugin);
 	await registerCommands(plugin);
 
+	plugin.event.addListener(AppEvents.SettingChanged, undefined, async () => {
+		const autoSortLibrary = (await plugin.settings.getSetting(autoSortLibrarySettingID)) as
+			| boolean
+			| undefined;
+		await updateLibraryRemAutoSort(plugin, Boolean(autoSortLibrary));
+	});
+
 	const multiInit = (await plugin.settings.getSetting('sync-multiple-libraries')) as
 		| boolean
 		| undefined;
@@ -879,6 +898,7 @@ async function onActivate(plugin: RNPlugin) {
 	let lastDisable: boolean | undefined;
 	let lastMulti: boolean | undefined;
 	let lastCitationSource: string | undefined;
+	let lastAutoSortLibrary: boolean | undefined;
 	let debugRegistered = false;
 	let syncTimeout: NodeJS.Timeout | undefined;
 
@@ -983,6 +1003,14 @@ async function onActivate(plugin: RNPlugin) {
 			await plugin.app.toast(
 				'Citation source changed. Reload the app to unregister old commands.'
 			);
+		}
+
+		const autoSortLibrary = (await reactivePlugin.settings.getSetting(
+			autoSortLibrarySettingID
+		)) as boolean | undefined;
+		if (autoSortLibrary !== lastAutoSortLibrary) {
+			await updateLibraryRemAutoSort(reactivePlugin, Boolean(autoSortLibrary));
+			lastAutoSortLibrary = autoSortLibrary;
 		}
 	});
 

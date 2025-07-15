@@ -33,6 +33,8 @@ The Zotero Connector syncs your Zotero library into RemNote and provides tools f
 
 The connector provides several command palette actions. Each command can be typed directly in RemNote or triggered via its quick code.
 
+The **Zotero** commands first send any detected source URLs to your Zotero library. Once the items are saved there, the connector retrieves the formatted citation or bibliography from Zotero. By contrast, the **Wikipedia** commands bypass your library entirely. They request the citation data directly from Wikipedia and do not store the reference in Zotero. Use the Zotero versions when you want the source archived in your library, and the Wikipedia versions for a quick lookup without saving anything. **You can configure which commands are available in the plugin settings.**
+
 -   **Copy Citation via Zotero** (`citez`) – copy formatted citations for the focused Rem's sources.
     <!-- ![Citation via Zotero](.github/assets/citez.gif) -->
 -   **Copy Bibliography via Zotero** (`bibz`) – copy bibliography entries for the focused Rem's sources.
@@ -69,7 +71,7 @@ Additional diagnostic commands become available when **Debug Mode** is enabled.
 
     ![Final Settings](.github/assets/final.png)
 
-<!-- 
+<!--
 ## Settings Reference
 
 -   **Zotero UserID** – your Zotero account ID from the Zotero API settings page.
@@ -79,6 +81,7 @@ Additional diagnostic commands become available when **Debug Mode** is enabled.
 -   **Items in Multiple Collections Display Behavior** – choose `Portal` to link all instances of an item or `Reference` to create separate copies in each collection.
 -   **Disable Auto Sync** – prevents automatic synchronization every five minutes.
 -   **Simple Syncing Mode** – skips metadata (notes, dates, etc.) when importing items.
+-   **Auto Sort Library Rem** – adds the Auto Sort powerup to the library page.
 -   **Citation Format** – formatting style for citations and bibliographies (APA, MLA, etc.).
 -   **Citation Source** – choose where citation data comes from (`Zotero`, `Wikipedia`, or `Both`).
 -   **Debug Mode (Zotero Connector)** – exposes extra diagnostic commands and enables verbose logging. (please use this when reporting bugs and sending console logs! 🙏)

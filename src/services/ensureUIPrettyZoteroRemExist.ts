@@ -1,5 +1,5 @@
 import { BuiltInPowerupCodes, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
-import { powerupCodes } from '../constants/constants';
+import { autoSortLibrarySettingID, powerupCodes } from '../constants/constants';
 import { LogType, logMessage } from '../utils/logging';
 
 export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
@@ -39,6 +39,18 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 		if (!(await homeRem.hasPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME))) {
 			await homeRem.addPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
 		}
+		const autoSortEnabled = (await plugin.settings.getSetting(autoSortLibrarySettingID)) as
+			| boolean
+			| undefined;
+		if (autoSortEnabled) {
+			if (!(await homeRem.hasPowerup(BuiltInPowerupCodes.AutoSort))) {
+				await homeRem.addPowerup(BuiltInPowerupCodes.AutoSort);
+			}
+		} else {
+			if (await homeRem.hasPowerup(BuiltInPowerupCodes.AutoSort)) {
+				await homeRem.removePowerup(BuiltInPowerupCodes.AutoSort);
+			}
+		}
 		if (await homeRem.hasPowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY)) {
 			await homeRem.removePowerup(powerupCodes.ZOTERO_SYNCED_LIBRARY);
 		}
@@ -59,7 +71,12 @@ export async function ensureZoteroLibraryRemExists(plugin: RNPlugin) {
 
 	await rem.setText(['Zotero Connector Home Page']);
 	await rem.addPowerup(powerupCodes.ZOTERO_CONNECTOR_HOME);
-	await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
+	const autoSortEnabled = (await plugin.settings.getSetting(autoSortLibrarySettingID)) as
+		| boolean
+		| undefined;
+	if (autoSortEnabled) {
+		await rem.addPowerup(BuiltInPowerupCodes.AutoSort);
+	}
 
 	await rem.setIsDocument(true); // TODO: we want this to be a folder rem! https://linear.app/remnoteio/issue/ENG-25553/add-a-remsetisfolder-to-the-plugin-system
 
@@ -203,4 +220,19 @@ export async function getUnfiledItemsRem(
 	}
 	const firstUnfiledZoteroItem = (await unfiledZoteroItemsPowerup.taggedRem())[0];
 	return firstUnfiledZoteroItem || null;
+}
+
+export async function updateLibraryRemAutoSort(plugin: RNPlugin, enable: boolean): Promise<void> {
+	const libraryRem = await getZoteroLibraryRem(plugin);
+	if (!libraryRem) {
+		await logMessage(plugin, 'Zotero Library Rem not found', LogType.Error, false);
+		return;
+	}
+	if (enable) {
+		if (!(await libraryRem.hasPowerup(BuiltInPowerupCodes.AutoSort))) {
+			await libraryRem.addPowerup(BuiltInPowerupCodes.AutoSort);
+		}
+	} else if (await libraryRem.hasPowerup(BuiltInPowerupCodes.AutoSort)) {
+		await libraryRem.removePowerup(BuiltInPowerupCodes.AutoSort);
+	}
 }
