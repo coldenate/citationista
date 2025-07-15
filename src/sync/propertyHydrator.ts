@@ -60,21 +60,37 @@ export class ZoteroPropertyHydrator {
 				}
 				await rem.addPowerup(itemTypeCode);
 
-                                // Basic text for notes or annotations
-                                if (item.data.itemType === 'note' && item.data.note) {
-                                        await this.plugin.richText.parseAndInsertHtml(
-                                                item.data.note,
-                                                rem
-                                        );
-                                } else if (
-                                        item.data.itemType === 'annotation' &&
-                                        typeof item.data.annotationText === 'string'
-                                ) {
-                                        await this.plugin.richText.parseAndInsertHtml(
-                                                item.data.annotationText,
-                                                rem
-                                        );
-                                }
+                               // Basic text for notes or annotations
+                               if (item.data.itemType === 'note' && item.data.note) {
+                                       const tempRoot = await this.plugin.rem.createRem();
+                                       if (tempRoot) {
+                                               await this.plugin.richText.parseAndInsertHtml(
+                                                       item.data.note,
+                                                       tempRoot
+                                               );
+                                               const rootRems = await tempRoot.getChildrenRem();
+                                               for (const rootRem of rootRems) {
+                                                       await rootRem.setParent(rem._id);
+                                               }
+                                               await tempRoot.remove();
+                                       }
+                               } else if (
+                                       item.data.itemType === 'annotation' &&
+                                       typeof item.data.annotationText === 'string'
+                               ) {
+                                       const tempRoot = await this.plugin.rem.createRem();
+                                       if (tempRoot) {
+                                               await this.plugin.richText.parseAndInsertHtml(
+                                                       item.data.annotationText,
+                                                       tempRoot
+                                               );
+                                               const rootRems = await tempRoot.getChildrenRem();
+                                               for (const rootRem of rootRems) {
+                                                       await rootRem.setParent(rem._id);
+                                               }
+                                               await tempRoot.remove();
+                                       }
+                               }
 
 				// await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]); we add this when we create it
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
