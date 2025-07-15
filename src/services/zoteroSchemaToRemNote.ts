@@ -28,7 +28,7 @@ export function isTitleLikeField(field: string): boolean {
 		field.includes('title') ||
 		field.includes('Title') ||
 		field.includes('name') ||
-		field.includes('Name')
+		field.includes('Name') 
 	);
 }
 

@@ -132,7 +132,7 @@ export class ZoteroPropertyHydrator {
 					// **Skip the 'key' property to prevent overwriting**
 					if (formattedKey === 'key') continue;
 
-					const matchingKey = Object.keys(item.data).find(
+					const matchingKey = Object.keys(item.data as ZoteroItemData).find(
 						(key) => key.toLowerCase().replace(/\s/g, '') === formattedKey
 					);
 
