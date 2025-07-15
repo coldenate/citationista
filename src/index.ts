@@ -9,13 +9,14 @@ import {
 import { fetchLibraries } from './api/zotero';
 import {
 	citationFormats,
-	citationSourceOptions,
-	escapeKeyID,
-	POPUP_Y_OFFSET,
-	powerupCodes,
-	selectItemKeyID,
-	selectNextKeyID,
-	selectPreviousKeyID,
+        citationSourceOptions,
+        escapeKeyID,
+        POPUP_Y_OFFSET,
+        powerupCodes,
+        autoSortLibrarySettingID,
+        selectItemKeyID,
+        selectNextKeyID,
+        selectPreviousKeyID,
 } from './constants/constants';
 import { itemTypes } from './constants/zoteroItemSchema';
 import { autoSync } from './services/autoSync';
@@ -108,13 +109,21 @@ async function registerSettings(plugin: RNPlugin) {
 		defaultValue: true,
 	});
 
-	await plugin.settings.registerBooleanSetting({
-		id: 'simple-mode',
-		title: 'Simple Syncing Mode',
-		description:
-			'(not recommended) Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
-		defaultValue: false,
-	});
+        await plugin.settings.registerBooleanSetting({
+                id: 'simple-mode',
+                title: 'Simple Syncing Mode',
+                description:
+                        '(not recommended) Enables Simple importing of Zotero Items. Toggling this ON will AVOID importing any metadata for a Zotero item. For ex, notes, date accessed, etc.',
+                defaultValue: false,
+        });
+
+        await plugin.settings.registerBooleanSetting({
+                id: autoSortLibrarySettingID,
+                title: 'Auto Sort Library Rem',
+                description:
+                        "Automatically add RemNote's Auto Sort powerup to the Zotero Connector library page.",
+                defaultValue: true,
+        });
 
 	await plugin.settings.registerDropdownSetting({
 		id: 'citation-format',
@@ -876,11 +885,12 @@ async function onActivate(plugin: RNPlugin) {
 	let lastApiKey: string | undefined;
 	let lastUserId: string | undefined;
 	let lastLibrary: string | undefined;
-	let lastDisable: boolean | undefined;
-	let lastMulti: boolean | undefined;
-	let lastCitationSource: string | undefined;
-	let debugRegistered = false;
-	let syncTimeout: NodeJS.Timeout | undefined;
+        let lastDisable: boolean | undefined;
+        let lastMulti: boolean | undefined;
+        let lastCitationSource: string | undefined;
+        let lastAutoSortLibrary: boolean | undefined;
+        let debugRegistered = false;
+        let syncTimeout: NodeJS.Timeout | undefined;
 
 	function scheduleSync(p: RNPlugin) {
 		if (syncTimeout) {
@@ -967,10 +977,10 @@ async function onActivate(plugin: RNPlugin) {
 			}
 		}
 
-		const citationSource = (await reactivePlugin.settings.getSetting('citation-source')) as
-			| string
-			| undefined;
-		if (citationSource !== lastCitationSource) {
+                const citationSource = (await reactivePlugin.settings.getSetting('citation-source')) as
+                        | string
+                        | undefined;
+                if (citationSource !== lastCitationSource) {
 			if (citationSource === 'zotero') {
 				await registerZoteroCitationCommands(plugin);
 			} else if (citationSource === 'wikipedia') {
@@ -979,12 +989,20 @@ async function onActivate(plugin: RNPlugin) {
 				await registerZoteroCitationCommands(plugin);
 				await registerWikipediaCitationCommands(plugin);
 			}
-			lastCitationSource = citationSource;
-			await plugin.app.toast(
-				'Citation source changed. Reload the app to unregister old commands.'
-			);
-		}
-	});
+                        lastCitationSource = citationSource;
+                        await plugin.app.toast(
+                                'Citation source changed. Reload the app to unregister old commands.'
+                        );
+                }
+
+                const autoSortLibrary = (await reactivePlugin.settings.getSetting(autoSortLibrarySettingID)) as
+                        | boolean
+                        | undefined;
+                if (autoSortLibrary !== lastAutoSortLibrary) {
+                        await ensureZoteroLibraryRemExists(reactivePlugin);
+                        lastAutoSortLibrary = autoSortLibrary;
+                }
+        });
 
 	await plugin.app.waitForInitialSync();
 	if (!isNewDebugMode) {

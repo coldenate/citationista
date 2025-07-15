@@ -79,6 +79,7 @@ Additional diagnostic commands become available when **Debug Mode** is enabled.
 -   **Items in Multiple Collections Display Behavior** – choose `Portal` to link all instances of an item or `Reference` to create separate copies in each collection.
 -   **Disable Auto Sync** – prevents automatic synchronization every five minutes.
 -   **Simple Syncing Mode** – skips metadata (notes, dates, etc.) when importing items.
+-   **Auto Sort Library Rem** – adds the Auto Sort powerup to the library page.
 -   **Citation Format** – formatting style for citations and bibliographies (APA, MLA, etc.).
 -   **Citation Source** – choose where citation data comes from (`Zotero`, `Wikipedia`, or `Both`).
 -   **Debug Mode (Zotero Connector)** – exposes extra diagnostic commands and enables verbose logging. (please use this when reporting bugs and sending console logs! 🙏)

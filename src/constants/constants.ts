@@ -3,6 +3,7 @@ export const selectNextKeyID = 'selectNextKey';
 export const selectPreviousKeyID = 'selectPreviousKey';
 export const selectItemKeyID = 'selectItemKey';
 export const escapeKeyID = 'escapeKey';
+export const autoSortLibrarySettingID = 'auto-sort-library-rem';
 
 export const citationFormats = [
 	{
