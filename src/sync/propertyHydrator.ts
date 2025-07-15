@@ -1,5 +1,12 @@
 /** Populates Rem properties using Zotero item metadata. */
-import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
+import {
+	filterAsync,
+	PropertyType,
+	type Rem,
+	RichText,
+	RichTextInterface,
+	type RNPlugin,
+} from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { checkAbortFlag, createRem } from '../services/pluginIO';
 import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
@@ -60,55 +67,54 @@ export class ZoteroPropertyHydrator {
 				}
 				await rem.addPowerup(itemTypeCode);
 
-                               // Basic text for notes or annotations
-                               if (item.data.itemType === 'note' && item.data.note) {
-                                       const tempRem = await createRem(this.plugin);
-                                       if (tempRem) {
-                                               await tempRem.setParent(rem);
-                                               await this.plugin.richText.parseAndInsertHtml(
-                                                       item.data.note,
-                                                       tempRem
-                                               );
-                                               const children = await tempRem.getChildrenRem();
-                                               for (const child of children) {
-                                                       const subchildren = await child.getChildrenRem();
-                                                       if (!child.text || child.text.length === 0) {
-                                                               for (const grand of subchildren) {
-                                                                       await grand.setParent(rem);
-                                                               }
-                                                               await child.remove();
-                                                       } else {
-                                                               await child.setParent(rem);
-                                                       }
-                                               }
-                                               await tempRem.remove();
-                                       }
-                               } else if (
-                                       item.data.itemType === 'annotation' &&
-                                       typeof item.data.annotationText === 'string'
-                               ) {
-                                       const tempRem = await createRem(this.plugin);
-                                       if (tempRem) {
-                                               await tempRem.setParent(rem);
-                                               await this.plugin.richText.parseAndInsertHtml(
-                                                       item.data.annotationText,
-                                                       tempRem
-                                               );
-                                               const children = await tempRem.getChildrenRem();
-                                               for (const child of children) {
-                                                       const subchildren = await child.getChildrenRem();
-                                                       if (!child.text || child.text.length === 0) {
-                                                               for (const grand of subchildren) {
-                                                                       await grand.setParent(rem);
-                                                               }
-                                                               await child.remove();
-                                                       } else {
-                                                               await child.setParent(rem);
-                                                       }
-                                               }
-                                               await tempRem.remove();
-                                       }
-                               }
+				// Basic text for notes or annotations
+				if (item.data.itemType === 'note' && item.data.note) {
+					await rem.setText(['Note']);
+					const tempRem = await createRem(this.plugin);
+					if (tempRem) {
+						await tempRem.setParent(rem);
+						await this.plugin.richText.parseAndInsertHtml(item.data.note, tempRem);
+						const children = await tempRem.getChildrenRem();
+						for (const child of children) {
+							const subchildren = await child.getChildrenRem();
+							if (!child.text || child.text.length === 0) {
+								for (const grand of subchildren) {
+									await grand.setParent(rem);
+								}
+								await child.remove();
+							} else {
+								await child.setParent(rem);
+							}
+						}
+						await tempRem.remove();
+					}
+				} else if (
+					item.data.itemType === 'annotation' &&
+					typeof item.data.annotationText === 'string'
+				) {
+					await rem.setText(['Annotation']);
+					const tempRem = await createRem(this.plugin);
+					if (tempRem) {
+						await tempRem.setParent(rem);
+						await this.plugin.richText.parseAndInsertHtml(
+							item.data.annotationText,
+							tempRem
+						);
+						const children = await tempRem.getChildrenRem();
+						for (const child of children) {
+							const subchildren = await child.getChildrenRem();
+							if (!child.text || child.text.length === 0) {
+								for (const grand of subchildren) {
+									await grand.setParent(rem);
+								}
+								await child.remove();
+							} else {
+								await child.setParent(rem);
+							}
+						}
+						await tempRem.remove();
+					}
+				}
 
 				// await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]); we add this when we create it
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
