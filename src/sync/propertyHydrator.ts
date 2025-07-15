@@ -1,12 +1,5 @@
 /** Populates Rem properties using Zotero item metadata. */
-import {
-	filterAsync,
-	PropertyType,
-	type Rem,
-	RichText,
-	RichTextInterface,
-	type RNPlugin,
-} from '@remnote/plugin-sdk';
+import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { checkAbortFlag, createRem } from '../services/pluginIO';
 import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
@@ -116,7 +109,7 @@ export class ZoteroPropertyHydrator {
 					}
 				}
 
-				// await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]); we add this when we create it
+				// We already add the KEY property when we create it, so there is no need to set it again
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
 
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'fullData', [
