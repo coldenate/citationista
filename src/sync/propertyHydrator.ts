@@ -1,7 +1,7 @@
 /** Populates Rem properties using Zotero item metadata. */
 import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
-import { checkAbortFlag } from '../services/pluginIO';
+import { checkAbortFlag, createRem } from '../services/pluginIO';
 import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
 import type { ChangeSet, ZoteroItemData } from '../types/types';
 import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
@@ -62,33 +62,25 @@ export class ZoteroPropertyHydrator {
 
                                // Basic text for notes or annotations
                                if (item.data.itemType === 'note' && item.data.note) {
-                                       const tempRoot = await this.plugin.rem.createRem();
-                                       if (tempRoot) {
+                                       const noteRem = await createRem(this.plugin);
+                                       if (noteRem) {
+                                               await noteRem.setParent(rem);
                                                await this.plugin.richText.parseAndInsertHtml(
                                                        item.data.note,
-                                                       tempRoot
+                                                       noteRem
                                                );
-                                               const rootRems = await tempRoot.getChildrenRem();
-                                               for (const rootRem of rootRems) {
-                                                       await rootRem.setParent(rem._id);
-                                               }
-                                               await tempRoot.remove();
                                        }
                                } else if (
                                        item.data.itemType === 'annotation' &&
                                        typeof item.data.annotationText === 'string'
                                ) {
-                                       const tempRoot = await this.plugin.rem.createRem();
-                                       if (tempRoot) {
+                                       const annotationRem = await createRem(this.plugin);
+                                       if (annotationRem) {
+                                               await annotationRem.setParent(rem);
                                                await this.plugin.richText.parseAndInsertHtml(
                                                        item.data.annotationText,
-                                                       tempRoot
+                                                       annotationRem
                                                );
-                                               const rootRems = await tempRoot.getChildrenRem();
-                                               for (const rootRem of rootRems) {
-                                                       await rootRem.setParent(rem._id);
-                                               }
-                                               await tempRoot.remove();
                                        }
                                }
 
