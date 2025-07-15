@@ -60,39 +60,51 @@ export class ZoteroPropertyHydrator {
 				}
 				await rem.addPowerup(itemTypeCode);
 
-				// Basic text for notes or annotations
-				if (item.data.itemType === 'note' && item.data.note) {
-					// create a tree with markdown if there are multiple lines, otherwise set createSingleRem
-					if (item.data.note.includes('\n')) {
-						const tempRemArray = await this.plugin.rem.createTreeWithMarkdown(
-							item.data.note
-						);
-						if (tempRemArray && tempRemArray.length > 0) {
-							// Only set the top-level rems as children, preserving internal hierarchy
-							const rootRems = tempRemArray.filter((childRem) => !childRem.parent);
-							rootRems.forEach((rootRem) => {
-								rootRem.setParent(rem._id);
-							});
-						}
-					} else {
-						const tempRem = await this.plugin.rem.createSingleRemWithMarkdown(
-							item.data.note
-						);
-						if (tempRem) {
-							tempRem.setParent(rem._id);
-						}
-					}
-				} else if (
-					item.data.itemType === 'annotation' &&
-					typeof item.data.annotationText === 'string'
-				) {
-					const tempRem = await this.plugin.rem.createSingleRemWithMarkdown(
-						item.data.annotationText
-					);
-					if (tempRem) {
-						tempRem.setParent(rem._id);
-					}
-				}
+                                // Basic text for notes or annotations
+                                if (item.data.itemType === 'note' && item.data.note) {
+                                        // Clear existing children to avoid duplicates when the note text changes
+                                        const existingChildren = await rem.getChildrenRem();
+                                        for (const child of existingChildren) {
+                                                await child.remove();
+                                        }
+
+                                        // create a tree with markdown if there are multiple lines, otherwise create a single Rem
+                                        if (item.data.note.includes('\n')) {
+                                                const tempRemArray = await this.plugin.rem.createTreeWithMarkdown(
+                                                        item.data.note
+                                                );
+                                                if (tempRemArray && tempRemArray.length > 0) {
+                                                        // Only set the top-level rems as children, preserving internal hierarchy
+                                                        const rootRems = tempRemArray.filter((childRem) => !childRem.parent);
+                                                        rootRems.forEach((rootRem) => {
+                                                                rootRem.setParent(rem._id);
+                                                        });
+                                                }
+                                        } else {
+                                                const tempRem = await this.plugin.rem.createSingleRemWithMarkdown(
+                                                        item.data.note
+                                                );
+                                                if (tempRem) {
+                                                        tempRem.setParent(rem._id);
+                                                }
+                                        }
+                                } else if (
+                                        item.data.itemType === 'annotation' &&
+                                        typeof item.data.annotationText === 'string'
+                                ) {
+                                        // Clear existing children for updated annotations
+                                        const existingChildren = await rem.getChildrenRem();
+                                        for (const child of existingChildren) {
+                                                await child.remove();
+                                        }
+
+                                        const tempRem = await this.plugin.rem.createSingleRemWithMarkdown(
+                                                item.data.annotationText
+                                        );
+                                        if (tempRem) {
+                                                tempRem.setParent(rem._id);
+                                        }
+                                }
 
 				// await rem.setPowerupProperty(powerupCodes.ZITEM, 'key', [item.key]); we add this when we create it
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
