@@ -71,7 +71,15 @@ export class ZoteroPropertyHydrator {
                                                );
                                                const children = await tempRem.getChildrenRem();
                                                for (const child of children) {
-                                                       await child.setParent(rem);
+                                                       const subchildren = await child.getChildrenRem();
+                                                       if (!child.text || child.text.length === 0) {
+                                                               for (const grand of subchildren) {
+                                                                       await grand.setParent(rem);
+                                                               }
+                                                               await child.remove();
+                                                       } else {
+                                                               await child.setParent(rem);
+                                                       }
                                                }
                                                await tempRem.remove();
                                        }
@@ -88,7 +96,15 @@ export class ZoteroPropertyHydrator {
                                                );
                                                const children = await tempRem.getChildrenRem();
                                                for (const child of children) {
-                                                       await child.setParent(rem);
+                                                       const subchildren = await child.getChildrenRem();
+                                                       if (!child.text || child.text.length === 0) {
+                                                               for (const grand of subchildren) {
+                                                                       await grand.setParent(rem);
+                                                               }
+                                                               await child.remove();
+                                                       } else {
+                                                               await child.setParent(rem);
+                                                       }
                                                }
                                                await tempRem.remove();
                                        }
