@@ -867,9 +867,16 @@ async function onActivate(plugin: RNPlugin) {
 			);
 		}
 	}
-	await registerWidgets(plugin);
-	await handleLibrarySwitch(plugin);
-	await registerCommands(plugin);
+        await registerWidgets(plugin);
+        await handleLibrarySwitch(plugin);
+        await registerCommands(plugin);
+
+        plugin.event.addListener(AppEvents.SettingChanged, undefined, async () => {
+                const autoSortLibrary = (await plugin.settings.getSetting(
+                        autoSortLibrarySettingID
+                )) as boolean | undefined;
+                await updateLibraryRemAutoSort(plugin, Boolean(autoSortLibrary));
+        });
 
 	const multiInit = (await plugin.settings.getSetting('sync-multiple-libraries')) as
 		| boolean
