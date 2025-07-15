@@ -197,8 +197,8 @@ export async function getZoteroLibraryRem(
 }
 
 export async function getUnfiledItemsRem(
-	plugin: RNPlugin,
-	libraryKey?: string
+        plugin: RNPlugin,
+        libraryKey?: string
 ): Promise<Rem | null> {
 	if (libraryKey) {
 		const map = (await plugin.storage.getSynced('unfiledRemMap')) as
@@ -218,6 +218,24 @@ export async function getUnfiledItemsRem(
 		await logMessage(plugin, 'Unfiled Power-Up not found!', LogType.Error, false);
 		return null;
 	}
-	const firstUnfiledZoteroItem = (await unfiledZoteroItemsPowerup.taggedRem())[0];
-	return firstUnfiledZoteroItem || null;
+        const firstUnfiledZoteroItem = (await unfiledZoteroItemsPowerup.taggedRem())[0];
+        return firstUnfiledZoteroItem || null;
+}
+
+export async function updateLibraryRemAutoSort(
+        plugin: RNPlugin,
+        enable: boolean
+): Promise<void> {
+        const libraryRem = await getZoteroLibraryRem(plugin);
+        if (!libraryRem) {
+                await logMessage(plugin, 'Zotero Library Rem not found', LogType.Error, false);
+                return;
+        }
+        if (enable) {
+                if (!(await libraryRem.hasPowerup(BuiltInPowerupCodes.AutoSort))) {
+                        await libraryRem.addPowerup(BuiltInPowerupCodes.AutoSort);
+                }
+        } else if (await libraryRem.hasPowerup(BuiltInPowerupCodes.AutoSort)) {
+                await libraryRem.removePowerup(BuiltInPowerupCodes.AutoSort);
+        }
 }

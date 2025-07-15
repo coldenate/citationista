@@ -28,7 +28,10 @@ import {
 	fetchZoteroCitation,
 	sendUrlsToZotero,
 } from './services/citationHelpers';
-import { ensureZoteroLibraryRemExists } from './services/ensureUIPrettyZoteroRemExist';
+import {
+        ensureZoteroLibraryRemExists,
+        updateLibraryRemAutoSort,
+} from './services/ensureUIPrettyZoteroRemExist';
 import { registerIconCSS } from './services/iconCSS';
 import { createRem, markAbortRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
@@ -999,7 +1002,7 @@ async function onActivate(plugin: RNPlugin) {
                         | boolean
                         | undefined;
                 if (autoSortLibrary !== lastAutoSortLibrary) {
-                        await ensureZoteroLibraryRemExists(reactivePlugin);
+                        await updateLibraryRemAutoSort(reactivePlugin, Boolean(autoSortLibrary));
                         lastAutoSortLibrary = autoSortLibrary;
                 }
         });
