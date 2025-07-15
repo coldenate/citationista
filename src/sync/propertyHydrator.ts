@@ -64,7 +64,7 @@ export class ZoteroPropertyHydrator {
                                 if (item.data.itemType === 'note' && item.data.note) {
                                         await this.plugin.richText.parseAndInsertHtml(
                                                 item.data.note,
-                                                rem
+                                                rem._id
                                         );
                                 } else if (
                                         item.data.itemType === 'annotation' &&
@@ -72,7 +72,7 @@ export class ZoteroPropertyHydrator {
                                 ) {
                                         await this.plugin.richText.parseAndInsertHtml(
                                                 item.data.annotationText,
-                                                rem
+                                                rem._id
                                         );
                                 }
 
