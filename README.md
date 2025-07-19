@@ -66,8 +66,11 @@ Additional diagnostic commands become available when **Debug Mode** is enabled.
     ![Generating key](.github/assets/what_scopes.gif)
 
 6. Paste the **User ID** and **API key** into the plugin settings in RemNote.
-7. Reload RemNote to populate the **Zotero Library** dropdown.
-8. Select a library to sync or enable **Sync Multiple Libraries** to import everything automatically.
+
+    <img width="1970" height="558" alt="CleanShot 2025-07-19 at 15 41 51@2x" src="https://github.com/user-attachments/assets/5d692152-c594-45c0-b8ec-96f72c70d4a2" />
+
+8. Reload RemNote to populate the **Zotero Library** dropdown.
+9. Select a library to sync or enable **Sync Multiple Libraries** to import everything automatically.
 
     ![Final Settings](.github/assets/final.png)
 
