@@ -189,18 +189,65 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
                         type: 'group' as const,
                 }));
 		return [{ id: String(userId), name: userName, type: 'user' as const }, ...groups];
-	} catch (err) {
-		await logMessage(
-			plugin,
-			'Failed to fetch group libraries',
-			LogType.Error,
-			false,
-			String(err)
-		);
+        } catch (err) {
+                await logMessage(
+                        plugin,
+                        'Failed to fetch group libraries',
+                        LogType.Error,
+                        false,
+                        String(err)
+                );
 
 		await plugin.app.toast(
 			'Failed to fetch group libraries. Your browser may be blocking the request.'
 		);
-		return [{ id: String(userId), name: 'My Library', type: 'user' }];
-	}
+                return [{ id: String(userId), name: 'My Library', type: 'user' }];
+        }
+}
+
+/**
+ * Update an existing Zotero note item.
+ * @param plugin - The RemNote plugin instance.
+ * @param itemKey - Zotero key of the note item to update.
+ * @param noteHTML - HTML content for the note.
+ * @param version - Last known Zotero version of the item.
+ */
+export async function updateNote(
+        plugin: RNPlugin,
+        itemKey: string,
+        noteHTML: string,
+        version: number
+): Promise<void> {
+        const apiKey = await plugin.settings.getSetting('zotero-api-key');
+        const userId = await plugin.settings.getSetting('zotero-user-id');
+        const libSetting = await plugin.settings.getSetting('zotero-library-id');
+
+        if (!apiKey || !userId) {
+                throw new Error('Zotero credentials not set');
+        }
+
+        let libraryId = String(userId);
+        let libraryType: 'users' | 'groups' = 'users';
+        if (typeof libSetting === 'string' && libSetting.includes(':')) {
+                const [type, id] = libSetting.split(':');
+                libraryType = type === 'group' ? 'groups' : 'users';
+                libraryId = id;
+        }
+
+        const baseUrl = process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
+        const res = await fetch(`${baseUrl}/${libraryType}/${libraryId}/items/${itemKey}`, {
+                method: 'PATCH',
+                headers: {
+                        'Content-Type': 'application/json',
+                        'Zotero-API-Key': String(apiKey),
+                        'Zotero-API-Version': '3',
+                        'If-Unmodified-Since-Version': String(version),
+                },
+                body: JSON.stringify({ note: noteHTML }),
+        });
+
+        if (!res.ok) {
+                const body = await res.text();
+                throw new Error(`Failed to update note ${itemKey}: ${res.status} ${body}`);
+        }
 }
