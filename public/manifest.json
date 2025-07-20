@@ -59,10 +59,13 @@
 			"powerupCode": "zotero-unfiled-items",
 			"level": "ReadCreateModifyDelete"
 		},
-		{
-			"type": "Powerup",
-			"powerupCode": "zotero-connector-home",
-			"level": "ReadCreateModifyDelete"
-		}
-	]
+                {
+                        "type": "Powerup",
+                        "powerupCode": "zotero-connector-home",
+                        "level": "ReadCreateModifyDelete"
+                },
+                {
+                        "type": "KnowledgeBaseInfo"
+                }
+        ]
 }

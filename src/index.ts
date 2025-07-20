@@ -11,7 +11,9 @@ import {
 	autoSortLibrarySettingID,
 	citationFormats,
 	citationSourceOptions,
+	ENABLED_KB_ID,
 	escapeKeyID,
+	KNOWN_KBS,
 	POPUP_Y_OFFSET,
 	powerupCodes,
 	selectItemKeyID,
@@ -61,6 +63,10 @@ async function registerSettings(plugin: RNPlugin) {
 		description:
 			'Find this at https://www.zotero.org/settings/keys. Make sure to enable all read/write for all features to work. But feel free to disable any you do not need.',
 	});
+
+	// select KB
+
+	await registerKBDropdownSettingPicker(plugin);
 
 	// selecting library
 
@@ -192,6 +198,38 @@ async function registerSettings(plugin: RNPlugin) {
 		title: 'Escape Key',
 		defaultValue: 'escape',
 		description: 'The key used to close the floating widget.',
+	});
+}
+
+async function registerKBDropdownSettingPicker(plugin: RNPlugin) {
+	const kbInfo = await plugin.kb.getCurrentKnowledgeBaseData();
+	let knownKbs = (await plugin.storage.getSynced(KNOWN_KBS)) as
+		| Record<string, string>
+		| undefined;
+	if (!knownKbs) {
+		knownKbs = {};
+	}
+	if (!knownKbs[kbInfo._id]) {
+		knownKbs[kbInfo._id] = kbInfo.name;
+		await plugin.storage.setSynced(KNOWN_KBS, knownKbs);
+	}
+	let enabledKbId = (await plugin.storage.getSynced(ENABLED_KB_ID)) as string | undefined;
+	if (!enabledKbId) {
+		enabledKbId = kbInfo._id;
+		await plugin.storage.setSynced(ENABLED_KB_ID, enabledKbId);
+	}
+
+	const kbOptions = Object.entries(knownKbs).map(([key, val]) => ({
+		key,
+		value: key,
+		label: val,
+	}));
+	await plugin.settings.registerDropdownSetting({
+		id: ENABLED_KB_ID,
+		title: 'Active Knowledge Base',
+		description: 'Zotero Connector will only sync in the selected knowledge base.',
+		options: kbOptions,
+		defaultValue: enabledKbId,
 	});
 }
 
@@ -849,6 +887,14 @@ async function registerCommands(plugin: RNPlugin) {
 
 async function onActivate(plugin: RNPlugin) {
 	await registerSettings(plugin);
+	const kbInfo = await plugin.kb.getCurrentKnowledgeBaseData();
+	const enabledKb = (await plugin.storage.getSynced(ENABLED_KB_ID)) as string | undefined;
+	if (enabledKb && enabledKb !== kbInfo._id) {
+		await plugin.app.toast(
+			'Zotero Connector is disabled in this knowledge base. Update settings to enable.'
+		);
+		return;
+	}
 	await registerPowerups(plugin);
 	setupThemeDetection(plugin, async () => {
 		await registerIconCSS(plugin, detectDarkMode());
@@ -899,6 +945,7 @@ async function onActivate(plugin: RNPlugin) {
 	let lastMulti: boolean | undefined;
 	let lastCitationSource: string | undefined;
 	let lastAutoSortLibrary: boolean | undefined;
+	let lastEnabledKb: string | undefined;
 	let debugRegistered = false;
 	let syncTimeout: NodeJS.Timeout | undefined;
 
@@ -932,6 +979,9 @@ async function onActivate(plugin: RNPlugin) {
 			| string
 			| undefined;
 		const userId = (await reactivePlugin.settings.getSetting('zotero-user-id')) as
+			| string
+			| undefined;
+		const enabledKbSetting = (await reactivePlugin.settings.getSetting(ENABLED_KB_ID)) as
 			| string
 			| undefined;
 		const libraryId = (await reactivePlugin.settings.getSetting('zotero-library-id')) as
@@ -968,6 +1018,11 @@ async function onActivate(plugin: RNPlugin) {
 			lastApiKey = apiKey;
 			lastUserId = userId;
 			lastMulti = multi;
+		}
+
+		if (enabledKbSetting !== lastEnabledKb) {
+			await reactivePlugin.storage.setSynced(ENABLED_KB_ID, enabledKbSetting);
+			lastEnabledKb = enabledKbSetting;
 		}
 
 		if (disable !== lastDisable) {
