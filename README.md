@@ -94,9 +94,20 @@ Run `npm test` to execute the Jest unit tests. During development, `npm run dev`
 -   **Debug Mode (Zotero Connector)** – exposes extra diagnostic commands and enables verbose logging. (please use this when reporting bugs and sending console logs! 🙏)
 -   **Select Next Key** – key to move down in the citation finder widget.
 -   **Select Previous Key** – key to move up in the citation finder widget.
--   **Select Item Key** – key to insert the selected citation.
--   **Escape Key** – key to close the citation finder widget.
--   -->
+ -   **Select Item Key** – key to insert the selected citation.
+ -   **Escape Key** – key to close the citation finder widget.
+
+## Programmatic API
+
+Use `updateNote` to push edited notes back to Zotero:
+
+```ts
+import { updateNote } from './src/api/zotero';
+await updateNote(plugin, 'ITEM_KEY', '<p>updated text</p>', 5);
+```
+
+The helper issues a `PATCH` request with `If-Unmodified-Since-Version` to avoid overwriting newer changes.
+-->
 
 ## Development Roadmap
 

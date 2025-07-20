@@ -6,7 +6,7 @@ import {
 	type RNPlugin,
 	WidgetLocation,
 } from '@remnote/plugin-sdk';
-import { fetchLibraries } from './api/zotero';
+import { fetchLibraries, updateNote } from './api/zotero';
 import {
 	autoSortLibrarySettingID,
 	citationFormats,
@@ -819,11 +819,26 @@ async function registerCommands(plugin: RNPlugin) {
 		});
 	}
 
-	plugin.event.addListener(AppEvents.EditorTextEdited, undefined, async () => {
-		if (citationWidgetId && (await plugin.window.isFloatingWidgetOpen(citationWidgetId))) {
-			return;
-		}
-	});
+        plugin.event.addListener(AppEvents.EditorTextEdited, undefined, async () => {
+                if (citationWidgetId && (await plugin.window.isFloatingWidgetOpen(citationWidgetId))) {
+                        return;
+                }
+
+                const rem = await plugin.focus.getFocusedRem();
+                if (!rem) return;
+                if (!(await rem.hasPowerup(powerupCodes.ZOTERO_NOTE))) return;
+
+                const key = await rem.getPowerupProperty(powerupCodes.ZITEM, 'key');
+                const verStr = await rem.getPowerupProperty(powerupCodes.ZITEM, 'version');
+                if (!key || !verStr) return;
+
+                try {
+                        const html = await plugin.richText.toHTML(rem.text ?? []);
+                        await updateNote(plugin, String(key), html, Number(verStr));
+                } catch (err) {
+                        await logMessage(plugin, 'Failed to update Zotero note', LogType.Error, false, String(err));
+                }
+        });
 
 	await plugin.app.registerCommand({
 		id: 'insert-citation-at-cursor',
