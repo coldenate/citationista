@@ -74,6 +74,10 @@ Additional diagnostic commands become available when **Debug Mode** is enabled.
 
     ![Final Settings](.github/assets/final.png)
 
+## Running Tests
+
+Run `npm test` to execute the Jest unit tests. During development, `npm run dev` starts the plugin and keeps the tests running in watch mode.
+
 <!--
 ## Settings Reference
 
