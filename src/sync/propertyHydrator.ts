@@ -62,51 +62,12 @@ export class ZoteroPropertyHydrator {
 
 				// Basic text for notes or annotations
 				if (item.data.itemType === 'note' && item.data.note) {
-					await rem.setText(['Note']);
-					const tempRem = await createRem(this.plugin);
-					if (tempRem) {
-						await tempRem.setParent(rem);
-						await this.plugin.richText.parseAndInsertHtml(item.data.note, tempRem);
-						const children = await tempRem.getChildrenRem();
-						for (const child of children) {
-							const subchildren = await child.getChildrenRem();
-							if (!child.text || child.text.length === 0) {
-								for (const grand of subchildren) {
-									await grand.setParent(rem);
-								}
-								await child.remove();
-							} else {
-								await child.setParent(rem);
-							}
-						}
-						await tempRem.remove();
-					}
+					await this.hydrateTextContent(rem, item.data.note, 'Note');
 				} else if (
 					item.data.itemType === 'annotation' &&
 					typeof item.data.annotationText === 'string'
 				) {
-					await rem.setText(['Annotation']);
-					const tempRem = await createRem(this.plugin);
-					if (tempRem) {
-						await tempRem.setParent(rem);
-						await this.plugin.richText.parseAndInsertHtml(
-							item.data.annotationText,
-							tempRem
-						);
-						const children = await tempRem.getChildrenRem();
-						for (const child of children) {
-							const subchildren = await child.getChildrenRem();
-							if (!child.text || child.text.length === 0) {
-								for (const grand of subchildren) {
-									await grand.setParent(rem);
-								}
-								await child.remove();
-							} else {
-								await child.setParent(rem);
-							}
-						}
-						await tempRem.remove();
-					}
+					await this.hydrateTextContent(rem, item.data.annotationText, 'Annotation');
 				}
 
 				// We already add the KEY property when we create it, so there is no need to set it again
@@ -217,6 +178,57 @@ export class ZoteroPropertyHydrator {
 				await rem.setPowerupProperty(powerupCodes.COLLECTION, 'name', [collection.name]);
 			}
 			if (onProgress) await onProgress();
+		}
+	}
+
+	/**
+	 * Helper to hydrate a Rem with note or annotation content.
+	 * If the content is multiline, the first line is used as the Rem text, and the rest as children.
+	 * If single line, uses the provided default label as Rem text and the content as children.
+	 */
+	private async hydrateTextContent(rem: Rem, content: string, defaultLabel: string) {
+		const lines = content.split(/\r?\n/);
+		if (lines.length > 1) {
+			await this.plugin.richText.parseAndInsertHtml(lines[0], rem);
+			const rest = lines.slice(1).join('\n');
+			const tempRem = await createRem(this.plugin);
+			if (tempRem) {
+				await tempRem.setParent(rem);
+				await this.plugin.richText.parseAndInsertHtml(rest, tempRem);
+				const children = await tempRem.getChildrenRem();
+				for (const child of children) {
+					const subchildren = await child.getChildrenRem();
+					if (!child.text || child.text.length === 0) {
+						for (const grand of subchildren) {
+							await grand.setParent(rem);
+						}
+						await child.remove();
+					} else {
+						await child.setParent(rem);
+					}
+				}
+				await tempRem.remove();
+			}
+		} else {
+			await rem.setText([defaultLabel]);
+			const tempRem = await createRem(this.plugin);
+			if (tempRem) {
+				await tempRem.setParent(rem);
+				await this.plugin.richText.parseAndInsertHtml(content, tempRem);
+				const children = await tempRem.getChildrenRem();
+				for (const child of children) {
+					const subchildren = await child.getChildrenRem();
+					if (!child.text || child.text.length === 0) {
+						for (const grand of subchildren) {
+							await grand.setParent(rem);
+						}
+						await child.remove();
+					} else {
+						await child.setParent(rem);
+					}
+				}
+				await tempRem.remove();
+			}
 		}
 	}
 
