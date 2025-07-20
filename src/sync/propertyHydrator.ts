@@ -2,7 +2,7 @@
 import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { checkAbortFlag, createRem } from '../services/pluginIO';
-import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
+import { getItemTitle } from '../services/zoteroSchemaToRemNote';
 import type { ChangeSet, ZoteroItemData } from '../types/types';
 import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
@@ -81,13 +81,13 @@ export class ZoteroPropertyHydrator {
 						}
 						await tempRem.remove();
 					}
-				} else if (
-					item.data.itemType === 'annotation' &&
-					typeof item.data.annotationText === 'string'
-				) {
-					await rem.setText(['Annotation']);
-					const tempRem = await createRem(this.plugin);
-					if (tempRem) {
+                                } else if (
+                                        item.data.itemType === 'annotation' &&
+                                        typeof item.data.annotationText === 'string'
+                                ) {
+                                        await rem.setText(['Annotation']);
+                                        const tempRem = await createRem(this.plugin);
+                                        if (tempRem) {
 						await tempRem.setParent(rem);
 						await this.plugin.richText.parseAndInsertHtml(
 							item.data.annotationText,
@@ -105,12 +105,20 @@ export class ZoteroPropertyHydrator {
 								await child.setParent(rem);
 							}
 						}
-						await tempRem.remove();
-					}
-				}
+                                                await tempRem.remove();
+                                        }
+                                }
 
-				// We already add the KEY property when we create it, so there is no need to set it again
-				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
+                                const itemTitle = getItemTitle(item.data);
+                                if (itemTitle) {
+                                        const safeTitle = await this.plugin.richText.parseFromMarkdown(
+                                                String(itemTitle)
+                                        );
+                                        await rem.setText(safeTitle);
+                                }
+
+                                // We already add the KEY property when we create it, so there is no need to set it again
+                                await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
 
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'fullData', [
 					JSON.stringify(item.data),
@@ -164,13 +172,6 @@ export class ZoteroPropertyHydrator {
 						continue;
 					}
 
-					if (isTitleLikeField(matchingKey)) {
-						const safeTitle = await this.plugin.richText.parseFromMarkdown(
-							String(propertyValue)
-						);
-						await rem.setText(safeTitle);
-						continue;
-					}
 
 					if (propertyType === PropertyType.URL) {
 						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
