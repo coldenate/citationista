@@ -19,7 +19,7 @@
 
 ## Overview
 
-The Zotero Connector syncs your Zotero library into RemNote and provides tools for working with citations and sources.
+The Zotero Connector syncs your Zotero library into RemNote and provides tools for working with citations and sources. Only notes are synchronized back to Zotero; items and metadata remain read-only in RemNote.
 
 ## Features
 
@@ -98,7 +98,11 @@ Additional diagnostic commands become available when **Debug Mode** is enabled.
 
 **Future Goals:**
 
--   Complete bidirectional sync between Zotero and RemNote
+-   Implement note synchronization from RemNote back to Zotero
+
+## HTML Import/Export
+
+Future updates will allow exporting RemNote highlights and notes as HTML attachments in Zotero. Those HTML files will be parsed when importing back into RemNote, and updates will use Zotero's Web API with the required `If-Unmodified-Since-Version` header.
 
 ## Issues and Feedback
 
