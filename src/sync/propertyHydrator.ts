@@ -1,6 +1,7 @@
 /** Populates Rem properties using Zotero item metadata. */
 import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
+import { itemTypeFieldLookup } from '../constants/zoteroItemSchema';
 import { checkAbortFlag, createRem } from '../services/pluginIO';
 import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
 import type { ChangeSet, ZoteroItemData } from '../types/types';
@@ -77,84 +78,87 @@ export class ZoteroPropertyHydrator {
 					JSON.stringify(item.data),
 				]);
 
-				const properties = await filterAsync(await powerupItemType.getChildrenRem(), (c) =>
-					c.isProperty()
-				);
+                                const properties = await filterAsync(await powerupItemType.getChildrenRem(), (c) =>
+                                        c.isProperty()
+                                );
+                                const allowedFields = itemTypeFieldLookup[item.data.itemType] ?? [];
 
-				// Collect all URLs for adding as sources
-				const urlSources: string[] = [];
+                                // Collect all URLs for adding as sources
+                                const urlSources: string[] = [];
 
-				for (const property of properties) {
-					if (!property.text || property.text.length === 0) continue;
+                                for (const field of allowedFields) {
+                                        const propertyValue = item.data[field as keyof ZoteroItemData];
+                                        if (!propertyValue) continue;
 
-					const propertyKey = stripPowerupSuffix(property.text[0] as string);
-					const formattedKey = propertyKey.toLowerCase().replace(/\s/g, '');
+                                        const formattedKey = field.toLowerCase().replace(/\s/g, '');
 
-					// **Skip the 'key' property to prevent overwriting**
-					if (formattedKey === 'key') continue;
+                                        if (formattedKey === 'key') continue;
 
-					const matchingKey = Object.keys(item.data as ZoteroItemData).find(
-						(key) => key.toLowerCase().replace(/\s/g, '') === formattedKey
-					);
+                                        const property = properties.find((p) => {
+                                                if (!p.text || p.text.length === 0) return false;
+                                                const propertyKey = stripPowerupSuffix(p.text[0] as string);
+                                                return (
+                                                        propertyKey
+                                                                .toLowerCase()
+                                                                .replace(/\s/g, '') === formattedKey
+                                                );
+                                        });
 
-					if (!matchingKey) {
-						logMessage(
-							this.plugin,
-							`No matching key for property: ${formattedKey}`,
-							LogType.Info
-						);
-						continue;
-					}
+                                        if (!property) {
+                                                logMessage(
+                                                        this.plugin,
+                                                        `No matching property for field: ${field}`,
+                                                        LogType.Info
+                                                );
+                                                continue;
+                                        }
 
-					const propertyValue = item.data[matchingKey];
-					if (!propertyValue) continue;
+                                        const propertyType = await property.getPropertyType();
+                                        const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
+                                                itemTypeCode,
+                                                generatePowerupCode(field)
+                                        );
 
-					const propertyType = await property.getPropertyType();
-					const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
-						itemTypeCode,
-						generatePowerupCode(matchingKey)
-					);
+                                        if (!slotCode) {
+                                                await logMessage(
+                                                        this.plugin,
+                                                        `Slot code not found for property: ${field}`,
+                                                        LogType.Error,
+                                                        false
+                                                );
+                                                continue;
+                                        }
 
-					if (!slotCode) {
-						await logMessage(
-							this.plugin,
-							`Slot code not found for property: ${matchingKey}`,
-							LogType.Error,
-							false
-						);
-						continue;
-					}
+                                        if (isTitleLikeField(field)) {
+                                                const safeTitle = await this.plugin.richText.parseFromMarkdown(
+                                                        String(propertyValue)
+                                                );
+                                                await rem.setText(safeTitle);
+                                                continue;
+                                        }
 
-					if (isTitleLikeField(matchingKey)) {
-						const safeTitle = await this.plugin.richText.parseFromMarkdown(
-							String(propertyValue)
-						);
-						await rem.setText(safeTitle);
-						continue;
-					}
-
-					if (propertyType === PropertyType.URL) {
-						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
-						if (!linkID) {
-							await logMessage(
-								this.plugin,
-								`Failed to create link rem for URL: ${propertyValue}`,
-								LogType.Error,
-								false
-							);
-							continue;
-						}
-						await rem.setTagPropertyValue(
-							slotCode._id,
-							// @ts-ignore
-							this.plugin.richText.rem(linkID).richText
-						);
-						// Collect URL for adding as source
-						urlSources.push(propertyValue);
-					} else {
-						await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
-					}
-				}
+                                        if (propertyType === PropertyType.URL) {
+                                                const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
+                                                if (!linkID) {
+                                                        await logMessage(
+                                                                this.plugin,
+                                                                `Failed to create link rem for URL: ${propertyValue}`,
+                                                                LogType.Error,
+                                                                false
+                                                        );
+                                                        continue;
+                                                }
+                                                await rem.setTagPropertyValue(
+                                                        slotCode._id,
+                                                        // @ts-ignore
+                                                        this.plugin.richText.rem(linkID).richText
+                                                );
+                                                // Collect URL for adding as source
+                                                urlSources.push(propertyValue);
+                                        } else {
+                                                await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
+                                        }
+                                }
 
 				// Handle multiple URLs as sources
 				await this.addAllUrlSources(rem, item.data, urlSources);

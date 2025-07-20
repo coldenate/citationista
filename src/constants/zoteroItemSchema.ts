@@ -1022,3 +1022,13 @@ export const itemTypes: ItemType[] = [
 		],
 	},
 ];
+
+/**
+ * Lookup map of Zotero item types to the list of field names that
+ * are defined for that type.
+ */
+export const itemTypeFieldLookup: Record<string, string[]> =
+        itemTypes.reduce<Record<string, string[]>>((acc, type) => {
+                acc[type.itemType] = type.fields.map((f) => f.field);
+                return acc;
+        }, {});
