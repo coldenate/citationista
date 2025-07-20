@@ -3,7 +3,7 @@ import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plu
 import { powerupCodes } from '../constants/constants';
 import { itemTypeFieldLookup } from '../constants/zoteroItemSchema';
 import { checkAbortFlag, createRem } from '../services/pluginIO';
-import { isTitleLikeField } from '../services/zoteroSchemaToRemNote';
+import { getItemTitle } from '../services/zoteroSchemaToRemNote';
 import type { ChangeSet, ZoteroItemData } from '../types/types';
 import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
@@ -71,8 +71,16 @@ export class ZoteroPropertyHydrator {
 					await this.hydrateTextContent(rem, item.data.annotationText, 'Annotation');
 				}
 
-				// We already add the KEY property when we create it, so there is no need to set it again
-				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
+                                const itemTitle = getItemTitle(item.data);
+                                if (itemTitle) {
+                                        const safeTitle = await this.plugin.richText.parseFromMarkdown(
+                                                String(itemTitle)
+                                        );
+                                        await rem.setText(safeTitle);
+                                }
+
+                                // We already add the KEY property when we create it, so there is no need to set it again
+                                await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
 
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'fullData', [
 					JSON.stringify(item.data),
@@ -129,13 +137,13 @@ export class ZoteroPropertyHydrator {
                                                 continue;
                                         }
 
-                                        if (isTitleLikeField(field)) {
-                                                const safeTitle = await this.plugin.richText.parseFromMarkdown(
-                                                        String(propertyValue)
-                                                );
-                                                await rem.setText(safeTitle);
-                                                continue;
-                                        }
+//                                         if (isTitleLikeField(field)) {
+//                                                 const safeTitle = await this.plugin.richText.parseFromMarkdown(
+//                                                         String(propertyValue)
+//                                                 );
+//                                                 await rem.setText(safeTitle);
+//                                                 continue;
+//                                         }
 
                                         if (propertyType === PropertyType.URL) {
                                                 const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
