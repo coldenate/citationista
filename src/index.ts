@@ -41,6 +41,7 @@ import { release } from './sync/syncLock';
 import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
 import { detectDarkMode, setupThemeDetection } from './utils/theme';
+import { registerEditListener } from './utils/editTracker';
 
 let autoSyncInterval: NodeJS.Timeout | undefined;
 let zoteroCitationRegistered = false;
@@ -887,6 +888,7 @@ async function registerCommands(plugin: RNPlugin) {
 
 async function onActivate(plugin: RNPlugin) {
 	await registerSettings(plugin);
+	registerEditListener(plugin);
 	const kbInfo = await plugin.kb.getCurrentKnowledgeBaseData();
 	const enabledKb = (await plugin.storage.getSynced(ENABLED_KB_ID)) as string | undefined;
 	if (enabledKb && enabledKb !== kbInfo._id) {
