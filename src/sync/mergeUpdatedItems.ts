@@ -4,6 +4,7 @@ import { powerupCodes } from '../constants/constants';
 import type { ChangeSet, Item, RemNode, ZoteroItemData } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
 import { threeWayMerge } from './threeWayMerge';
+import { isProgrammaticallyEdited } from '../utils/editTracker';
 
 /**
  * For each updated item in the ChangeSet, merge the local data, remote data, and the previous shadow copy.
@@ -26,26 +27,28 @@ export async function mergeUpdatedItems(
 		const remNode = nodeCache.get(updatedItem.key);
 		let localData = {};
 		if (remNode) {
-			const localDataStr = await remNode.rem.getPowerupProperty(
-				powerupCodes.ZITEM,
-				'fullData'
-			);
-			if (localDataStr?.[0]) {
-				try {
-					localData = JSON.parse(localDataStr[0]);
-				} catch (e) {
-					await logMessage(
-						_plugin,
-						`Failed to parse local data for item ${updatedItem.key}`,
-						LogType.Warning,
-						false,
-						String(e)
-					);
-					localData = {};
-				}
-			}
 			// attach rem to updatedItem for downstream steps
 			updatedItem.rem = remNode.rem;
+			if (!isProgrammaticallyEdited(remNode.rem._id)) {
+				const localDataStr = await remNode.rem.getPowerupProperty(
+					powerupCodes.ZITEM,
+					'fullData'
+				);
+				if (localDataStr?.[0]) {
+					try {
+						localData = JSON.parse(localDataStr[0]);
+					} catch (e) {
+						await logMessage(
+							_plugin,
+							`Failed to parse local data for item ${updatedItem.key}`,
+							LogType.Warning,
+							false,
+							String(e)
+						);
+						localData = {};
+					}
+				}
+			}
 		}
 		// Merge the three data versions.
 		const mergedData = threeWayMerge(localData, updatedItem.data, shadowItem.data);

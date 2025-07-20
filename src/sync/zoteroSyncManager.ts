@@ -15,6 +15,14 @@ import { mergeUpdatedItems } from './mergeUpdatedItems';
 import { ZoteroPropertyHydrator } from './propertyHydrator';
 import { release, tryAcquire } from './syncLock';
 import { TreeBuilder } from './treeBuilder';
+import {
+	registerEditListener,
+	loadStoredEdits,
+	persistEdits,
+	startProgrammaticEdits,
+	endProgrammaticEdits,
+	clearEdits,
+} from '../utils/editTracker';
 
 export class ZoteroSyncManager {
 	private plugin: RNPlugin;
@@ -36,6 +44,7 @@ export class ZoteroSyncManager {
 		this.treeBuilder = new TreeBuilder(plugin);
 		this.changeDetector = new ChangeDetector();
 		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
+		void loadStoredEdits(plugin);
 	}
 
 	private async updateProgress(value: number, libraryKey?: string) {
@@ -252,6 +261,7 @@ export class ZoteroSyncManager {
 				applied++;
 				await this.updateProgress(0.4 + (applied / Math.max(applyTotal, 1)) * 0.3, key);
 			};
+			startProgrammaticEdits();
 			await this.treeBuilder.applyChanges(changes, applyProgress);
 			// 8. Populate detailed properties (build fields) on each Rem.
 			const isSimpleSync = await this.plugin.settings.getSetting('simple-mode');
@@ -273,6 +283,9 @@ export class ZoteroSyncManager {
 			} else {
 				await this.updateProgress(0.9, key);
 			}
+			endProgrammaticEdits();
+			await persistEdits(this.plugin);
+			clearEdits();
 			if (await this.checkAbort(isMulti)) return;
 
 			// 9. Save the current data as the new shadow copy for future syncs.
