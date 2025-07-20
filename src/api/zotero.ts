@@ -4,10 +4,12 @@ import type { RNPlugin } from '@remnote/plugin-sdk';
 // @ts-ignore
 import createZoteroClient from 'zotero-api-client';
 import type {
-	Collection,
-	Item,
-	ZoteroCollectionResponse,
-	ZoteroItemResponse,
+       Collection,
+       Item,
+       ZoteroCollectionResponse,
+       ZoteroItemResponse,
+       ZoteroGroupListItem,
+       ZoteroUserResponse,
 } from '../types/types';
 import { LogType, logMessage } from '../utils/logging';
 import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters';
@@ -164,25 +166,28 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
 	const baseUrl = process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
 
 	try {
-		const resUser = await fetch(`${baseUrl}/users/${userId}`, { headers });
+                const resUser = await fetch(`${baseUrl}/users/${userId}`, { headers });
 
-		let userName = 'My Library';
-		if (resUser.ok) {
-			const userData = (await resUser.json()) as any;
-			userName = userData?.data?.profileName || userData?.data?.username || userName;
-		}
+                let userName = 'My Library';
+                if (resUser.ok) {
+                        const userData = (await resUser.json()) as ZoteroUserResponse;
+                        userName =
+                                userData.data?.profileName ||
+                                userData.data?.username ||
+                                userName;
+                }
 
-		const res = await fetch(`${baseUrl}/users/${userId}/groups`, { headers });
+                const res = await fetch(`${baseUrl}/users/${userId}/groups`, { headers });
 
-		if (!res.ok) {
-			throw new Error(`HTTP ${res.status}`);
-		}
-		const data = (await res.json()) as any[];
-		const groups = data.map((g) => ({
-			id: String(g.id ?? g.data?.id),
-			name: g.data?.name ?? g.name ?? '',
-			type: 'group' as const,
-		}));
+                if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}`);
+                }
+                const data = (await res.json()) as ZoteroGroupListItem[];
+                const groups = data.map((g) => ({
+                        id: String(g.id ?? g.data?.id),
+                        name: g.data?.name ?? g.name ?? '',
+                        type: 'group' as const,
+                }));
 		return [{ id: String(userId), name: userName, type: 'user' as const }, ...groups];
 	} catch (err) {
 		await logMessage(
