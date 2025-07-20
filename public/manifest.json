@@ -14,12 +14,16 @@
 	"unlisted": true,
 	"description": "📚 Official Zotero Integration, Export Sources as Bibliography, and more!",
 	"requestNative": false,
-	"requiredScopes": [
-		{
-			"type": "All",
-			"level": "ReadCreateModify"
-		},
-		{
+        "requiredScopes": [
+                {
+                        "type": "All",
+                        "level": "ReadCreateModify"
+                },
+                {
+                        "type": "KnowledgeBaseInfo",
+                        "level": "Read"
+                },
+                {
 			"type": "Powerup",
 			"powerupCode": "zotero-synced-library",
 			"level": "ReadCreateModifyDelete"

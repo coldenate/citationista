@@ -46,6 +46,7 @@ The **Zotero** commands first send any detected source URLs to your Zotero libra
 -   **Force Zotero Sync** (`sync`) – immediately synchronize your Zotero library.
 -   **Abort Zotero Sync** – stop the current sync job.
 -   **Reset Synced Zotero Data** (`rszd`) – remove all Zotero Connector data from this knowledge base.
+-   **Knowledge Base ID** setting chooses which knowledge base Zotero Connector runs in.
 
 Additional diagnostic commands become available when **Debug Mode** is enabled.
 

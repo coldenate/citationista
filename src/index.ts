@@ -40,6 +40,8 @@ import { ZoteroSyncManager } from './sync/zoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
 import { detectDarkMode, setupThemeDetection } from './utils/theme';
 
+const knowledgeBaseSettingId = 'zotero-knowledge-base-id';
+
 let autoSyncInterval: NodeJS.Timeout | undefined;
 let zoteroCitationRegistered = false;
 let wikiCitationRegistered = false;
@@ -48,19 +50,25 @@ let citationWidgetId: string | undefined;
 // Helper functions for organizing registration logic
 
 async function registerSettings(plugin: RNPlugin) {
-	// user sign-in
+        // user sign-in
 
 	await plugin.settings.registerStringSetting({
 		id: 'zotero-user-id',
 		title: 'Zotero userID',
 		description: 'Find this at https://www.zotero.org/settings/keys',
 	});
-	await plugin.settings.registerStringSetting({
-		id: 'zotero-api-key',
-		title: 'Zotero API Key',
-		description:
-			'Find this at https://www.zotero.org/settings/keys. Make sure to enable all read/write for all features to work. But feel free to disable any you do not need.',
-	});
+        await plugin.settings.registerStringSetting({
+                id: 'zotero-api-key',
+                title: 'Zotero API Key',
+                description:
+                        'Find this at https://www.zotero.org/settings/keys. Make sure to enable all read/write for all features to work. But feel free to disable any you do not need.',
+        });
+
+        await plugin.settings.registerStringSetting({
+                id: knowledgeBaseSettingId,
+                title: 'Knowledge Base ID',
+                description: 'Only run Zotero Connector in this knowledge base.',
+        });
 
 	// selecting library
 
@@ -512,14 +520,29 @@ async function registerPowerups(plugin: RNPlugin) {
 }
 
 async function _deleteTaggedRems(plugin: RNPlugin, powerupCodes: string[]): Promise<void> {
-	for (const code of powerupCodes) {
-		const powerup = await plugin.powerup.getPowerupByCode(code);
-		const taggedRems = await powerup?.taggedRem();
-		if (taggedRems) {
-			const removalPromises = taggedRems.map((rem) => rem?.remove());
-			await Promise.all(removalPromises);
-		}
-	}
+        for (const code of powerupCodes) {
+                const powerup = await plugin.powerup.getPowerupByCode(code);
+                const taggedRems = await powerup?.taggedRem();
+                if (taggedRems) {
+                        const removalPromises = taggedRems.map((rem) => rem?.remove());
+                        await Promise.all(removalPromises);
+                }
+        }
+}
+
+async function ensureAllowedKnowledgeBase(plugin: RNPlugin): Promise<boolean> {
+        const data = await plugin.kb.getCurrentKnowledgeBaseData();
+        let stored = (await plugin.storage.getSynced('allowedKnowledgeBase')) as string | undefined;
+        if (!stored) {
+                stored = data._id;
+                await plugin.storage.setSynced('allowedKnowledgeBase', stored);
+        }
+        const selected = (await plugin.settings.getSetting(knowledgeBaseSettingId)) as string | undefined;
+        if (selected && selected !== data._id) {
+                await plugin.app.toast('Zotero Connector disabled in this knowledge base');
+                return false;
+        }
+        return true;
 }
 
 async function handleLibrarySwitch(plugin: RNPlugin) {
@@ -848,7 +871,10 @@ async function registerCommands(plugin: RNPlugin) {
 }
 
 async function onActivate(plugin: RNPlugin) {
-	await registerSettings(plugin);
+        if (!(await ensureAllowedKnowledgeBase(plugin))) {
+                return;
+        }
+        await registerSettings(plugin);
 	await registerPowerups(plugin);
 	setupThemeDetection(plugin, async () => {
 		await registerIconCSS(plugin, detectDarkMode());
