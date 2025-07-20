@@ -71,102 +71,98 @@ export class ZoteroPropertyHydrator {
 					await this.hydrateTextContent(rem, item.data.annotationText, 'Annotation');
 				}
 
-                                const itemTitle = getItemTitle(item.data);
-                                if (itemTitle) {
-                                        const safeTitle = await this.plugin.richText.parseFromMarkdown(
-                                                String(itemTitle)
-                                        );
-                                        await rem.setText(safeTitle);
-                                }
+				const itemTitle = getItemTitle(item.data);
+				if (itemTitle) {
+					const safeTitle = await this.plugin.richText.parseFromMarkdown(
+						String(itemTitle)
+					);
+					await rem.setText(safeTitle);
+				}
 
-                                // We already add the KEY property when we create it, so there is no need to set it again
-                                await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
+				// We already add the KEY property when we create it, so there is no need to set it again
+				await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [String(item.version)]);
 
 				await rem.setPowerupProperty(powerupCodes.ZITEM, 'fullData', [
 					JSON.stringify(item.data),
 				]);
 
-                                const properties = await filterAsync(await powerupItemType.getChildrenRem(), (c) =>
-                                        c.isProperty()
-                                );
-                                const allowedFields = itemTypeFieldLookup[item.data.itemType] ?? [];
+				const properties = await filterAsync(await powerupItemType.getChildrenRem(), (c) =>
+					c.isProperty()
+				);
+				const allowedFields = itemTypeFieldLookup[item.data.itemType] ?? [];
 
-                                // Collect all URLs for adding as sources
-                                const urlSources: string[] = [];
+				// Collect all URLs for adding as sources
+				const urlSources: string[] = [];
 
-                                for (const field of allowedFields) {
-                                        const propertyValue = item.data[field as keyof ZoteroItemData];
-                                        if (!propertyValue) continue;
+				for (const field of allowedFields) {
+					const propertyValue = item.data[field as keyof ZoteroItemData];
+					if (!propertyValue) continue;
 
-                                        const formattedKey = field.toLowerCase().replace(/\s/g, '');
+					const formattedKey = field.toLowerCase().replace(/\s/g, '');
 
-                                        if (formattedKey === 'key') continue;
+					if (formattedKey === 'key') continue;
 
-                                        const property = properties.find((p) => {
-                                                if (!p.text || p.text.length === 0) return false;
-                                                const propertyKey = stripPowerupSuffix(p.text[0] as string);
-                                                return (
-                                                        propertyKey
-                                                                .toLowerCase()
-                                                                .replace(/\s/g, '') === formattedKey
-                                                );
-                                        });
+					const property = properties.find((p) => {
+						if (!p.text || p.text.length === 0) return false;
+						const propertyKey = stripPowerupSuffix(p.text[0] as string);
+						return propertyKey.toLowerCase().replace(/\s/g, '') === formattedKey;
+					});
 
-                                        if (!property) {
-                                                logMessage(
-                                                        this.plugin,
-                                                        `No matching property for field: ${field}`,
-                                                        LogType.Info
-                                                );
-                                                continue;
-                                        }
+					if (!property) {
+						logMessage(
+							this.plugin,
+							`No matching property for field: ${field}`,
+							LogType.Info
+						);
+						continue;
+					}
 
-                                        const propertyType = await property.getPropertyType();
-                                        const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
-                                                itemTypeCode,
-                                                generatePowerupCode(field)
-                                        );
+					const propertyType = await property.getPropertyType();
+					const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
+						itemTypeCode,
+						generatePowerupCode(field)
+					);
 
-                                        if (!slotCode) {
-                                                await logMessage(
-                                                        this.plugin,
-                                                        `Slot code not found for property: ${field}`,
-                                                        LogType.Error,
-                                                        false
-                                                );
-                                                continue;
-                                        }
+					if (!slotCode) {
+						await logMessage(
+							this.plugin,
+							`Slot code not found for property: ${field}`,
+							LogType.Error,
+							false
+						);
+						continue;
+					}
 
-//                                         if (isTitleLikeField(field)) {
-//                                                 const safeTitle = await this.plugin.richText.parseFromMarkdown(
-//                                                         String(propertyValue)
-//                                                 );
-//                                                 await rem.setText(safeTitle);
-//                                                 continue;
-//                                         }
+					//                                         if (isTitleLikeField(field)) {
+					//                                                 const safeTitle = await this.plugin.richText.parseFromMarkdown(
+					//                                                         String(propertyValue)
+					//                                                 );
+					//                                                 await rem.setText(safeTitle);
+					//                                                 continue;
+					//                                         }
 
-                                        if (propertyType === PropertyType.URL) {
-                                                const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
-                                                if (!linkID) {
-                                                        await logMessage(
-                                                                this.plugin,
-                                                                `Failed to create link rem for URL: ${propertyValue}`,
-                                                                LogType.Error,
-                                                                false
-                                                        );
-                                                        continue;
-                                                }
-                                                await rem.setTagPropertyValue(
-                                                        slotCode._id,
-                                                        // @ts-ignore
-                                                        this.plugin.richText.rem(linkID).richText
-                                                );
-                                                // Collect URL for adding as source
-                                                urlSources.push(propertyValue);
-                                        } else {
-                                                await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
-                                        }
-                                }
+					if (propertyType === PropertyType.URL) {
+						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
+						if (!linkID) {
+							await logMessage(
+								this.plugin,
+								`Failed to create link rem for URL: ${propertyValue}`,
+								LogType.Error,
+								false
+							);
+							continue;
+						}
+						await rem.setTagPropertyValue(
+							slotCode._id,
+							// @ts-ignore
+							this.plugin.richText.rem(linkID).richText
+						);
+						// Collect URL for adding as source
+						urlSources.push(propertyValue);
+					} else {
+						await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
+					}
+				}
 
 				// Handle multiple URLs as sources
 				await this.addAllUrlSources(rem, item.data, urlSources);

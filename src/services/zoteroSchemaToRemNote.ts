@@ -1,12 +1,12 @@
 /** Helpers for generating and registering RemNote power‑ups from Zotero item types. */
 import {
-        type PowerupCode,
-        PropertyLocation,
-        PropertyType,
-        type RegisterPowerupOptions,
+	type PowerupCode,
+	PropertyLocation,
+	PropertyType,
+	type RegisterPowerupOptions,
 } from '@remnote/plugin-sdk';
-import { generatePowerupCode, generatePowerupName } from '../utils/getCodeName';
 import type { ZoteroItemData } from '../types/types';
+import { generatePowerupCode, generatePowerupName } from '../utils/getCodeName';
 
 type Field = {
 	field: string;
@@ -25,16 +25,16 @@ export type ItemType = {
 };
 
 export function isTitleLikeField(field: string): boolean {
-        return (
-                field.includes('title') ||
-                field.includes('Title') ||
-                field.includes('name') ||
-                field.includes('Name')
-        );
+	return (
+		field.includes('title') ||
+		field.includes('Title') ||
+		field.includes('name') ||
+		field.includes('Name')
+	);
 }
 
 export function getItemTitle(data: ZoteroItemData): string | undefined {
-        return data.title ?? data.shortTitle ?? (data as { name?: string }).name;
+	return data.title ?? data.shortTitle ?? (data as { name?: string }).name;
 }
 
 function inferPropertyType(field: string): PropertyType {
