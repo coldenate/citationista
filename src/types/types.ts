@@ -196,30 +196,30 @@ export type Collection = {
 };
 
 export interface RemNode {
-        remId: string;
-        zoteroId: string;
-        zoteroParentId: string | string[] | null;
-        rem: Rem;
+	remId: string;
+	zoteroId: string;
+	zoteroParentId: string | string[] | null;
+	rem: Rem;
 }
 
 /**
  * Minimal user object returned from the Zotero API when fetching the current user.
  */
 export interface ZoteroUserResponse {
-       data?: {
-               profileName?: string;
-               username?: string;
-       };
+	data?: {
+		profileName?: string;
+		username?: string;
+	};
 }
 
 /**
  * Minimal group object returned when listing user groups via the Zotero API.
  */
 export interface ZoteroGroupListItem {
-       id?: number | string;
-       name?: string;
-       data?: {
-               id?: number | string;
-               name?: string;
-       };
+	id?: number | string;
+	name?: string;
+	data?: {
+		id?: number | string;
+		name?: string;
+	};
 }

@@ -9,20 +9,19 @@ import {
 } from '../services/ensureUIPrettyZoteroRemExist';
 import { checkAbortFlag } from '../services/pluginIO';
 import type { ChangeSet, Collection, Item } from '../types/types';
+import {
+	clearEdits,
+	endProgrammaticEdits,
+	loadStoredEdits,
+	persistEdits,
+	startProgrammaticEdits,
+} from '../utils/editTracker';
 import { LogType, logMessage } from '../utils/logging';
 import { ChangeDetector } from './changeDetector';
 import { mergeUpdatedItems } from './mergeUpdatedItems';
 import { ZoteroPropertyHydrator } from './propertyHydrator';
 import { release, tryAcquire } from './syncLock';
 import { TreeBuilder } from './treeBuilder';
-import {
-	registerEditListener,
-	loadStoredEdits,
-	persistEdits,
-	startProgrammaticEdits,
-	endProgrammaticEdits,
-	clearEdits,
-} from '../utils/editTracker';
 
 export class ZoteroSyncManager {
 	private plugin: RNPlugin;

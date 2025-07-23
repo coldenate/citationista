@@ -3,15 +3,15 @@
 	"name": "remnote-plugin-template-react",
 	"version": "0.0.1",
 	"license": "MIT",
-        "scripts": {
-                "check-types": "tsc",
-                "start:dev": "cross-env NODE_ENV=development webpack-dev-server --color --progress --no-open",
-                "dev": "concurrently \"npm run start:dev\" \"npm run test:watch\"",
-                "test": "jest",
-                "test:watch": "jest --watch",
-                "build": "npx remnote-plugin validate && shx rm -rf dist && cross-env NODE_ENV=production webpack --color --progress && shx cp README.md dist && cd dist && bestzip ../PluginZip.zip ./*",
-                "generate-snippet": "ts-node scripts/generateCssSnippet.ts"
-        },
+	"scripts": {
+		"check-types": "tsc",
+		"start:dev": "cross-env NODE_ENV=development webpack-dev-server --color --progress --no-open",
+		"dev": "concurrently \"npm run start:dev\" \"npm run test:watch\"",
+		"test": "jest",
+		"test:watch": "jest --watch",
+		"build": "npx remnote-plugin validate && shx rm -rf dist && cross-env NODE_ENV=production webpack --color --progress && shx cp README.md dist && cd dist && bestzip ../PluginZip.zip ./*",
+		"generate-snippet": "ts-node scripts/generateCssSnippet.ts"
+	},
 	"dependencies": {
 		"@remnote/plugin-sdk": "0.0.44",
 		"citation-js": "^0.7.4",
