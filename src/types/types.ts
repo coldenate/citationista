@@ -1,30 +1,6 @@
 import type { Rem } from '@remnote/plugin-sdk';
 
 /**
- * Raw item object returned directly from the Zotero API.
- */
-export interface ZoteroItemResponse {
-	key: string;
-	version: number;
-	message?: string;
-	rem?: Record<string, unknown> | null;
-	data?: Partial<ZoteroItemData>;
-	relations?: Relations;
-}
-
-/**
- * Raw collection object returned directly from the Zotero API.
- */
-export interface ZoteroCollectionResponse {
-	key: string;
-	version: number;
-	name?: string;
-	parentCollection?: string | false;
-	rem?: Record<string, unknown> | null;
-	relations?: Record<string, string>;
-}
-
-/**
  * Detailed data for a Zotero item. This attempts to mirror the fields
  * returned by the Zotero Web API. All fields are optional because not every
  * item type makes use of every field.
@@ -105,6 +81,90 @@ export interface ZoteroItemData {
 	runningTime?: string;
 }
 
+export interface ZoteroLibraryInfo {
+	type: 'user' | 'group';
+	id: number;
+	name: string;
+	links?: {
+		alternate: {
+			href: string;
+			type: string;
+		};
+	};
+}
+
+export interface TreeLinkage {
+	key: string;
+	children?: SyncTreeNode[];
+	parent?: SyncTreeNode | null;
+}
+
+export interface ZoteroItem extends TreeLinkage {
+	version: number;
+	library: ZoteroLibraryInfo;
+	links: {
+		self: {
+			href: string;
+			type: string;
+		};
+		alternate: {
+			href: string;
+			type: string;
+		};
+	};
+	meta: {
+		numChildren: number;
+	};
+	data: ZoteroItemData;
+	rem?: Rem | null;
+}
+
+export interface ZoteroCollection extends TreeLinkage {
+	version: number;
+	name: string;
+	parentCollection: boolean | string; // if false, top-level
+	relations: Record<string, string>;
+	rem?: Rem | null;
+}
+
+export type SyncTreeNode = ZoteroItem | ZoteroCollection;
+/**
+ * 1. Initial Sync scenario:
+ * This is the Tree structure that will be used to sync the Zotero library with the RemNote library.
+ * It will represent first, the Zotero library at a state already in hierarchy.
+ * Then, we, in another file, will run through the Zotero library use the SyncTree as a playbook to build out the RemNote library. As we iterate, we will update the SyncTree to contain Rem references to the Rems we create.
+ * 2. Syncing scenario:
+ * This is the Tree structure that will be used to sync the Zotero library with the RemNote library.
+ * We will build out two SyncTrees from the RemNote library and Zotero Library.
+ * We will then compare the two trees and determine the changes that need to be made to the RemNote library to bring it up to date with the Zotero library.
+ * We will then apply the changes to the RemNote library.
+ */
+export type SyncTree = SyncTreeNode[];
+
+// /**
+//  * Raw item object returned directly from the Zotero API.
+//  */
+// export interface ZoteroItemResponseOld {
+// 	key: string;
+// 	version: number;
+// 	message?: string;
+// 	rem?: Record<string, unknown> | null;
+// 	data?: Partial<ZoteroItemData>;
+// 	relations?: Relations;
+// }
+
+// /**
+//  * Raw collection object returned directly from the Zotero API.
+//  */
+// export interface ZoteroCollectionResponseOld {
+// 	key: string;
+// 	version: number;
+// 	name?: string;
+// 	parentCollection?: string | false;
+// 	rem?: Record<string, unknown> | null;
+// 	relations?: Record<string, string>;
+// }
+
 export interface Creator {
 	creatorType: CreatorType;
 	firstName?: string;
@@ -159,47 +219,6 @@ export enum LinkMode {
 	ImportedURL = 'imported_url',
 	LinkedFile = 'linked_file',
 	LinkedURL = 'linked_url',
-}
-
-export type Item = {
-	version: number;
-	message?: string;
-	key: string;
-	/**
-	 * The Rem corresponding to this Zotero item. When initially fetched from
-	 * the API this will be `null` and later populated once the tree builder
-	 * creates or locates the Rem.
-	 */
-	rem: Rem | null;
-	data: ZoteroItemData;
-};
-
-export interface ChangeSet {
-	newItems: Item[];
-	updatedItems: Item[];
-	deletedItems: Item[];
-	movedItems: Item[];
-	newCollections: Collection[];
-	updatedCollections: Collection[];
-	deletedCollections: Collection[];
-	movedCollections: Collection[];
-}
-
-export type Collection = {
-	/** Rem corresponding to this collection. May be `null` until created */
-	rem: Rem | null;
-	key: string;
-	version: number;
-	name: string;
-	parentCollection: string;
-	relations: Record<string, string>; // TODO: Implement Relations (if needed?)
-};
-
-export interface RemNode {
-	remId: string;
-	zoteroId: string;
-	zoteroParentId: string | string[] | null;
-	rem: Rem;
 }
 
 /**
