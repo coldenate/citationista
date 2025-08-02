@@ -5,6 +5,7 @@ import type { RNPlugin } from '@remnote/plugin-sdk';
 import createZoteroClient from 'zotero-api-client';
 import type {
 	ZoteroCollection,
+	ZoteroCollectionResponse,
 	ZoteroGroupListItem,
 	ZoteroItem,
 	ZoteroUserResponse,
@@ -126,7 +127,7 @@ export class ZoteroAPI {
 		try {
 			const apiConnection = await this.getOrCreateConnection(libraryType, libraryId);
 			const response = await apiConnection.collections().get();
-			const rawCollections = response.getData() as ZoteroCollection[];
+			const rawCollections = response.getData() as ZoteroCollectionResponse[];
 			return rawCollections.map(fromZoteroCollection);
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : 'Unknown error';

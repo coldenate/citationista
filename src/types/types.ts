@@ -144,6 +144,41 @@ export const isCollection = (n: SyncTreeNode): n is ZoteroCollection => {
 	return (n as ZoteroCollection).parentCollection !== undefined;
 };
 
+// remPlanner.ts ──────────────────────────────────────────────
+export type OpType = 'create' | 'update' | 'move' | 'delete';
+
+export interface RemOpBase {
+	type: OpType;
+	key: string; // Zotero key
+}
+
+/** create – parent→child order matters */
+export interface CreateOp extends RemOpBase {
+	type: 'create';
+	node: SyncTreeNode; // full Zotero+linkage payload
+	parentKey: string | null; // where to attach (null = root)
+}
+
+/** update – text / props only, no structural movement */
+export interface UpdateOp extends RemOpBase {
+	type: 'update';
+	node: SyncTreeNode; // remote (authoritative) version
+}
+
+/** move – structure only, no content change */
+export interface MoveOp extends RemOpBase {
+	type: 'move';
+	newParentKey: string | null;
+}
+
+/** delete – bottom-up order is enforced later */
+export interface DeleteOp extends RemOpBase {
+	type: 'delete';
+	isCollection: boolean; // helps executor decide recurse-or-simple remove
+}
+
+export type RemOperation = CreateOp | UpdateOp | MoveOp | DeleteOp;
+
 // /**
 //  * Raw item object returned directly from the Zotero API.
 //  */
@@ -244,4 +279,42 @@ export interface ZoteroGroupListItem {
 		id?: number | string;
 		name?: string;
 	};
+}
+
+// Add missing type definitions
+export type Item = ZoteroItem;
+export type Collection = ZoteroCollection;
+
+export interface ChangeSet {
+	newItems: Item[];
+	updatedItems: Item[];
+	deletedItems: Item[];
+	movedItems: Item[];
+	newCollections: Collection[];
+	updatedCollections: Collection[];
+	deletedCollections: Collection[];
+	movedCollections: Collection[];
+}
+
+export interface RemNode {
+	remId: string;
+	zoteroId: string;
+	zoteroParentId?: string;
+	rem: Rem;
+}
+
+export interface ZoteroItemResponse {
+	key: string;
+	version: number;
+	message?: string;
+	data?: Partial<ZoteroItemData>;
+	relations?: Relations;
+}
+
+export interface ZoteroCollectionResponse {
+	key: string;
+	version: number;
+	name?: string;
+	parentCollection?: string | false;
+	relations?: Record<string, string>;
 }

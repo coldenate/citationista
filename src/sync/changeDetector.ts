@@ -1,4 +1,5 @@
 import type { ChangeSet, Collection, Item } from '../types/types';
+import { SyncTree } from './SyncTree';
 
 export class ChangeDetector {
 	detectChanges(
@@ -76,6 +77,68 @@ export class ChangeDetector {
 			changes.newItems = currentData.items;
 			changes.newCollections = currentData.collections;
 		}
+		return changes;
+	}
+
+	diffTrees(prev: SyncTree, curr: SyncTree): ChangeSet {
+		// super-simple 1st pass: key-based comparison
+		const changes: ChangeSet = {
+			newItems: [],
+			updatedItems: [],
+			deletedItems: [],
+			movedItems: [],
+			newCollections: [],
+			updatedCollections: [],
+			deletedCollections: [],
+			movedCollections: [],
+		};
+
+		// ------- items -------
+		for (const node of curr.dfs()) {
+			if (!('data' in node)) continue; // skip collections
+			const prevNode = prev.get(node.key);
+
+			if (!prevNode) {
+				changes.newItems.push(node);
+				continue;
+			}
+
+			// version bump?
+			if ((prevNode as any).version !== node.version) {
+				changes.updatedItems.push(node);
+			}
+
+			// parent change?
+			if ((prevNode.parent?.key ?? null) !== (node.parent?.key ?? null)) {
+				changes.movedItems.push(node);
+			}
+		}
+
+		for (const node of prev.dfs()) {
+			if (!('data' in node)) continue;
+			if (!curr.has(node.key)) changes.deletedItems.push(node);
+		}
+
+		// ------- collections (same idea) -------
+		for (const node of curr.dfs()) {
+			if (!('name' in node)) continue; // item => skip
+			const prevNode = prev.get(node.key);
+			if (!prevNode) {
+				changes.newCollections.push(node);
+				continue;
+			}
+			if ((prevNode as any).version !== node.version) {
+				changes.updatedCollections.push(node);
+			}
+			if ((prevNode.parent?.key ?? null) !== (node.parent?.key ?? null)) {
+				changes.movedCollections.push(node);
+			}
+		}
+		for (const node of prev.dfs()) {
+			if (!('name' in node)) continue;
+			if (!curr.has(node.key)) changes.deletedCollections.push(node);
+		}
+
 		return changes;
 	}
 }
