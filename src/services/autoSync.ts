@@ -1,5 +1,5 @@
 import type { RNPlugin } from '@remnote/plugin-sdk';
-import { ZoteroSyncManager } from '../sync/zoteroSyncManager';
+import { ZoteroSyncManager } from '../drivers/remnote/ZoteroSyncManager';
 
 /** Kick off a sync cycle if auto‑sync is enabled. */
 

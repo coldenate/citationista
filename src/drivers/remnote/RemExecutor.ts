@@ -12,13 +12,13 @@
  *      • Minimal error handling → logs and continues
  *****************************************************************/
 import type { Rem, RNPlugin } from '@remnote/plugin-sdk';
-import { powerupCodes } from '../constants/constants';
-import { createRem } from '../services/pluginIO';
-import type { RemOperation } from '../types/types'; // ← the union type we defined there
-import { generatePowerupCode } from '../utils/getCodeName';
-import { LogType, logMessage } from '../utils/logging';
+import { powerupCodes } from '../../constants/constants';
+import { createRem } from '../../services/pluginIO';
+import type { RemOperation } from '../../types/types'; // ← the union type we defined there
+import { generatePowerupCode } from '../../utils/getCodeName';
+import { LogType, logMessage } from '../../utils/logging';
 import type { TouchedItem } from './HydrationPipeline';
-import type { SyncTreeNode } from './SyncTree';
+import type { SyncTreeNode } from '../../core/SyncTree';
 
 const BATCH = 10;
 
@@ -106,29 +106,27 @@ export class RemExecutor {
 	 * ──────────────────────────────────────────────────────────── */
 
 	/** returns the Rem (fetches once, then cached) */
-	private async getRem(key: string): Promise<Rem | null> {
-		const cached = this.cache.get(key);
-		if (cached) return cached.rem;
+        private async getRem(key: string): Promise<Rem | null> {
+                const cached = this.cache.get(key);
+                if (cached) return cached.rem;
 
-		// slow path – ask DB
-		const powerup = await this.plugin.powerup.getPowerupByCode(powerupCodes.ZITEM);
-		if (!powerup) return null;
-
-		const rems = await powerup.taggedRem();
-		for (const r of rems) {
-			const remKey = await r.getPowerupProperty(powerupCodes.ZITEM, 'key');
-			if (remKey === key) {
-				const parentRem = await r.getParentRem();
-				this.cache.set(key, {
-					key,
-					rem: r,
-					parentKey: parentRem?._id ?? null,
-				});
-				return r;
-			}
-		}
-		return null;
-	}
+                // try both item and collection power-ups
+                const codes = [powerupCodes.ZITEM, powerupCodes.COLLECTION];
+                for (const code of codes) {
+                        const pu = await this.plugin.powerup.getPowerupByCode(code);
+                        if (!pu) continue;
+                        const rems = await pu.taggedRem();
+                        for (const r of rems) {
+                                const remKey = await r.getPowerupProperty(code, 'key');
+                                if (remKey === key) {
+                                        const parentRem = await r.getParentRem();
+                                        this.cache.set(key, { key, rem: r, parentKey: parentRem?._id ?? null });
+                                        return r;
+                                }
+                        }
+                }
+                return null;
+        }
 
 	/* ---------- operations ---------- */
 
@@ -164,7 +162,9 @@ export class RemExecutor {
 		const rem = await this.getRem(nodeKey);
 		if (!rem) return;
 
-		await this.getRem(newParentKey ?? '');
+		if (newParentKey) {
+                        await this.getRem(newParentKey);
+                }
 		const current = this.cache.get(nodeKey);
 		if (current?.parentKey === newParentKey) return; // already correct
 

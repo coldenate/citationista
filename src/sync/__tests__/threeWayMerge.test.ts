@@ -1,4 +1,4 @@
-import { mergeChildContent, threeWayMerge } from '../threeWayMerge';
+import { mergeChildContent, threeWayMerge } from '../../core/threeWayMerge';
 
 describe('mergeChildContent', () => {
   test('merges remote and local without duplicates relative to base', () => {
