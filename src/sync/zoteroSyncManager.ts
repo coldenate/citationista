@@ -21,10 +21,11 @@ import { release, tryAcquire } from './syncLock';
 import { TreeBuilder } from './treeBuilder';
 
 interface SyncState {
-	syncing: boolean;
-	progress: number;
-	startTime?: string;
-	multiLibraryProgress?: Record<string, { progress: number; name: string }>;
+        syncing: boolean;
+        progress: number;
+        startTime?: string;
+        multiLibraryProgress?: Record<string, { progress: number; name: string }>;
+        totalLibraries?: number;
 }
 
 export class ZoteroSyncManager {
@@ -54,20 +55,24 @@ export class ZoteroSyncManager {
 		this.syncState = { ...this.syncState, ...updates };
 
 		// Persist all state changes in one batch
-		const storageUpdates: Array<
-			[string, string | number | boolean | Record<string, { progress: number; name: string }>]
-		> = [
-			['syncing', this.syncState.syncing],
-			['syncProgress', this.syncState.progress],
-		];
+                const storageUpdates: Array<
+                        [string, string | number | boolean | Record<string, { progress: number; name: string }>]
+                > = [
+                        ['syncing', this.syncState.syncing],
+                        ['syncProgress', this.syncState.progress],
+                ];
 
 		if (this.syncState.startTime !== undefined) {
 			storageUpdates.push(['syncStartTime', this.syncState.startTime]);
 		}
 
-		if (this.syncState.multiLibraryProgress !== undefined) {
-			storageUpdates.push(['multiLibraryProgress', this.syncState.multiLibraryProgress]);
-		}
+                if (this.syncState.multiLibraryProgress !== undefined) {
+                        storageUpdates.push(['multiLibraryProgress', this.syncState.multiLibraryProgress]);
+                }
+
+                if (this.syncState.totalLibraries !== undefined) {
+                        storageUpdates.push(['totalLibraries', this.syncState.totalLibraries]);
+                }
 
 		await Promise.all(
 			storageUpdates.map(([key, value]) => this.plugin.storage.setSession(key, value))
@@ -78,53 +83,60 @@ export class ZoteroSyncManager {
 	 * Centralized method to get sync state from storage
 	 */
 	private async getSyncState(): Promise<SyncState> {
-		const [syncing, progress, startTime, multiLibraryProgress] = await Promise.all([
-			this.plugin.storage.getSession('syncing'),
-			this.plugin.storage.getSession('syncProgress'),
-			this.plugin.storage.getSession('syncStartTime'),
-			this.plugin.storage.getSession('multiLibraryProgress'),
-		]);
+                const [syncing, progress, startTime, multiLibraryProgress, totalLibraries] =
+                        await Promise.all([
+                                this.plugin.storage.getSession('syncing'),
+                                this.plugin.storage.getSession('syncProgress'),
+                                this.plugin.storage.getSession('syncStartTime'),
+                                this.plugin.storage.getSession('multiLibraryProgress'),
+                                this.plugin.storage.getSession('totalLibraries'),
+                        ]);
 
 		return {
 			syncing: (syncing as boolean) ?? false,
 			progress: (progress as number) ?? 0,
 			startTime: startTime as string | undefined,
-			multiLibraryProgress: multiLibraryProgress as
-				| Record<string, { progress: number; name: string }>
-				| undefined,
-		};
-	}
+                        multiLibraryProgress: multiLibraryProgress as
+                                | Record<string, { progress: number; name: string }>
+                                | undefined,
+                        totalLibraries: totalLibraries as number | undefined,
+                };
+        }
 
 	/**
 	 * Centralized progress update with multi-library support
 	 */
 	private async updateProgress(value: number, libraryKey?: string): Promise<void> {
-		if (this.syncState.multiLibraryProgress && libraryKey) {
-			const entry = this.syncState.multiLibraryProgress[libraryKey];
-			const prev = entry?.progress ?? 0;
-			const next = value < prev ? prev : value;
+                if (this.syncState.multiLibraryProgress && libraryKey) {
+                        const entry = this.syncState.multiLibraryProgress[libraryKey];
+                        const prev = entry?.progress ?? 0;
+                        const next = value < prev ? prev : value;
 
-			this.syncState.multiLibraryProgress[libraryKey] = {
-				...(entry || { name: libraryKey }),
-				progress: next,
-			};
+                        this.syncState.multiLibraryProgress[libraryKey] = {
+                                ...(entry || { name: libraryKey }),
+                                progress: next,
+                        };
 
-			// Calculate overall progress
-			const total = Object.values(this.syncState.multiLibraryProgress).reduce(
-				(a, b) => a + b.progress,
-				0
-			);
-			const avg = total / Object.keys(this.syncState.multiLibraryProgress).length;
+                        // Calculate cumulative progress across all libraries
+                        const total = Object.values(this.syncState.multiLibraryProgress).reduce(
+                                (a, b) => a + b.progress,
+                                0
+                        );
+                        const totalLibs =
+                                this.syncState.totalLibraries ||
+                                Object.keys(this.syncState.multiLibraryProgress).length;
+                        const overall = total / totalLibs;
+                        const safeOverall = overall < this.syncState.progress ? this.syncState.progress : overall;
 
-			await this.updateSyncState({
-				progress: avg,
-				multiLibraryProgress: this.syncState.multiLibraryProgress,
-			});
-			return;
-		}
+                        await this.updateSyncState({
+                                progress: safeOverall,
+                                multiLibraryProgress: this.syncState.multiLibraryProgress,
+                        });
+                        return;
+                }
 
-		await this.updateSyncState({ progress: value });
-	}
+                await this.updateSyncState({ progress: value });
+        }
 
 	/**
 	 * Centralized sync status management
@@ -146,9 +158,10 @@ export class ZoteroSyncManager {
 				startTime: undefined,
 			};
 
-			if (isMulti) {
-				cleanupUpdates.multiLibraryProgress = undefined;
-			}
+                if (isMulti) {
+                        cleanupUpdates.multiLibraryProgress = undefined;
+                        cleanupUpdates.totalLibraries = undefined;
+                }
 
 			await this.updateSyncState(cleanupUpdates);
 			await logMessage(this.plugin, 'Sync aborted', LogType.Info, false);
@@ -159,22 +172,24 @@ export class ZoteroSyncManager {
 	/**
 	 * Initialize multi-library sync state
 	 */
-	private async initializeMultiLibrarySync(libraries: ZoteroLibraryInfo[]): Promise<void> {
-		this.syncState.multiLibraryProgress = {};
-		for (const lib of libraries) {
-			this.syncState.multiLibraryProgress[`${lib.type}:${lib.id}`] = {
-				progress: 0,
-				name: lib.name,
-			};
-		}
+        private async initializeMultiLibrarySync(libraries: ZoteroLibraryInfo[]): Promise<void> {
+                this.syncState.multiLibraryProgress = {};
+                this.syncState.totalLibraries = libraries.length;
+                for (const lib of libraries) {
+                        this.syncState.multiLibraryProgress[`${lib.type}:${lib.id}`] = {
+                                progress: 0,
+                                name: lib.name,
+                        };
+                }
 
-		await this.updateSyncState({
-			syncing: true,
-			progress: 0,
-			startTime: new Date().toISOString(),
-			multiLibraryProgress: this.syncState.multiLibraryProgress,
-		});
-	}
+                await this.updateSyncState({
+                        syncing: true,
+                        progress: 0,
+                        startTime: new Date().toISOString(),
+                        multiLibraryProgress: this.syncState.multiLibraryProgress,
+                        totalLibraries: this.syncState.totalLibraries,
+                });
+        }
 
 	/**
 	 * Clean up sync state after completion
@@ -186,9 +201,10 @@ export class ZoteroSyncManager {
 			startTime: undefined,
 		};
 
-		if (isMulti) {
-			cleanupUpdates.multiLibraryProgress = undefined;
-		}
+                if (isMulti) {
+                        cleanupUpdates.multiLibraryProgress = undefined;
+                        cleanupUpdates.totalLibraries = undefined;
+                }
 
 		await this.updateSyncState(cleanupUpdates);
 	}
