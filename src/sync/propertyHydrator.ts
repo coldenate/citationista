@@ -1,11 +1,11 @@
 /** Populates Rem properties using Zotero item metadata. */
-import { PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
+import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { itemTypeFieldLookup } from '../constants/zoteroItemSchema';
 import { checkAbortFlag, createRem } from '../services/pluginIO';
 import { getItemTitle } from '../services/zoteroSchemaToRemNote';
 import type { ChangeSet, ZoteroItemData } from '../types/types';
-import { generatePowerupCode } from '../utils/getCodeName';
+import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
 
 export class ZoteroPropertyHydrator {
@@ -56,24 +56,10 @@ export class ZoteroPropertyHydrator {
 				const itemTypeCode = generatePowerupCode(item.data.itemType);
 				const powerupItemType = await this.plugin.powerup.getPowerupByCode(itemTypeCode);
 				if (!powerupItemType) {
-					await logMessage(
-						this.plugin,
-						`Powerup not found for itemType: ${item.data.itemType}, code: ${itemTypeCode}`,
-						LogType.Error
-					);
+					await logMessage(this.plugin, 'Powerup not found!', LogType.Error);
 					return;
 				}
-
 				await rem.addPowerup(itemTypeCode);
-
-				// Debug: Verify the powerup was added
-				const hasPowerup = await rem.hasPowerup(itemTypeCode);
-				await logMessage(
-					this.plugin,
-					`Rem has powerup ${itemTypeCode}: ${hasPowerup}`,
-					LogType.Info,
-					false
-				);
 
 				// Basic text for notes or annotations
 				if (item.data.itemType === 'note' && item.data.note) {
@@ -100,41 +86,52 @@ export class ZoteroPropertyHydrator {
 					JSON.stringify(item.data),
 				]);
 
-				const allowedFields = itemTypeFieldLookup[item.data.itemType] ?? [];
-				await logMessage(
-					this.plugin,
-					`Processing item type: ${item.data.itemType} with ${allowedFields.length} allowed fields: ${allowedFields.join(', ')}`,
-					LogType.Info,
-					false
+				const properties = await filterAsync(await powerupItemType.getChildrenRem(), (c) =>
+					c.isProperty()
 				);
+				const allowedFields = itemTypeFieldLookup[item.data.itemType] ?? [];
 
 				// Collect all URLs for adding as sources
 				const urlSources: string[] = [];
 
 				for (const field of allowedFields) {
 					const propertyValue = item.data[field as keyof ZoteroItemData];
-					if (!propertyValue) {
-						await logMessage(
-							this.plugin,
-							`Skipping field ${field} - no value`,
-							LogType.Info,
-							false
-						);
-						continue;
-					}
+					if (!propertyValue) continue;
 
 					const formattedKey = field.toLowerCase().replace(/\s/g, '');
 
 					if (formattedKey === 'key') continue;
 
-					// Generate the field code for this property
-					const fieldCode = generatePowerupCode(field);
-					await logMessage(
-						this.plugin,
-						`Setting property: itemTypeCode=${itemTypeCode}, fieldCode=${fieldCode}, field=${field}, value=${propertyValue}`,
-						LogType.Info,
-						false
+					const property = properties.find((p) => {
+						if (!p.text || p.text.length === 0) return false;
+						const propertyKey = stripPowerupSuffix(p.text[0] as string);
+						return propertyKey.toLowerCase().replace(/\s/g, '') === formattedKey;
+					});
+
+					if (!property) {
+						logMessage(
+							this.plugin,
+							`No matching property for field: ${field}`,
+							LogType.Info
+						);
+						continue;
+					}
+
+					const propertyType = await property.getPropertyType();
+					const slotCode = await this.plugin.powerup.getPowerupSlotByCode(
+						itemTypeCode,
+						generatePowerupCode(field)
 					);
+
+					if (!slotCode) {
+						await logMessage(
+							this.plugin,
+							`Slot code not found for property: ${field}`,
+							LogType.Error,
+							false
+						);
+						continue;
+					}
 
 					//                                         if (isTitleLikeField(field)) {
 					//                                                 const safeTitle = await this.plugin.richText.parseFromMarkdown(
@@ -143,21 +140,6 @@ export class ZoteroPropertyHydrator {
 					//                                                 await rem.setText(safeTitle);
 					//                                                 continue;
 					//                                         }
-
-					// Determine property type based on field name
-					let propertyType = PropertyType.TEXT;
-					if (field.includes('date') || field.includes('Date')) {
-						propertyType = PropertyType.DATE;
-					} else if (field.includes('url') || field.includes('URL')) {
-						propertyType = PropertyType.URL;
-					} else if (
-						field.includes('number') ||
-						field.includes('Number') ||
-						field.includes('volume') ||
-						field.includes('pages')
-					) {
-						propertyType = PropertyType.NUMBER;
-					}
 
 					if (propertyType === PropertyType.URL) {
 						const linkID = await this.plugin.rem.createLinkRem(propertyValue, true);
@@ -170,37 +152,15 @@ export class ZoteroPropertyHydrator {
 							);
 							continue;
 						}
-						await rem.setPowerupProperty(
-							itemTypeCode,
-							fieldCode,
+						await rem.setTagPropertyValue(
+							slotCode._id,
 							// @ts-ignore
-							[this.plugin.richText.rem(linkID).richText]
+							this.plugin.richText.rem(linkID).richText
 						);
 						// Collect URL for adding as source
 						urlSources.push(propertyValue);
-
-						// Debug: Verify the URL property was set
-						const verifiedUrlValue = await rem.getPowerupProperty(
-							itemTypeCode,
-							fieldCode
-						);
-						await logMessage(
-							this.plugin,
-							`Set URL property: ${field} = ${propertyValue}, verified: ${JSON.stringify(verifiedUrlValue)}`,
-							LogType.Info,
-							false
-						);
 					} else {
-						await rem.setPowerupProperty(itemTypeCode, fieldCode, [propertyValue]);
-
-						// Debug: Verify the property was set
-						const verifiedValue = await rem.getPowerupProperty(itemTypeCode, fieldCode);
-						await logMessage(
-							this.plugin,
-							`Set property: ${field} = ${propertyValue}, verified: ${JSON.stringify(verifiedValue)}`,
-							LogType.Info,
-							false
-						);
+						await rem.setTagPropertyValue(slotCode._id, [propertyValue]);
 					}
 				}
 
