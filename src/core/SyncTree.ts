@@ -213,11 +213,11 @@ export class SyncTree {
 		for (const n of this.byKey.values()) {
 			if ('data' in n) {
 				// item – strip linkage fields
-				const { parent: _p, children: _c, ...pure } = n;
+				const { parent: _p, children: _c, rem: _r, ...pure } = n;
 				items.push(pure as ZoteroItem);
 			} else {
 				// collection
-				const { parent: _p, children: _c, ...pure } = n;
+				const { parent: _p, children: _c, rem: _r, ...pure } = n;
 				collections.push(pure as ZoteroCollection);
 			}
 		}

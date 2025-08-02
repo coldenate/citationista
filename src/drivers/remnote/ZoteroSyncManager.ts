@@ -1,24 +1,18 @@
 /** Coordinates syncing between Zotero and RemNote. */
 import type { RNPlugin } from '@remnote/plugin-sdk';
 
-import { fetchLibraries, ZoteroAPI, type ZoteroLibraryInfo } from '../api/zotero';
+import { fetchLibraries, ZoteroAPI, type ZoteroLibraryInfo } from '../../api/zotero';
 import {
 	ensureSpecificLibraryRemExists,
 	ensureUnfiledItemsRemExists,
 	ensureZoteroLibraryRemExists,
-} from '../services/ensureUIPrettyZoteroRemExist';
-import { checkAbortFlag } from '../services/pluginIO';
-import type { ZoteroCollection, ZoteroItem } from '../types/types';
-import { loadStoredEdits, startProgrammaticEdits } from '../utils/editTracker';
-import { LogType, logMessage } from '../utils/logging';
-import { ChangeDetector } from './changeDetector';
-import { HydrationPipeline } from './HydrationPipeline';
-import { ZoteroPropertyHydrator } from './propertyHydrator';
-import { RemExecutor } from './RemExecutor';
-import { planRemOperations } from './RemPlanner';
-import { SyncTree } from './SyncTree';
-import { release, tryAcquire } from './syncLock';
-import { TreeBuilder } from './treeBuilder';
+} from '../../services/ensureUIPrettyZoteroRemExist';
+import { checkAbortFlag } from '../../services/pluginIO';
+import type { ZoteroCollection, ZoteroItem } from '../../types/types';
+import { loadStoredEdits } from '../../utils/editTracker';
+import { LogType, logMessage } from '../../utils/logging';
+import { syncLibrary } from './syncLibrary';
+import { release, tryAcquire } from '../../sync/syncLock';
 
 interface SyncState {
 	syncing: boolean;
@@ -30,10 +24,7 @@ interface SyncState {
 export class ZoteroSyncManager {
 	private plugin: RNPlugin;
 	private api: ZoteroAPI;
-	private treeBuilder: TreeBuilder;
-	private changeDetector: ChangeDetector;
-	private propertyHydrator: ZoteroPropertyHydrator;
-	private syncState: SyncState = {
+        private syncState: SyncState = {
 		syncing: false,
 		progress: 0,
 	};
@@ -41,10 +32,7 @@ export class ZoteroSyncManager {
 	constructor(plugin: RNPlugin) {
 		this.plugin = plugin;
 		this.api = new ZoteroAPI(plugin);
-		this.treeBuilder = new TreeBuilder(plugin);
-		this.changeDetector = new ChangeDetector();
-		this.propertyHydrator = new ZoteroPropertyHydrator(plugin);
-		void loadStoredEdits(plugin);
+                void loadStoredEdits(plugin);
 	}
 
 	/**
@@ -224,8 +212,9 @@ export class ZoteroSyncManager {
 				await this.initializeMultiLibrarySync(libs);
 
 				for (const lib of libs) {
-					await this.syncLibrary(lib, true);
-				}
+                                const key = `${lib.type}:${lib.id}`;
+                                await syncLibrary(this.plugin, lib, (f) => this.updateProgress(f, key));
+                                }
 
 				await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
 				await this.cleanupSyncState(true);
@@ -250,96 +239,12 @@ export class ZoteroSyncManager {
 
 			if (!library) return;
 
-			await this.syncLibrary(library);
+			await syncLibrary(this.plugin, library, (f) => this.updateProgress(f));
 			await logMessage(this.plugin, 'Sync complete!', LogType.Info, true);
 		} finally {
 			release();
 		}
 	}
-
-	private async syncLibrary(library: ZoteroLibraryInfo, isMulti: boolean = false): Promise<void> {
-		const key = `${library.type}:${library.id}`;
-		await this.plugin.storage.setSynced('syncedLibraryId', key);
-
-		if (!isMulti) {
-			await this.updateSyncState({
-				syncing: true,
-				progress: 0,
-				startTime: new Date().toISOString(),
-			});
-		}
-		await this.updateProgress(0, key);
-
-		try {
-			await ensureZoteroLibraryRemExists(this.plugin);
-			await ensureSpecificLibraryRemExists(this.plugin, library);
-			await ensureUnfiledItemsRemExists(this.plugin, key);
-
-			if (await this.checkAbort(isMulti)) return;
-
-			await this.updateProgress(0.1, key);
-
-			// Fetch Current Data
-
-			const currentZoteroData = await this.api.fetchLibraryContents(library.type, library.id);
-
-			const localTree = await SyncTree.buildTreeFromRems(this.plugin, library.id);
-
-			// Build an immutable snapshot of that data, preparing for actionable todo/action list
-
-			const remoteTree = SyncTree.build(currentZoteroData);
-
-			// compare previous tree to current tree
-
-			const changes = this.changeDetector.diffTrees(localTree, remoteTree);
-
-			if (!changes) {
-				await logMessage(this.plugin, 'No changes detected', LogType.Info, false);
-				return;
-			}
-
-			// apply those changes to the tree
-
-			const plan = planRemOperations(changes);
-
-			startProgrammaticEdits();
-			const touched = await new RemExecutor(this.plugin).run(plan, (p) =>
-				this.updateProgress(0.3 * p, key)
-			); // 0-30 %
-
-			/* ---------- hydrate (30-90 %) ---------- */
-			const baseRaw = await this.plugin.storage.getSynced('beforeUserEdits');
-			const baseTree = baseRaw
-				? SyncTree.fromSerializable(
-						baseRaw as {
-							items: ZoteroItem[];
-							collections: ZoteroCollection[];
-						}
-					)
-				: undefined;
-
-			const hydrator = new HydrationPipeline(this.plugin);
-			await hydrator.run(
-				touched,
-				baseTree,
-				async (f) => this.updateProgress(0.3 + 0.6 * f, key) //   30-90 %
-			);
-
-			/* ---------- snapshot for next run ---------- */
-			await this.plugin.storage.setSynced('beforeUserEdits', remoteTree.toSerializable());
-
-			await this.updateProgress(1, key);
-			await this.plugin.storage.setSynced('lastSyncTime', new Date().toISOString());
-			await logMessage(this.plugin, 'Library sync complete', LogType.Info, false);
-		} catch (error) {
-			await logMessage(this.plugin, error as Error, LogType.Error, false);
-		} finally {
-			if (!isMulti) {
-				await this.cleanupSyncState(false);
-			} else {
-				// ensure final progress is recorded as complete
-				await this.updateProgress(1, key);
-			}
-		}
-	}
 }
+	
+

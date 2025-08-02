@@ -82,6 +82,11 @@ export function mergeChildContent(
 	return merged;
 }
 
+export function mergeHtml(localHtml?: string, remoteHtml?: string, baseHtml?: string): string {
+        // TODO: implement rich-text merge
+        return remoteHtml ?? localHtml ?? '';
+}
+
 export function threeWayMerge(
 	localData: Partial<ZoteroItemData> | undefined,
 	remoteData: Partial<ZoteroItemData> | undefined,
@@ -94,7 +99,9 @@ export function threeWayMerge(
 		const localVal = localData ? localData[key as keyof ZoteroItemData] : undefined;
 		const baseVal = baseData ? baseData[key as keyof ZoteroItemData] : undefined;
 
-		if (isCoreField(key)) {
+		if (key === 'note' || key === 'annotationText') {
+                        (mergedData as Record<string, unknown>)[key] = mergeHtml(localVal as string | undefined, remoteVal as string | undefined, baseVal as string | undefined);
+                } else if (isCoreField(key)) {
 			// For core fields, always adopt the remote value.
 			(mergedData as Record<string, unknown>)[key] = remoteVal;
 		} else if (isChildContentField(key)) {

@@ -38,7 +38,7 @@ import { registerIconCSS } from './services/iconCSS';
 import { createRem, markAbortRequested } from './services/pluginIO';
 import { registerItemPowerups } from './services/zoteroSchemaToRemNote';
 import { release } from './sync/syncLock';
-import { ZoteroSyncManager } from './sync/zoteroSyncManager';
+import { ZoteroSyncManager } from './drivers/remnote/ZoteroSyncManager';
 import { LogType, logMessage } from './utils/logging';
 import { detectDarkMode, setupThemeDetection } from './utils/theme';
 import { registerEditListener } from './utils/editTracker';
