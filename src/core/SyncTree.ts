@@ -16,8 +16,6 @@
  *     a resolvable parent)
  */
 
-import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
-import { powerupCodes } from '../constants/constants';
 import type { ZoteroCollection, ZoteroItem } from '../types/types';
 
 /* ---------- shared linkage ---------- */
@@ -111,62 +109,7 @@ export class SyncTree {
 		return new SyncTree(roots, orphans, map);
 	}
 
-	/**
-	 * Build a SyncTree from the current RemNote KB.
-	 * – Reads only power-up props; NO writes.
-	 * – Uses the `fullData` JSON blob if present (safer than scattered fields).
-	 */
-	static async buildTreeFromRems(plugin: RNPlugin, libraryID: string): Promise<SyncTree> {
-		// 0) grab tagged Rems (same calls you already know)
-		const colPU = await plugin.powerup.getPowerupByCode(powerupCodes.COLLECTION);
-		const itemPU = await plugin.powerup.getPowerupByCode(powerupCodes.ZITEM);
-		if (!colPU || !itemPU) throw new Error('Required power-ups missing');
-
-		// NB: filter out the definition Rems
-		const [rawCols, rawItems] = await Promise.all([
-			colPU.taggedRem().then((rs) => rs.filter((r) => !r.isPowerup())),
-			itemPU.taggedRem().then((rs) => rs.filter((r) => !r.isPowerup())),
-		]);
-
-		// filter out Rems that are not in the library
-		const libraryRems = await filterAsync(rawItems, async (r) => {
-			const libraryKey = await r.getPowerupProperty(
-				powerupCodes.ZOTERO_SYNCED_LIBRARY,
-				'key'
-			);
-			return libraryKey === libraryID;
-		});
-
-		const libraryCols = await filterAsync(rawCols, async (r) => {
-			const libraryKey = await r.getPowerupProperty(
-				powerupCodes.ZOTERO_SYNCED_LIBRARY,
-				'key'
-			);
-			return libraryKey === libraryID;
-		});
-
-		// 1) de-serialise each Rem → plain Zotero* object
-		const collections: ZoteroCollection[] = [];
-		for (const rem of libraryCols) {
-			const blob = await rem.getPowerupProperty(powerupCodes.COLLECTION, 'fullData');
-			if (!blob) continue; // skip corrupted Rem
-			const z: ZoteroCollection = JSON.parse(blob[0]);
-			collections.push(z);
-		}
-
-		const items: ZoteroItem[] = [];
-		for (const rem of libraryRems) {
-			const blob = await rem.getPowerupProperty(powerupCodes.ZITEM, 'fullData');
-			if (!blob) continue;
-			const z: ZoteroItem = JSON.parse(blob[0]);
-			items.push(z);
-		}
-
-		// 2) delegate to the existing pure builder
-		return SyncTree.build({ collections, items });
-	}
-
-	/** Create a SyncTree from existing data (for applyChangeSet) */
+        /** Create a SyncTree from existing data (for applyChangeSet) */
 	static fromData(
 		roots: SyncTreeNode[],
 		orphans: SyncTreeNode[],

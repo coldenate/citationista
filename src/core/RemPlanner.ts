@@ -1,14 +1,22 @@
-import type { ChangeSet, CreateOp, DeleteOp, MoveOp, RemOperation, UpdateOp } from '../types/types';
+import type {
+  ChangeSet,
+  CreateOp,
+  DeleteOp,
+  MoveOp,
+  RemOperation,
+  UpdateOp,
+} from '../types/types';
 import type { SyncTreeNode } from './SyncTree';
+import { resolveParentKey } from './parentUtils';
 
 export function planRemOperations(changes: ChangeSet): RemOperation[] {
 	const ops: RemOperation[] = [];
 
 	/* ── 1) CREATIONS ───────────────────────────────────────────── */
-	const queue: SyncTreeNode[] = [...changes.newCollections, ...changes.newItems];
+        const queue: SyncTreeNode[] = [...changes.newCollections, ...changes.newItems];
 
-	for (const n of queue) {
-		const parentKey = n.parent ? n.parent.key : null;
+        for (const n of queue) {
+                const parentKey = resolveParentKey(n);
 
 		ops.push({
 			type: 'create',
@@ -27,8 +35,8 @@ export function planRemOperations(changes: ChangeSet): RemOperation[] {
 	}
 
 	/* ── 3) MOVES ───────────────────────────────────────────────── */
-	for (const n of [...changes.movedCollections, ...changes.movedItems]) {
-		const newParentKey = n.parent ? n.parent.key : null;
+        for (const n of [...changes.movedCollections, ...changes.movedItems]) {
+                const newParentKey = resolveParentKey(n);
 		ops.push({
 			type: 'move',
 			key: n.key,

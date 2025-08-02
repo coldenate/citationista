@@ -1,12 +1,12 @@
 /** Populates Rem properties using Zotero item metadata. */
 import { filterAsync, PropertyType, type Rem, type RNPlugin } from '@remnote/plugin-sdk';
-import { powerupCodes } from '../constants/constants';
-import { itemTypeFieldLookup } from '../constants/zoteroItemSchema';
-import { checkAbortFlag, createRem } from '../services/pluginIO';
-import { getItemTitle } from '../services/zoteroSchemaToRemNote';
-import type { ChangeSet, ZoteroItemData } from '../types/types';
-import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
-import { LogType, logMessage } from '../utils/logging';
+import { powerupCodes } from '../../constants/constants';
+import { itemTypeFieldLookup } from '../../constants/zoteroItemSchema';
+import { checkAbortFlag, createRem } from '../../services/pluginIO';
+import { getItemTitle } from '../../services/zoteroSchemaToRemNote';
+import type { ChangeSet, ZoteroItemData } from '../../types/types';
+import { generatePowerupCode, stripPowerupSuffix } from '../../utils/getCodeName';
+import { LogType, logMessage } from '../../utils/logging';
 
 export class ZoteroPropertyHydrator {
 	private plugin: RNPlugin;

@@ -6,12 +6,12 @@
  * -----------------------------------------------------------------*/
 
 import type { RNPlugin } from '@remnote/plugin-sdk';
-import { powerupCodes } from '../constants/constants';
-import type { ChangeSet, Item, SyncTreeNode, ZoteroItemData } from '../types/types';
-import { LogType, logMessage } from '../utils/logging';
+import { powerupCodes } from '../../constants/constants';
+import type { ChangeSet, Item, SyncTreeNode, ZoteroItemData } from '../../types/types';
+import { LogType, logMessage } from '../../utils/logging';
 import { ZoteroPropertyHydrator } from './propertyHydrator';
-import type { SyncTree } from './SyncTree';
-import { threeWayMerge } from './threeWayMerge';
+import type { SyncTree } from '../../core/SyncTree';
+import { threeWayMerge } from '../../core/threeWayMerge';
 
 export interface TouchedItem {
 	/** Zotero key                         */ key: string;
@@ -104,20 +104,23 @@ export class HydrationPipeline {
 
 	/** Minimal hydration: title + fullData blob                 */
 	private async hydrateLight(job: HydrationJob) {
-		try {
-			const rem = await this.plugin.rem.findOne(job.remId);
-			if (!rem) return;
+                try {
+                        const rem = await this.plugin.rem.findOne(job.remId);
+                        if (!rem) return;
 
-			// ① title
-			if (job.merged.title !== undefined) {
-				await rem.setText([job.merged.title]);
-			}
+                        const title = job.merged.title ?? job.remoteNode.data.title;
+                        if (title) {
+                                await rem.setText([title]);
+                        }
 
-			// ② store complete JSON snapshot for next diff / merge
-			await rem.setPowerupProperty(powerupCodes.ZITEM, 'fullData', [
-				JSON.stringify(job.merged),
-			]);
-		} catch (err) {
+                        await rem.setPowerupProperty(powerupCodes.ZITEM, 'version', [
+                                String((job.remoteNode as any).version ?? ''),
+                        ]);
+
+                        await rem.setPowerupProperty(powerupCodes.ZITEM, 'fullData', [
+                                JSON.stringify(job.merged),
+                        ]);
+                } catch (err) {
 			await logMessage(
 				this.plugin,
 				`Hydration error for rem ${job.remId}: ${(err as Error).message}`,

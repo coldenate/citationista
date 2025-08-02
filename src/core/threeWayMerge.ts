@@ -82,6 +82,16 @@ export function mergeChildContent(
 	return merged;
 }
 
+// Placeholder for future rich-text HTML merges
+export function mergeHtml(
+        localHtml: string | undefined,
+        remoteHtml: string | undefined,
+        baseHtml: string | undefined
+): string {
+        // TODO: implement proper three-way HTML merge
+        return remoteHtml ?? localHtml ?? '';
+}
+
 export function threeWayMerge(
 	localData: Partial<ZoteroItemData> | undefined,
 	remoteData: Partial<ZoteroItemData> | undefined,

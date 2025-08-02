@@ -2,7 +2,7 @@ import './syncStatusWidget.css';
 import { type Rem, renderWidget, usePlugin } from '@remnote/plugin-sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { markAbortRequested } from '../services/pluginIO';
-import { ZoteroSyncManager } from '../sync/zoteroSyncManager';
+import { ZoteroSyncManager } from '../drivers/remnote/zoteroSyncManager';
 import { LogType, logMessage } from '../utils/logging';
 
 interface LibraryEntry {
