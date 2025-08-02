@@ -139,7 +139,10 @@ export type SyncTreeNode = ZoteroItem | ZoteroCollection;
  * We will then compare the two trees and determine the changes that need to be made to the RemNote library to bring it up to date with the Zotero library.
  * We will then apply the changes to the RemNote library.
  */
-export type SyncTree = SyncTreeNode[];
+
+export const isCollection = (n: SyncTreeNode): n is ZoteroCollection => {
+	return (n as ZoteroCollection).parentCollection !== undefined;
+};
 
 // /**
 //  * Raw item object returned directly from the Zotero API.
