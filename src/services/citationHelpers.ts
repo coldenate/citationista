@@ -105,15 +105,19 @@ export async function sendUrlsToZotero(plugin: RNPlugin, urls: string[]): Promis
 		/* 2 ▸ POST to Zotero */
 		await logMessage(plugin, `⤴ Pushing item to Zotero`, LogType.Debug, false);
 
-		const postRes = await fetch(`${zoteroBase()}/${primaryLibType}/${primaryLibId}/items`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Zotero-API-Key': apiKey,
-				'Zotero-API-Version': '3', // explicit version = clearer errors
-			},
-			body: JSON.stringify([item]), // array per API spec
-		});
+                const postRes = await fetch(
+                        `${zoteroBase()}/${primaryLibType}/${primaryLibId}/items?key=${encodeURIComponent(
+                                apiKey
+                        )}`,
+                        {
+                                method: 'POST',
+                                headers: {
+                                        'Content-Type': 'application/json',
+                                        'Zotero-API-Version': '3', // explicit version = clearer errors
+                                },
+                                body: JSON.stringify([item]), // array per API spec
+                        }
+                );
 
 		const bodyText = await postRes.text(); // we’ll need this for logging
 
@@ -201,12 +205,13 @@ async function tryFetchFormatted(
 ): Promise<string | null> {
 	let res: Response;
 	try {
-		res = await fetch(url, {
-			headers: {
-				'Zotero-API-Key': apiKey,
-				Accept: 'application/json',
-			},
-		});
+                const finalUrl =
+                        `${url}${url.includes('?') ? '&' : '?'}key=${encodeURIComponent(apiKey)}`;
+                res = await fetch(finalUrl, {
+                        headers: {
+                                Accept: 'application/json',
+                        },
+                });
 	} catch (e) {
 		await logMessage(plugin, `Fetch failed for ${url}: ${String(e)}`, LogType.Warning, false);
 		return null;

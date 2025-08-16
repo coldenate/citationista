@@ -160,13 +160,12 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
 		return [];
 	}
 
-	const headers = { 'Zotero-API-Key': String(apiKey) };
+        // Use proxy in development mode to avoid CORS issues
+        const baseUrl = process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
+        const keyParam = `key=${encodeURIComponent(String(apiKey))}`;
 
-	// Use proxy in development mode to avoid CORS issues
-	const baseUrl = process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
-
-	try {
-                const resUser = await fetch(`${baseUrl}/users/${userId}`, { headers });
+        try {
+                const resUser = await fetch(`${baseUrl}/users/${userId}?${keyParam}`);
 
                 let userName = 'My Library';
                 if (resUser.ok) {
@@ -177,7 +176,7 @@ export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInf
                                 userName;
                 }
 
-                const res = await fetch(`${baseUrl}/users/${userId}/groups`, { headers });
+                const res = await fetch(`${baseUrl}/users/${userId}/groups?${keyParam}`);
 
                 if (!res.ok) {
                         throw new Error(`HTTP ${res.status}`);
