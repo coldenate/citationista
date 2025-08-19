@@ -3,7 +3,7 @@ import type {
 	Item,
 	ZoteroCollectionResponse,
 	ZoteroItemResponse,
-} from '../types/types';
+} from '../types/zotero.api';
 
 export function fromZoteroItem(raw: ZoteroItemResponse): Item {
 	return {

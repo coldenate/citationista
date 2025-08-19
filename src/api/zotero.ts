@@ -4,18 +4,13 @@ import type { RNPlugin } from "@remnote/plugin-sdk";
 // @ts-ignore
 import createZoteroClient from "zotero-api-client";
 import type {
-  Collection,
-  Item,
-  ZoteroCollectionResponse,
-  ZoteroGroupListItem,
-  ZoteroItemResponse,
-  ZoteroUserResponse,
-} from "../types/types";
-import { LogType, logMessage } from "../utils/logging";
-import {
-  fromZoteroCollection,
-  fromZoteroItem,
-} from "../utils/zoteroConverters";
+	ZoteroCollection,
+	ZoteroGroupListItem,
+	ZoteroItem,
+	ZoteroUserResponse,
+} from '../types/zotero.api';
+import { LogType, logMessage } from '../utils/logging';
+import { fromZoteroCollection, fromZoteroItem } from '../utils/zoteroConverters';
 
 /**
  * A class to interact with the Zotero API.
@@ -42,7 +37,7 @@ import {
 export interface ZoteroLibraryInfo {
 	id: string;
 	name: string;
-	type: "user" | "group";
+	type: 'user' | 'group';
 }
 
 export class ZoteroAPI {
@@ -55,30 +50,30 @@ export class ZoteroAPI {
 	}
 
 	private async getOrCreateConnection(
-		libraryType?: "user" | "group",
-		libraryId?: string,
+		libraryType?: 'user' | 'group',
+		libraryId?: string
 	): Promise<any> {
-		const apiKey = await this.plugin.settings.getSetting("zotero-api-key");
+		const apiKey = await this.plugin.settings.getSetting('zotero-api-key');
 		if (!apiKey) {
-			throw new Error("Zotero API key not set");
+			throw new Error('Zotero API key not set');
 		}
 
 		if (!libraryType || !libraryId) {
-			const stored = await this.plugin.settings.getSetting("zotero-library-id");
-			if (stored && typeof stored === "string") {
-				const [type, id] = stored.split(":");
-				libraryType = (type as "user" | "group") || libraryType;
+			const stored = await this.plugin.settings.getSetting('zotero-library-id');
+			if (stored && typeof stored === 'string') {
+				const [type, id] = stored.split(':');
+				libraryType = (type as 'user' | 'group') || libraryType;
 				libraryId = id || libraryId;
 			}
 		}
 
 		if (!libraryType || !libraryId) {
-			libraryType = "user";
-			libraryId = await this.plugin.settings.getSetting("zotero-user-id");
+			libraryType = 'user';
+			libraryId = await this.plugin.settings.getSetting('zotero-user-id');
 		}
 
 		if (!libraryId) {
-			throw new Error("Zotero Library ID not set");
+			throw new Error('Zotero Library ID not set');
 		}
 
 		const key = `${libraryType}:${libraryId}`;
@@ -86,30 +81,24 @@ export class ZoteroAPI {
 			return this.zoteroConnection;
 		}
 
-		this.zoteroConnection = await createZoteroClient(apiKey).library(
-			libraryType,
-			libraryId,
-		);
+		this.zoteroConnection = await createZoteroClient(apiKey).library(libraryType, libraryId);
 		this.lastLibraryKey = key;
 		return this.zoteroConnection;
 	}
 
 	private async fetchItems(
-		libraryType?: "user" | "group",
-		libraryId?: string,
-	): Promise<Item[]> {
+		libraryType?: 'user' | 'group',
+		libraryId?: string
+	): Promise<ZoteroItem[]> {
 		try {
-			const apiConnection = await this.getOrCreateConnection(
-				libraryType,
-				libraryId,
-			);
-			const items: Item[] = [];
+			const apiConnection = await this.getOrCreateConnection(libraryType, libraryId);
+			const items: ZoteroItem[] = [];
 			let start = 0;
 			const limit = 100; // Maximize limit to reduce number of requests
 
 			while (true) {
 				const response = await apiConnection.items().get({ start, limit });
-				const rawItems = response.raw as ZoteroItemResponse[];
+				const rawItems = response.raw as ZoteroItem[];
 				for (const raw of rawItems) {
 					items.push(fromZoteroItem(raw));
 				}
@@ -124,41 +113,32 @@ export class ZoteroAPI {
 
 			return items;
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			await this.plugin.app.toast(
-				`Failed to fetch Zotero items: ${errorMessage}`,
-			);
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			await this.plugin.app.toast(`Failed to fetch Zotero items: ${errorMessage}`);
 			throw error;
 		}
 	}
 
 	private async fetchCollections(
-		libraryType?: "user" | "group",
-		libraryId?: string,
-	): Promise<Collection[]> {
+		libraryType?: 'user' | 'group',
+		libraryId?: string
+	): Promise<ZoteroCollection[]> {
 		try {
-			const apiConnection = await this.getOrCreateConnection(
-				libraryType,
-				libraryId,
-			);
+			const apiConnection = await this.getOrCreateConnection(libraryType, libraryId);
 			const response = await apiConnection.collections().get();
-			const rawCollections = response.getData() as ZoteroCollectionResponse[];
+			const rawCollections = response.getData() as ZoteroCollection[];
 			return rawCollections.map(fromZoteroCollection);
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			await this.plugin.app.toast(
-				`Failed to fetch Zotero collections: ${errorMessage}`,
-			);
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			await this.plugin.app.toast(`Failed to fetch Zotero collections: ${errorMessage}`);
 			throw error;
 		}
 	}
 
 	async fetchLibraryData(
-		libraryType?: "user" | "group",
-		libraryId?: string,
-	): Promise<{ items: Item[]; collections: Collection[] }> {
+		libraryType?: 'user' | 'group',
+		libraryId?: string
+	): Promise<{ items: ZoteroItem[]; collections: ZoteroCollection[] }> {
 		const [items, collections] = await Promise.all([
 			this.fetchItems(libraryType, libraryId),
 			this.fetchCollections(libraryType, libraryId),
@@ -167,41 +147,34 @@ export class ZoteroAPI {
 			this.plugin,
 			`Fetched ${items.length} items and ${collections.length} collections from Zotero.`,
 			LogType.Debug,
-			false,
+			false
 		);
 		return { items, collections };
 	}
 }
 
-export async function fetchLibraries(
-	plugin: RNPlugin,
-): Promise<ZoteroLibraryInfo[]> {
-	const apiKey = await plugin.settings.getSetting("zotero-api-key");
-	const userId = await plugin.settings.getSetting("zotero-user-id");
+export async function fetchLibraries(plugin: RNPlugin): Promise<ZoteroLibraryInfo[]> {
+	const apiKey = await plugin.settings.getSetting('zotero-api-key');
+	const userId = await plugin.settings.getSetting('zotero-user-id');
 
 	if (!apiKey || !userId) {
 		return [];
 	}
 
-	const headers = { "Zotero-API-Key": String(apiKey) };
-
 	// Use proxy in development mode to avoid CORS issues
-	const baseUrl =
-		process.env.NODE_ENV === "development"
-			? "/zotero"
-			: "https://api.zotero.org";
+	const baseUrl = process.env.NODE_ENV === 'development' ? '/zotero' : 'https://api.zotero.org';
+	const keyParam = `key=${encodeURIComponent(String(apiKey))}`;
 
 	try {
-		const resUser = await fetch(`${baseUrl}/users/${userId}`, { headers });
+		const resUser = await fetch(`${baseUrl}/users/${userId}?${keyParam}`);
 
-		let userName = "My Library";
+		let userName = 'My Library';
 		if (resUser.ok) {
 			const userData = (await resUser.json()) as ZoteroUserResponse;
-			userName =
-				userData.data?.profileName || userData.data?.username || userName;
+			userName = userData.data?.profileName || userData.data?.username || userName;
 		}
 
-		const res = await fetch(`${baseUrl}/users/${userId}/groups`, { headers });
+		const res = await fetch(`${baseUrl}/users/${userId}/groups?${keyParam}`);
 
 		if (!res.ok) {
 			throw new Error(`HTTP ${res.status}`);
@@ -209,26 +182,23 @@ export async function fetchLibraries(
 		const data = (await res.json()) as ZoteroGroupListItem[];
 		const groups = data.map((g) => ({
 			id: String(g.id ?? g.data?.id),
-			name: g.data?.name ?? g.name ?? "",
-			type: "group" as const,
+			name: g.data?.name ?? g.name ?? '',
+			type: 'group' as const,
 		}));
-		return [
-			{ id: String(userId), name: userName, type: "user" as const },
-			...groups,
-		];
+		return [{ id: String(userId), name: userName, type: 'user' as const }, ...groups];
 	} catch (err) {
 		await logMessage(
 			plugin,
-			"Failed to fetch group libraries",
+			'Failed to fetch group libraries',
 			LogType.Error,
 			false,
-			String(err),
+			String(err)
 		);
 
 		await plugin.app.toast(
-			"Failed to fetch group libraries. Your browser may be blocking the request.",
+			'Failed to fetch group libraries. Your browser may be blocking the request.'
 		);
-		return [{ id: String(userId), name: "My Library", type: "user" }];
+		return [{ id: String(userId), name: 'My Library', type: 'user' }];
 	}
 }
 

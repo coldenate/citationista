@@ -7,3 +7,6 @@
 -   [x] Replace the any in types.ts so synced items carry strongly typed data.
 -   [x] Expand treeBuilder and mergeUpdatedItems to recognize Zotero notes/annotations and create corresponding child Rems instead of dumping them into “Unfiled Items.”
 -   [x] Add logging/breakpoints around the unfiled-items code path to inspect data and ensure proper parentage
+
+Refactor plan
+-   [ ] See `REFACTOR_TODO.md` for the modular sync pipeline checklist (Index, Diff, Merge, Executor, SyncApplier, Hydrator, Manager split, strategies, tests).
