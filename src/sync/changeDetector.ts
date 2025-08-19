@@ -1,4 +1,4 @@
-import type { ChangeSet, Collection, Item } from '../types/types';
+import type { ChangeSet, Collection, Item } from '../types/zotero.api';
 
 export class ChangeDetector {
 	detectChanges(

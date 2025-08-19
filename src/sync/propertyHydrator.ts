@@ -4,7 +4,7 @@ import { powerupCodes } from '../constants/constants';
 import { itemTypeFieldLookup } from '../constants/zoteroItemSchema';
 import { checkAbortFlag, createRem } from '../services/pluginIO';
 import { getItemTitle } from '../services/zoteroSchemaToRemNote';
-import type { ChangeSet, ZoteroItemData } from '../types/types';
+import type { ChangeSet, ZoteroItemData } from '../types/zotero.api';
 import { generatePowerupCode, stripPowerupSuffix } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
 

@@ -2,7 +2,7 @@ import { filterAsync, type RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
 import { getUnfiledItemsRem, getZoteroLibraryRem } from '../services/ensureUIPrettyZoteroRemExist';
 import { checkAbortFlag, createRem } from '../services/pluginIO';
-import type { ChangeSet, Collection, Item, RemNode } from '../types/types';
+import type { ChangeSet, Collection, Item, RemNode } from '../types/zotero.api';
 import { generatePowerupCode } from '../utils/getCodeName';
 import { LogType, logMessage } from '../utils/logging';
 

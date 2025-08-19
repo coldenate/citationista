@@ -1,4 +1,4 @@
-import type { Tag, ZoteroItemData } from '../types/types';
+import type { Tag, ZoteroItemData } from '../types/zotero.api';
 
 /**
  * Implements a three‑way merge algorithm.

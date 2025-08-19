@@ -93,13 +93,8 @@ export interface ZoteroLibraryInfo {
 	};
 }
 
-export interface TreeLinkage {
-	key: string;
-	children?: SyncTreeNode[];
-	parent?: SyncTreeNode | null;
-}
 
-export interface ZoteroItem extends TreeLinkage {
+export interface ZoteroItem {
 	version: number;
 	library: ZoteroLibraryInfo;
 	links: {
@@ -119,7 +114,7 @@ export interface ZoteroItem extends TreeLinkage {
 	rem?: Rem | null;
 }
 
-export interface ZoteroCollection extends TreeLinkage {
+export interface ZoteroCollection {
 	version: number;
 	name: string;
 	parentCollection: boolean | string; // if false, top-level
@@ -127,19 +122,6 @@ export interface ZoteroCollection extends TreeLinkage {
 	rem?: Rem | null;
 }
 
-export type SyncTreeNode = ZoteroItem | ZoteroCollection;
-/**
- * 1. Initial Sync scenario:
- * This is the Tree structure that will be used to sync the Zotero library with the RemNote library.
- * It will represent first, the Zotero library at a state already in hierarchy.
- * Then, we, in another file, will run through the Zotero library use the SyncTree as a playbook to build out the RemNote library. As we iterate, we will update the SyncTree to contain Rem references to the Rems we create.
- * 2. Syncing scenario:
- * This is the Tree structure that will be used to sync the Zotero library with the RemNote library.
- * We will build out two SyncTrees from the RemNote library and Zotero Library.
- * We will then compare the two trees and determine the changes that need to be made to the RemNote library to bring it up to date with the Zotero library.
- * We will then apply the changes to the RemNote library.
- */
-export type SyncTree = SyncTreeNode[];
 
 // /**
 //  * Raw item object returned directly from the Zotero API.

@@ -5,7 +5,7 @@ import {
 	PropertyType,
 	type RegisterPowerupOptions,
 } from '@remnote/plugin-sdk';
-import type { ZoteroItemData } from '../types/types';
+import type { ZoteroItemData } from '../types/zotero.api';
 import { generatePowerupCode, generatePowerupName } from '../utils/getCodeName';
 
 type Field = {

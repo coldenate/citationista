@@ -1,10 +1,10 @@
 // src/sync/mergeUpdatedItems.ts
 import type { RNPlugin } from '@remnote/plugin-sdk';
 import { powerupCodes } from '../constants/constants';
-import type { ChangeSet, Item, RemNode, ZoteroItemData } from '../types/types';
+import type { ChangeSet, Item, RemNode, ZoteroItemData } from '../types/zotero.api';
+import { isProgrammaticallyEdited } from '../utils/editTracker';
 import { LogType, logMessage } from '../utils/logging';
 import { threeWayMerge } from './threeWayMerge';
-import { isProgrammaticallyEdited } from '../utils/editTracker';
 
 /**
  * For each updated item in the ChangeSet, merge the local data, remote data, and the previous shadow copy.

@@ -8,7 +8,7 @@ import {
 	ensureZoteroLibraryRemExists,
 } from '../services/ensureUIPrettyZoteroRemExist';
 import { checkAbortFlag } from '../services/pluginIO';
-import type { ChangeSet, Collection, Item } from '../types/types';
+import type { ChangeSet, Collection, Item } from '../types/zotero.api';
 import {
 	clearEdits,
 	endProgrammaticEdits,
