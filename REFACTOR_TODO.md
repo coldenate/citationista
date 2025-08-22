@@ -16,37 +16,37 @@ Key goals
 
 1. Types and shared contracts
 
--   [ ] Add `src/types/syncContracts.ts` with unified node model used by Local/Remote/Shadow:
-    -   [ ] `type NodeKind = 'item' | 'collection' | 'note' | 'attachment'`
-    -   [ ] `type GlobalKey = "${libraryKey}:${itemKey}"` used everywhere (nodes, maps, planner, validator, snapshots)
-    -   [ ] `interface BaseSyncNode { key: GlobalKey; libraryKey: string; itemKey: string; parentKeys: GlobalKey[] }`
-    -   [ ] `type ZoteroItemCore = Omit<ZoteroItem, 'rem' | 'children' | 'parent'>`
-    -   [ ] `type ZoteroCollectionCore = Omit<ZoteroCollection, 'rem' | 'children' | 'parent'>`
-    -   [ ] `type SyncNode = (BaseSyncNode & { kind: 'collection'; contents: ZoteroCollectionCore }) | (BaseSyncNode & { kind: 'item' | 'note' | 'attachment'; contents: ZoteroItemCore })`
-    -   [ ] `interface LocalSidecar { remId: string; rem?: Rem | null; titleRT?: RichTextInterface; propertyMap?: Record<string, unknown>; lastPluginWriteAt?: number; protectedUntil?: number; }`
-    -   [ ] `interface RemoteSidecar { etag?: string; }`
-    -   [ ] `type LocalNode = SyncNode & { sidecar: LocalSidecar }`
-    -   [ ] `type RemoteNode = SyncNode & { sidecar: RemoteSidecar }`
-    -   [ ] `type ShadowNode = SyncNode`
-    -   [ ] `interface IndexResult { nodeByKey: Map<GlobalKey, LocalNode>; childrenByParentKey: Map<GlobalKey, GlobalKey[]>; libraryRem: Rem | null; unfiledRem: Rem | null; libraryKey: string; }`
-    -   [ ] `type PreparedChangeSet = ChangeSet & { prepared: true }` (optional flag while migrating)
-    -   [ ] `type LocallyEditedFields = Record<string, Set<string>>` (itemKey → edited fields)
--   [ ] Update imports to use these contracts where appropriate (avoid unnecessary re‑exports to reduce coupling)
+-   [x] Add `src/types/syncContracts.ts` with unified node model used by Local/Remote/Shadow:
+    -   [x] `type NodeKind = 'item' | 'collection' | 'note' | 'attachment'`
+    -   [x] `type GlobalKey = "${libraryKey}:${itemKey}"` used everywhere (nodes, maps, planner, validator, snapshots)
+    -   [x] `interface BaseSyncNode { key: GlobalKey; libraryKey: string; itemKey: string; parentKeys: GlobalKey[] }`
+    -   [x] `type ZoteroItemCore = Omit<ZoteroItem, 'rem' | 'children' | 'parent'>`
+    -   [x] `type ZoteroCollectionCore = Omit<ZoteroCollection, 'rem' | 'children' | 'parent'>`
+    -   [x] `type SyncNode = (BaseSyncNode & { kind: 'collection'; contents: ZoteroCollectionCore }) | (BaseSyncNode & { kind: 'item' | 'note' | 'attachment'; contents: ZoteroItemCore })`
+    -   [x] `interface LocalSidecar { remId: string; rem?: Rem | null; titleRT?: RichTextInterface; propertyMap?: Record<string, unknown>; lastPluginWriteAt?: number; protectedUntil?: number; }`
+    -   [x] `interface RemoteSidecar { etag?: string; }`
+    -   [x] `type LocalNode = SyncNode & { sidecar: LocalSidecar }`
+    -   [x] `type RemoteNode = SyncNode & { sidecar: RemoteSidecar }`
+    -   [x] `type ShadowNode = SyncNode`
+    -   [x] `interface IndexResult { nodeByKey: Map<GlobalKey, LocalNode>; childrenByParentKey: Map<GlobalKey, GlobalKey[]>; libraryRem: Rem | null; unfiledRem: Rem | null; libraryKey: string; }`
+    -   [x] `type PreparedChangeSet = ChangeSet & { prepared: true }` (optional flag while migrating)
+    -   [x] `type LocallyEditedFields = Record<string, Set<string>>` (itemKey → edited fields)
+-   [x] Update imports to use these contracts where appropriate (avoid unnecessary re‑exports to reduce coupling)
 
 2. Indexing Module
 
--   [ ] Create `src/modules/tree/RemNoteIndex.ts` with a single public API:
-    -   [ ] `buildIndex(plugin: RNPlugin, libraryKey: string): Promise<IndexResult>`
-    -   [ ] Walk ZITEM/Collection Rems → produce `LocalNode` entries with unified `SyncNode` fields + `LocalSidecar`
-    -   [ ] Use `ensureUIPrettyZoteroRemExist.ts` to resolve `libraryRem`/`unfiledRem`
--   [ ] Create `src/modules/tree/ZoteroIndex.ts` that wraps `ZoteroAPI.fetchLibraryData` and returns `Map<string, RemoteNode>` mirroring `SyncNode`
-    -   [ ] Return `Map<GlobalKey, RemoteNode>`
--   [ ] Ensure empty `parentKeys` implies Unfiled placement for items
--   [ ] Add unit tests under `src/modules/tree/__tests__/RemNoteIndex.test.ts` and `ZoteroIndex.test.ts`
+-   [x] Create `src/modules/tree/RemNoteIndex.ts` with a single public API:
+    -   [x] `buildIndex(plugin: RNPlugin, libraryKey: string): Promise<IndexResult>`
+    -   [x] Walk ZITEM/Collection Rems → produce `LocalNode` entries with unified `SyncNode` fields + `LocalSidecar`
+    -   [x] Use `ensureUIPrettyZoteroRemExist.ts` to resolve `libraryRem`/`unfiledRem`
+-   [x] Create `src/modules/tree/ZoteroIndex.ts` that wraps `ZoteroAPI.fetchLibraryData` and returns `Map<string, RemoteNode>` mirroring `SyncNode`
+    -   [x] Return `Map<GlobalKey, RemoteNode>`
+-   [x] Ensure empty `parentKeys` implies Unfiled placement for items
+-   [x] Add unit tests under `src/modules/tree/__tests__/RemNoteIndex.test.ts` and `ZoteroIndex.test.ts`
 
-3. Change Computation (diff)
+1. Change Computation (diff)
 
--   [ ] Move/duplicate `src/sync/changeDetector.ts` to `src/modules/diff/changeDetector.ts` (keep current API)
+-   [ ] Move `src/sync/changeDetector.ts` to `src/modules/diff/changeDetector.ts` (keep current API)
 -   [ ] Keep detection logic as-is for now (remote vs prev shadow)
 -   [ ] Add TODO hooks for Phase 2 local-change detection:
     -   [ ] Compare current RemNote title/note text to `prevData` to infer local edits

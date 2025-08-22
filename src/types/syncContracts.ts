@@ -60,3 +60,14 @@ export function makeGlobalKey(libraryKey: string, itemKey: string): GlobalKey {
 }
 
 export type PluginLike = RNPlugin;
+
+export type ChangeSet = {
+	newItems: ZoteroItem[];
+	updatedItems: ZoteroItem[];
+	deletedItems: ZoteroItem[];
+	movedItems: ZoteroItem[];
+	newCollections: ZoteroCollection[];
+	updatedCollections: ZoteroCollection[];
+	deletedCollections: ZoteroCollection[];
+	movedCollections: ZoteroCollection[];
+};
